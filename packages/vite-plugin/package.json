@@ -1,0 +1,36 @@
+{
+  "name": "jsx-styled-vite-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./cached-css/*": {
+      "import": "./dist/.cache/*"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "check": "biome check --write",
+    "dev": "rslib build --watch",
+    "format": "biome format --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@rslib/core": "^0.6.1",
+    "@types/node": "^22.8.1",
+    "jsx-styled-core": "*",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.5"
+  },
+  "private": true
+}
