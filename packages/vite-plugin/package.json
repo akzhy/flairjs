@@ -29,6 +29,7 @@
     "@rslib/core": "^0.6.1",
     "@types/node": "^22.8.1",
     "jsx-styled-core": "*",
+    "sass": "^1.86.3",
     "typescript": "^5.8.2",
     "vite": "^6.2.5"
   },
