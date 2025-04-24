@@ -5,12 +5,29 @@ import * as t from "@babel/types";
 import { createCacheCSSFile, createCacheDir } from "./create-cache-dir";
 import { transformCSS } from "./transform-css";
 import { extractCSS } from "./extract-css";
-import { processAttribute } from "./process-attribute";
+import { updateAttribute, updateCallExpression } from "./process-attribute";
+import path from "path";
+import {
+  STYLE_TAG_NAME,
+  CLASSNAME_ATTRIBUTES,
+  CLASSNAME_UTIL_FUNCTIONS,
+  CLIENT_PACKAGE_NAMES,
+} from "./constants";
 
 createCacheDir();
 
-export const transform = (code: string, id: string) => {
-  if (!id.endsWith(".tsx")) {
+export interface TransformOptions {
+  code: string;
+  filePath: string;
+  cssPreprocessor?: (css: string, id: string) => string;
+}
+
+export const transform = async ({
+  code,
+  filePath,
+  cssPreprocessor,
+}: TransformOptions) => {
+  if (!filePath.endsWith(".tsx")) {
     return null;
   }
 
@@ -19,14 +36,35 @@ export const transform = (code: string, id: string) => {
     plugins: ["typescript", "jsx"],
   });
 
+  let localStyleTagName = STYLE_TAG_NAME;
+  let localClassNameUtilFunctions: string[] = [];
+
   traverse(ast, {
+    ImportDeclaration(path) {
+      if (CLIENT_PACKAGE_NAMES.includes(path.node.source.value)) {
+        for (const specifier of path.node.specifiers) {
+          if (specifier.type === "ImportSpecifier") {
+            let importedName =
+              specifier.imported.type === "Identifier"
+                ? specifier.imported.name
+                : specifier.imported.value;
+
+            if (importedName === STYLE_TAG_NAME) {
+              localStyleTagName = specifier.local.name;
+            } else if (CLASSNAME_UTIL_FUNCTIONS.includes(importedName)) {
+              localClassNameUtilFunctions.push(specifier.local.name);
+            }
+          }
+        }
+      }
+    },
     JSXElement(path) {
       if (path.node.openingElement.name.type !== "JSXIdentifier") {
         return;
       }
 
       const name = path.node.openingElement.name.name;
-      if (name !== "Style") {
+      if (name !== localStyleTagName) {
         return;
       }
 
@@ -43,21 +81,41 @@ export const transform = (code: string, id: string) => {
 
       const styleBody = extractCSS(path.node);
 
-      const { code: transformedCSS, exports } = transformCSS(styleBody, id);
+      let processedCSS = styleBody;
+      if (cssPreprocessor) {
+        processedCSS = cssPreprocessor(styleBody, filePath);
+      }
+
+      const { code: transformedCSS, exports: classNameMap } = transformCSS(
+        processedCSS,
+        filePath
+      );
 
       const { name: cacheFileName } = createCacheCSSFile({
-        id,
+        id: filePath,
         css: transformedCSS,
       });
 
       parentFunction.traverse({
         JSXAttribute(path) {
-          if (path.node.name.name === "className") {
-            processAttribute({
+          if (
+            typeof path.node.name.name === "string" &&
+            CLASSNAME_ATTRIBUTES.includes(path.node.name.name)
+          ) {
+            updateAttribute({
+              path,
               node: path.node,
-              attrName: "className",
-              classNameMap: exports,
+              attrName: path.node.name.name,
+              classNameMap,
             });
+          }
+        },
+        CallExpression(path) {
+          if (
+            t.isIdentifier(path.node.callee) &&
+            localClassNameUtilFunctions.includes(path.node.callee.name)
+          ) {
+            updateCallExpression(path.node, classNameMap);
           }
         },
       });
@@ -69,7 +127,10 @@ export const transform = (code: string, id: string) => {
         )
       );
 
-      path.remove();
+      const nodeEnv = process.env.NODE_ENV;
+      if (nodeEnv === "production") {
+        path.remove();
+      }
     },
   });
 
