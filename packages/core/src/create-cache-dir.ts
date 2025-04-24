@@ -1,7 +1,7 @@
 import nodePath from "path";
 import fs from "fs";
 import { createHash } from "crypto";
-const CACHE_DIR_NAME = ".cache";
+import { CACHE_DIR_NAME } from "./constants";
 
 export const createCacheDir = () => {
   const relDirectory = import.meta?.dirname;
