@@ -1,14 +1,17 @@
 import * as t from "@babel/types";
 import { CSSModuleExports } from "lightningcss";
+import { NodePath } from "@babel/traverse";
 
-export const processAttribute = ({
+export const updateAttribute = ({
   node,
   attrName,
   classNameMap,
+  path,
 }: {
   node: t.JSXAttribute;
   attrName: string;
   classNameMap: CSSModuleExports;
+  path: NodePath<t.JSXAttribute>;
 }) => {
   if (node.value?.type === "StringLiteral") {
     const transformedClassNames = processStringLiteral(
@@ -18,23 +21,61 @@ export const processAttribute = ({
     node.value = t.stringLiteral(transformedClassNames);
   } else if (node.value?.type === "JSXExpressionContainer") {
     if (node.value.expression.type === "CallExpression") {
-      const transformedArgs = processCallExpression(
-        node.value.expression,
-        classNameMap
-      );
-      node.value.expression.arguments = transformedArgs;
+      updateCallExpression(node.value.expression, classNameMap);
     } else if (node.value.expression.type === "LogicalExpression") {
-      const transformedNode = processLogicalExpression(
+      const transformedNode = updateLogicalExpression(
         node.value.expression,
         classNameMap
       );
       node.value.expression = transformedNode;
     } else if (node.value.expression.type === "ConditionalExpression") {
-      const transformedNode = processConditionalExpression(
+      const transformedNode = updateConditionalExpression(
         node.value.expression,
         classNameMap
       );
       node.value.expression = transformedNode;
+    } else if (node.value.expression.type === "Identifier") {
+      const varName = node.value.expression.name;
+      const binding = path.scope.getBinding(varName);
+      if (binding && t.isVariableDeclarator(binding.path.node)) {
+        switch (binding.path.node.init?.type) {
+          case "StringLiteral":
+            const transformedClassNames = processStringLiteral(
+              binding.path.node.init,
+              classNameMap
+            );
+            binding.path.node.init.value = transformedClassNames;
+            break;
+          case "ObjectExpression":
+            const properties = updateObjectExpression(
+              binding.path.node.init,
+              classNameMap
+            );
+            binding.path.node.init.properties = properties;
+            break;
+          case "ArrayExpression":
+            const elements = updateArrayExpression(
+              binding.path.node.init,
+              classNameMap
+            );
+            binding.path.node.init.elements = elements;
+            break;
+          case "LogicalExpression":
+            const transformedLogicalExpression = updateLogicalExpression(
+              binding.path.node.init,
+              classNameMap
+            );
+            binding.path.node.init = transformedLogicalExpression;
+            break;
+          case "ConditionalExpression":
+            const transformedConditionalExpression =
+              updateConditionalExpression(binding.path.node.init, classNameMap);
+            binding.path.node.init = transformedConditionalExpression;
+            break;
+          default:
+            break;
+        }
+      }
     }
   }
 };
@@ -52,7 +93,7 @@ const processStringLiteral = (
   return transformedClassNames.join(" ");
 };
 
-const processObjectExpression = (
+const updateObjectExpression = (
   node: t.ObjectExpression,
   classNameMap: CSSModuleExports
 ) => {
@@ -71,7 +112,7 @@ const processObjectExpression = (
   return properties;
 };
 
-const processArrayExpression = (
+const updateArrayExpression = (
   node: t.ArrayExpression,
   classNameMap: CSSModuleExports
 ) => {
@@ -79,7 +120,7 @@ const processArrayExpression = (
     (element) => {
       switch (element?.type) {
         case "ObjectExpression":
-          const properties = processObjectExpression(element, classNameMap);
+          const properties = updateObjectExpression(element, classNameMap);
           element.properties = properties;
           return element;
         case "StringLiteral":
@@ -87,13 +128,13 @@ const processArrayExpression = (
           element.value = value;
           return element;
         case "ArrayExpression":
-          const elements = processArrayExpression(element, classNameMap);
+          const elements = updateArrayExpression(element, classNameMap);
           element.elements = elements;
           return element;
         case "LogicalExpression":
-          return processLogicalExpression(element, classNameMap);
+          return updateLogicalExpression(element, classNameMap);
         case "ConditionalExpression":
-          return processConditionalExpression(element, classNameMap);
+          return updateConditionalExpression(element, classNameMap);
         default:
           return element;
       }
@@ -102,7 +143,7 @@ const processArrayExpression = (
   return elements;
 };
 
-const processLogicalExpression = (
+const updateLogicalExpression = (
   node: t.LogicalExpression,
   classNameMap: CSSModuleExports
 ) => {
@@ -115,44 +156,66 @@ const processLogicalExpression = (
       node.right.value = transformedClassNames;
       return node;
     case "ObjectExpression":
-      const properties = processObjectExpression(node.right, classNameMap);
+      const properties = updateObjectExpression(node.right, classNameMap);
       node.right.properties = properties;
       return node;
     case "ArrayExpression":
-      const elements = processArrayExpression(node.right, classNameMap);
+      const elements = updateArrayExpression(node.right, classNameMap);
       node.right.elements = elements;
       return node;
+    case "ConditionalExpression":
+      return updateConditionalExpression(node.right, classNameMap);
+    case "CallExpression":
+      return updateCallExpression(node.right, classNameMap);
+    case "LogicalExpression":
+      return updateLogicalExpression(node.right, classNameMap);
     default:
       return node;
   }
 };
 
-const processConditionalExpression = (
+const updateConditionalExpression = (
   node: t.ConditionalExpression,
   classNameMap: CSSModuleExports
 ) => {
-  switch (node.consequent.type) {
+  updateConditionalExpressionLeaf(node, "consequent", classNameMap);
+  updateConditionalExpressionLeaf(node, "alternate", classNameMap);
+  return node;
+};
+
+const updateConditionalExpressionLeaf = (
+  node: t.ConditionalExpression,
+  type: "consequent" | "alternate",
+  classNameMap: CSSModuleExports
+) => {
+  switch (node[type].type) {
     case "StringLiteral":
       const transformedClassNames = processStringLiteral(
-        node.consequent,
+        node[type],
         classNameMap
       );
-      node.consequent.value = transformedClassNames;
+      node[type].value = transformedClassNames;
       return node;
     case "ObjectExpression":
-      const properties = processObjectExpression(node.consequent, classNameMap);
-      node.consequent.properties = properties;
+      const properties = updateObjectExpression(node[type], classNameMap);
+      node[type].properties = properties;
       return node;
     case "ArrayExpression":
-      const elements = processArrayExpression(node.consequent, classNameMap);
-      node.consequent.elements = elements;
+      const elements = updateArrayExpression(node[type], classNameMap);
+      node[type].elements = elements;
       return node;
+    case "ConditionalExpression":
+      return updateConditionalExpression(node[type], classNameMap);
+    case "LogicalExpression":
+      return updateLogicalExpression(node[type], classNameMap);
+    case "CallExpression":
+      return updateCallExpression(node[type], classNameMap);
     default:
       return node;
   }
 };
 
-const processCallExpression = (
+export const updateCallExpression = (
   node: t.CallExpression,
   classNameMap: CSSModuleExports
 ) => {
@@ -162,15 +225,24 @@ const processCallExpression = (
       arg.value = transformedClassNames;
       return arg;
     } else if (arg.type === "ObjectExpression") {
-      const properties = processObjectExpression(arg, classNameMap);
+      const properties = updateObjectExpression(arg, classNameMap);
       arg.properties = properties;
     } else if (arg.type === "ArrayExpression") {
-      const transformedClassNames = processArrayExpression(arg, classNameMap);
+      const transformedClassNames = updateArrayExpression(arg, classNameMap);
       arg.elements = transformedClassNames;
+    } else if (arg.type === "LogicalExpression") {
+      const transformedClassNames = updateLogicalExpression(arg, classNameMap);
+      arg.right = transformedClassNames;
+    } else if (arg.type === "ConditionalExpression") {
+      const transformedClassNames = updateConditionalExpression(arg, classNameMap);
+      arg.consequent = transformedClassNames;
+    } else if (arg.type === "CallExpression") {
+      updateCallExpression(arg, classNameMap);
     }
 
     return arg;
   });
 
-  return args;
+  node.arguments = args;
+  return node;
 };
