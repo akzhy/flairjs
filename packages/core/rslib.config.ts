@@ -9,14 +9,6 @@ export default defineConfig({
       output: {
         externals: ['lightningcss'],
       }
-    },
-    {
-      format: 'cjs',
-      syntax: 'es2021',
-      autoExternal: true,
-      output: {
-        externals: ['lightningcss'],
-      }
-    },
+    }
   ],
 });
