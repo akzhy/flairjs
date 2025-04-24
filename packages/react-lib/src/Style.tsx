@@ -5,6 +5,6 @@ export interface StyleProps {
   global?: boolean;
 }
 
-export const Style = ({ children, global, ...props }: StyleProps) => {
-  return <style {...props}>{children}</style>;
+export const Style = (props: StyleProps) => {
+  return null;
 };
