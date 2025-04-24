@@ -2,13 +2,22 @@ import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
-import { Style } from "jsx-styled-react";
+import { c, Style } from "jsx-styled-react";
 import clsx from "clsx";
 
 const cardClassName = "card";
 
 function App() {
   const [count, setCount] = useState(0);
+
+  const getImageClassName = () => {
+    if (count % 2 === 0) {
+      return c("logo img-active");
+    }
+    return "logo";
+  };
+
+  const reactLogoClassName = "logo react";
 
   return (
     <>
@@ -18,14 +27,18 @@ function App() {
           target="_blank"
           className={count % 2 === 0 && count > 2 && "link-primary"}
         >
-          <img src={viteLogo} className="logo" alt="Vite logo" />
+          <img src={viteLogo} className={getImageClassName()} alt="Vite logo" />
         </a>
         <a
           href="https://react.dev"
           target="_blank"
           className={count % 2 === 0 ? "link-primary" : "link-secondary"}
         >
-          <img src={reactLogo} className="logo react" alt="React logo" />
+          <img
+            src={reactLogo}
+            className={reactLogoClassName}
+            alt="React logo"
+          />
         </a>
       </div>
       <h1>Vite + React</h1>
@@ -50,12 +63,20 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <ButtonThatThrows />
       <Style>
         {
           /* css */ `
           .read-the-docs {
             padding: 2em;
-            color: green;
+          }
+
+          .react {
+            scale: 2;
+          }
+
+          .img-active {
+            scale: 2;
           }
 
           .btn {
@@ -99,5 +120,17 @@ function App() {
     </>
   );
 }
+
+export const ButtonThatThrows = () => {
+  return (
+    <button
+      onClick={() => {
+        throw new Error("This is a test error");
+      }}
+    >
+      Click me
+    </button>
+  );
+};
 
 export default App;
