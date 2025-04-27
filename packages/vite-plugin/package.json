@@ -31,7 +31,7 @@
     "jsx-styled-core": "*",
     "sass": "^1.86.3",
     "typescript": "^5.8.2",
-    "vite": "^6.2.5"
+    "vite": "^6.3.3"
   },
   "private": true
 }
