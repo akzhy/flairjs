@@ -91,6 +91,21 @@ export const TestCaseComponent = () => {
             outline-color: rgb(255, 0, 6);
           }
         }
+
+        .case-7-1 {
+          color: rgb(255, 0, 7);
+        }
+
+        .case-8 {
+          &.case-8-1 {
+            background-color: rgb(255, 0, 8);
+          }
+
+          &.case-8-2 {
+            color: rgb(255, 0, 8);
+          }
+        }
+        
       `
       }</Style>
     </>

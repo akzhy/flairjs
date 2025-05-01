@@ -77,11 +77,38 @@ test("case-6", () => {
   expect(element).toBeInTheDocument();
   expect(element).not.toHaveClass("case-6 case-6-1 case-6-3 case-6-4");
   expect(element).toHaveClass("case-6-2");
-  console.log(getComputedStyle(element).color);
   expect(element).toHaveStyle({
     color: "rgb(255, 0, 6)",
     backgroundColor: "rgb(255, 0, 6)",
     borderColor: "rgb(255, 0, 6)",
     outlineColor: "rgb(255, 0, 6)",
+  });
+});
+
+test("case-7", () => {
+  render(<TestCaseComponent />);
+
+  const element = screen.getByText(/Case7/i);
+  expect(element).toBeInTheDocument();
+  expect(element).not.toHaveClass("case-7-1");
+  expect(element).toHaveClass("case-7");
+  expect(element).toHaveStyle({
+    color: "rgb(255, 0, 7)",
+  });
+});
+
+test("case-8", async () => {
+  render(<TestCaseComponent />);
+
+  const element = screen.getByText(/Case8/i);
+  expect(element).toBeInTheDocument();
+  expect(element).not.toHaveClass("case-8-1 case-8-2");
+  console.log(element.className);
+  expect(element).toHaveStyle({
+    color: "rgb(255, 0, 8)",
+  });
+  await userEvent.click(element);
+  expect(element).toHaveStyle({
+    backgroundColor: "rgb(255, 0, 8)",
   });
 });
