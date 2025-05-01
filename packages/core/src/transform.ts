@@ -2,17 +2,18 @@ import { generate } from "@babel/generator";
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
-import { createCacheCSSFile, createCacheDir } from "./create-cache-dir";
-import { transformCSS } from "./transform-css";
-import { extractCSS } from "./extract-css";
-import { updateAttribute, updateCallExpression } from "./process-attribute";
-import path from "path";
 import {
-  STYLE_TAG_NAME,
   CLASSNAME_ATTRIBUTES,
   CLASSNAME_UTIL_FUNCTIONS,
   CLIENT_PACKAGE_NAMES,
+  STYLE_TAG_NAME,
 } from "./constants";
+import { createCacheCSSFile, createCacheDir } from "./create-cache-dir";
+import { extractCSS } from "./extract-css";
+import {
+  AttributeProcessor,
+} from "./process-attribute";
+import { transformCSS } from "./transform-css";
 
 createCacheDir();
 
@@ -102,12 +103,11 @@ export const transform = async ({
             typeof path.node.name.name === "string" &&
             CLASSNAME_ATTRIBUTES.includes(path.node.name.name)
           ) {
-            updateAttribute({
+            new AttributeProcessor({
               path,
-              node: path.node,
               attrName: path.node.name.name,
               classNameMap,
-            });
+            }).updateAttribute();;
           }
         },
         CallExpression(path) {
@@ -115,7 +115,11 @@ export const transform = async ({
             t.isIdentifier(path.node.callee) &&
             localClassNameUtilFunctions.includes(path.node.callee.name)
           ) {
-            updateCallExpression(path.node, classNameMap);
+            new AttributeProcessor({
+              path,
+              attrName: path.node.callee.name,
+              classNameMap,
+            }).updateCallExpression(path.node);
           }
         },
       });
