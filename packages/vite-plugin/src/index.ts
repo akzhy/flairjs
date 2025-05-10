@@ -1,5 +1,6 @@
 import { transform } from "jsx-styled-core";
 import type { Plugin } from "vite";
+import { writeFileSync } from "fs";
 
 export default function jsxStyledVitePlugin({
   cssPreprocessor,
@@ -10,11 +11,21 @@ export default function jsxStyledVitePlugin({
     name: "vite-plugin-jsx-styled",
     enforce: "pre",
     transform(code, id) {
-      return transform({
+      const result = transform({
         code,
         filePath: id,
         cssPreprocessor,
       });
+
+      
+      if (!result) {
+        return code;
+      }
+
+      return {
+        code: result.code,
+        map: result.map,
+      };
     },
   };
 }

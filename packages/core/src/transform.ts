@@ -10,9 +10,7 @@ import {
 } from "./constants";
 import { createCacheCSSFile, createCacheDir } from "./create-cache-dir";
 import { extractCSS } from "./extract-css";
-import {
-  AttributeProcessor,
-} from "./process-attribute";
+import { AttributeProcessor } from "./process-attribute";
 import { transformCSS } from "./transform-css";
 
 createCacheDir();
@@ -21,12 +19,16 @@ export interface TransformOptions {
   code: string;
   filePath: string;
   cssPreprocessor?: (css: string, id: string) => string;
+  outputType?: "inject-import" | "write-css-file";
+  outputPath?: string;
 }
 
-export const transform = async ({
+export const transform = ({
   code,
   filePath,
   cssPreprocessor,
+  outputType = "inject-import",
+  outputPath,
 }: TransformOptions) => {
   if (!filePath.endsWith(".tsx")) {
     return null;
@@ -107,7 +109,7 @@ export const transform = async ({
               path,
               attrName: path.node.name.name,
               classNameMap,
-            }).updateAttribute();;
+            }).updateAttribute();
           }
         },
         CallExpression(path) {
@@ -138,5 +140,18 @@ export const transform = async ({
     },
   });
 
-  return generate(ast).code;
+  const generatedCode = generate(
+    ast,
+    {
+      sourceMaps: true,
+      sourceFileName: filePath,
+    },
+    code
+  );
+
+  return {
+    code: generatedCode.code,
+    map: generatedCode.map,
+    ast,
+  };
 };
