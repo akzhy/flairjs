@@ -1,4 +1,4 @@
-const c = <T extends string | TemplateStringsArray>(className: T) => {
+const c = (className: string) => {
   return className;
 };
 
