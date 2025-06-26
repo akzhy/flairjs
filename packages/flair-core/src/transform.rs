@@ -7,9 +7,9 @@ use oxc::{
   parser::{Parser, ParserReturn},
   semantic::ScopeFlags,
 };
-use oxc_ast::{ast::Function, AstBuilder};
 use oxc_ast::ast::JSXElement;
 use oxc_ast::ast::{JSXChild, JSXElementName, JSXExpression};
+use oxc_ast::{ast::Function, AstBuilder};
 use oxc_codegen::{Codegen, CodegenOptions};
 
 pub struct TransformOptions {
@@ -45,7 +45,7 @@ pub fn transform(options: TransformOptions) -> Option<String> {
     file_path: &options.file_path,
     css_preprocessor: &options.css_preprocessor,
     output_type: options.output_type.clone(),
-    ast_builder
+    ast_builder,
   };
 
   visitor.visit_program(&mut program);
@@ -79,10 +79,10 @@ struct TransformVisitor<'a> {
   ast_builder: AstBuilder<'a>,
 }
 
-impl<'a> VisitMut<'_> for TransformVisitor<'a> {
+impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   fn visit_arrow_function_expression(
     &mut self,
-    it: &mut oxc_ast::ast::ArrowFunctionExpression<'_>,
+    it: &mut oxc_ast::ast::ArrowFunctionExpression<'a>,
   ) {
     let mut has_style = false;
     let mut css: String = "".to_string();
@@ -99,7 +99,7 @@ impl<'a> VisitMut<'_> for TransformVisitor<'a> {
       println!("Style found in arrow function");
     }
   }
-  fn visit_function(&mut self, function: &mut Function<'_>, _flags: ScopeFlags) {
+  fn visit_function(&mut self, function: &mut Function<'a>, _flags: ScopeFlags) {
     let mut has_style = false;
     let mut css: String = "".to_string();
 

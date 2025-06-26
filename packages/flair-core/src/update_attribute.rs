@@ -2,25 +2,20 @@ use std::collections::HashMap;
 
 use lightningcss::css_modules::CssModuleExport;
 use oxc::ast_visit::VisitMut;
-use oxc_allocator::{Allocator, Box};
+use oxc_allocator::Allocator;
 use oxc_ast::{
-  ast::{JSXAttributeName, JSXAttributeValue, StringLiteral},
+  ast::{JSXAttributeName, JSXAttributeValue},
   AstBuilder,
 };
-use oxc_span::Atom;
 
-pub struct AttributeUpdater<'a, 'b> {
+pub struct AttributeUpdater<'a> {
   pub class_name_map: HashMap<String, CssModuleExport>,
   pub allocator: &'a Allocator,
   pub ast_builder: AstBuilder<'a>,
-  pub phantom: std::marker::PhantomData<&'b ()>,
 }
 
-impl<'a, 'b> VisitMut<'b> for AttributeUpdater<'a, 'b>
-where
-  'a: 'b,
-{
-  fn visit_jsx_attribute(&mut self, it: &mut oxc_ast::ast::JSXAttribute<'b>) {
+impl<'a> VisitMut<'a> for AttributeUpdater<'a> {
+  fn visit_jsx_attribute(&mut self, it: &mut oxc_ast::ast::JSXAttribute<'a>) {
     if let JSXAttributeName::Identifier(ident) = &it.name {
       if ident.name == "className" {
         let value = it.value.as_ref().unwrap();
