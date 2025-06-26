@@ -1,0 +1,6 @@
+{
+  "rust-analyzer.linkedProjects": [
+    "packages/flair-core/Cargo.toml",
+  ],
+  "rust-analyzer.checkOnSave": true
+}

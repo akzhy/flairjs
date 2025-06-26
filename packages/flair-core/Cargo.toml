@@ -1,0 +1,26 @@
+[package]
+edition = "2021"
+name = "flair_core"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+lightningcss = "1.0.0-alpha.66"
+# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
+napi = { version = "2.12.2", default-features = false, features = ["napi4"] }
+napi-derive = "2.12.2"
+oxc = { version = "0.74.0", features = ["full"] }
+oxc_allocator = "0.74.0"
+oxc_ast = "0.74.0"
+oxc_codegen = "0.74.0"
+oxc_parser = "0.74.0"
+oxc_span = "0.74.0"
+
+[build-dependencies]
+napi-build = "2.0.1"
+
+[profile.release]
+lto = true
+strip = "symbols"

@@ -2,6 +2,7 @@ import { generate } from "@babel/generator";
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
+import { writeFileSync } from "fs";
 import {
   CLASSNAME_ATTRIBUTES,
   CLASSNAME_UTIL_FUNCTIONS,
@@ -41,6 +42,8 @@ export const transform = ({
 
   let localStyleTagName = STYLE_TAG_NAME;
   let localClassNameUtilFunctions: string[] = [];
+
+  const extractedCSS: { css: string; filePath: string }[] = [];
 
   traverse(ast, {
     ImportDeclaration(path) {
@@ -83,6 +86,10 @@ export const transform = ({
       }
 
       const styleBody = extractCSS(path.node);
+      extractedCSS.push({
+        css: styleBody,
+        filePath,
+      });
 
       let processedCSS = styleBody;
       if (cssPreprocessor) {
@@ -93,11 +100,6 @@ export const transform = ({
         processedCSS,
         filePath
       );
-
-      const { name: cacheFileName } = createCacheCSSFile({
-        id: filePath,
-        css: transformedCSS,
-      });
 
       parentFunction.traverse({
         JSXAttribute(path) {
@@ -126,12 +128,20 @@ export const transform = ({
         },
       });
 
-      ast.program.body.push(
-        t.importDeclaration(
-          [],
-          t.stringLiteral(`jsx-styled-vite-plugin/cached-css/${cacheFileName}`)
-        )
-      );
+      if (outputType === "inject-import") {
+        const { name: cacheFileName } = createCacheCSSFile({
+          id: filePath,
+          css: transformedCSS,
+        });
+        ast.program.body.push(
+          t.importDeclaration(
+            [],
+            t.stringLiteral(
+              `jsx-styled-vite-plugin/cached-css/${cacheFileName}`
+            )
+          )
+        );
+      }
 
       const nodeEnv = process.env.NODE_ENV;
       if (nodeEnv === "production") {
@@ -139,6 +149,11 @@ export const transform = ({
       }
     },
   });
+
+  if (outputType === "write-css-file" && outputPath) {
+    const css = extractedCSS.map(({ css }) => css).join("\n");
+    writeFileSync(outputPath, css);
+  }
 
   const generatedCode = generate(
     ast,
