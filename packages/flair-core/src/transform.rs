@@ -3,14 +3,23 @@ use crate::update_attribute::AttributeUpdater;
 use oxc::{
   allocator::Allocator,
   ast::ast::SourceType,
-  ast_visit::{Visit, VisitMut},
+  ast_visit::{walk_mut, Visit, VisitMut},
   parser::{Parser, ParserReturn},
-  semantic::ScopeFlags,
+  semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
+  syntax::identifier,
 };
-use oxc_ast::ast::JSXElement;
-use oxc_ast::ast::{JSXChild, JSXElementName, JSXExpression};
+use oxc_ast::ast::{
+  BindingIdentifier, BindingPatternKind, JSXChild, JSXElementName, JSXExpression,
+};
+use oxc_ast::ast::{JSXElement, Program};
 use oxc_ast::{ast::Function, AstBuilder};
 use oxc_codegen::{Codegen, CodegenOptions};
+
+#[derive(PartialEq, Debug, Clone)]
+enum Pass {
+  First,
+  Second,
+}
 
 pub struct TransformOptions {
   pub code: String,
@@ -31,10 +40,15 @@ pub fn transform(options: TransformOptions) -> Option<String> {
   let ParserReturn { mut program, .. } =
     Parser::new(&allocator, &options.code, source_type).parse();
 
+  let semantic_builder = SemanticBuilder::new().build(&program);
+
+  let scoping = semantic_builder.semantic.into_scoping();
+
   let mut local_style_tag_name = "style".to_string();
   let mut local_class_name_util_functions = vec![];
   let mut extracted_css = vec![];
   let ast_builder = AstBuilder::new(&allocator);
+  let mut symbold_ids_vec: Vec<SymbolId> = vec![];
 
   // Traverse the AST
   let mut visitor = TransformVisitor {
@@ -46,14 +60,17 @@ pub fn transform(options: TransformOptions) -> Option<String> {
     css_preprocessor: &options.css_preprocessor,
     output_type: options.output_type.clone(),
     ast_builder,
+    scoping: &scoping,
+    identifier_symbol_ids: &mut symbold_ids_vec,
+    pass: Pass::First,
   };
 
-  visitor.visit_program(&mut program);
+  visitor.begin(&mut program);
 
   let codegen = Codegen::new();
   let result = codegen.build(&program);
 
-  println!("Transformed code: {}", result.code);
+  // println!("Transformed code: {}", result.code);
   // println!("Program: {:#?}", program);
 
   //   if let Some(output_type) = options.output_type {
@@ -77,9 +94,40 @@ struct TransformVisitor<'a> {
   css_preprocessor: &'a Option<Box<dyn Fn(String, String) -> String>>,
   output_type: Option<String>,
   ast_builder: AstBuilder<'a>,
+  scoping: &'a Scoping,
+  identifier_symbol_ids: &'a mut Vec<SymbolId>,
+  pass: Pass,
+}
+
+impl<'a> TransformVisitor<'a> {
+  fn begin(&mut self, program: &mut Program<'a>) {
+    self.visit_program(program);
+
+    self.pass = Pass::Second;
+
+    // println!("Identifiers {:#?}", self.identifier_symbol_ids);
+    self.visit_program(program);
+  }
 }
 
 impl<'a> VisitMut<'a> for TransformVisitor<'a> {
+  fn visit_variable_declaration(&mut self, it: &mut oxc_ast::ast::VariableDeclaration<'a>) {
+    if self.pass == Pass::First {
+      return walk_mut::walk_variable_declaration(self, it);
+    }
+
+    it.declarations.iter().for_each(|decl| {
+      if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
+        let symbold_id = binding_identifier.symbol_id();
+        if self.identifier_symbol_ids.contains(&symbold_id) {
+          println!(
+            "Symbol ID already exists: {:#?}, {:#?}, {:#?}",
+            self.identifier_symbol_ids, symbold_id, binding_identifier
+          );
+        }
+      }
+    });
+  }
   fn visit_arrow_function_expression(
     &mut self,
     it: &mut oxc_ast::ast::ArrowFunctionExpression<'a>,
@@ -96,10 +144,15 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     style_detector.visit_function_body(&body);
 
     if has_style {
-      println!("Style found in arrow function");
+      // println!("Style found in arrow function");
     }
   }
-  fn visit_function(&mut self, function: &mut Function<'a>, _flags: ScopeFlags) {
+  fn visit_function(&mut self, function: &mut Function<'a>, flags: ScopeFlags) {
+    println!("Pass id is: {:?}", self.pass);
+    if self.pass == Pass::Second {
+      return walk_mut::walk_function(self, function, flags);
+    }
+
     let mut has_style = false;
     let mut css: String = "".to_string();
 
@@ -114,15 +167,23 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
 
     if has_style {
       let parsed_css = parse_css(&css).unwrap();
+      let identifier_symbol_ids: Vec<SymbolId> = vec![];
 
       let mut attribute_updater = AttributeUpdater {
         allocator: self.allocator,
         class_name_map: parsed_css.exports.unwrap(),
         ast_builder: self.ast_builder,
+        scoping: self.scoping,
+        identifier_symbol_ids: identifier_symbol_ids,
       };
 
       attribute_updater.visit_function_body(body);
+
+      self
+        .identifier_symbol_ids
+        .append(&mut attribute_updater.get_identifier_symbol_ids().to_vec());
     }
+    walk_mut::walk_function(self, function, flags);
   }
 }
 
