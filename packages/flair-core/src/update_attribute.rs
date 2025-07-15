@@ -8,24 +8,42 @@ use oxc::{
 use oxc_allocator::Allocator;
 use oxc_allocator::Box as OxcBox;
 use oxc_ast::{
-  ast::{Expression, JSXAttributeName, JSXAttributeValue, JSXExpression, StringLiteral},
+  ast::{
+    ArrayExpression, BinaryExpression, BinaryOperator, CallExpression, ConditionalExpression,
+    Expression, IdentifierReference, JSXAttributeName, JSXAttributeValue, JSXExpression,
+    LogicalExpression, LogicalOperator, ObjectExpression, ObjectPropertyKind, PropertyKey,
+    StringLiteral,
+  },
   AstBuilder,
 };
 
-pub struct AttributeUpdater<'a> {
+#[derive(Clone, Debug, PartialEq)]
+pub struct SymbolStore {
+  pub symbol_id: SymbolId,
+  pub fn_id: u32,
+}
+
+impl SymbolStore {
+  pub fn new(symbol_id: SymbolId, fn_id: u32) -> Self {
+    Self { symbol_id, fn_id }
+  }
+}
+
+pub struct ClassNameReplacer<'a> {
   pub class_name_map: HashMap<String, CssModuleExport>,
   pub allocator: &'a Allocator,
   pub ast_builder: AstBuilder<'a>,
   pub scoping: &'a Scoping,
-  pub identifier_symbol_ids: Vec<SymbolId>,
+  pub identifier_symbol_ids: Vec<SymbolStore>,
+  pub fn_id: u32,
 }
 
-impl<'a> AttributeUpdater<'a> {
+impl<'a> ClassNameReplacer<'a> {
   fn get_classname_exports(&self) -> &HashMap<String, CssModuleExport> {
     &self.class_name_map
   }
 
-  pub fn get_identifier_symbol_ids(&self) -> &Vec<SymbolId> {
+  pub fn get_identifier_symbol_ids(&self) -> &Vec<SymbolStore> {
     &self.identifier_symbol_ids
   }
 
@@ -46,7 +64,7 @@ impl<'a> AttributeUpdater<'a> {
     updated_class_names_str
   }
 
-  fn update_string_expression(&self, string_value: &mut OxcBox<'a, StringLiteral<'a>>) {
+  fn update_string_expression(&mut self, string_value: &mut OxcBox<'a, StringLiteral<'a>>) {
     let updated_class_names_str = self.get_updated_classname(&string_value.value);
     let atom = self
       .ast_builder
@@ -56,7 +74,65 @@ impl<'a> AttributeUpdater<'a> {
     string_value.value = atom;
   }
 
-  fn update_expression(&self, expression: Option<&mut Expression<'a>>) {
+  fn update_array_expression(&mut self, array_expression: &mut OxcBox<'a, ArrayExpression<'a>>) {
+    array_expression.elements.iter_mut().for_each(|element| {
+      self.update_expression(element.as_expression_mut());
+    });
+  }
+
+  fn update_object_expression(&mut self, object_expression: &mut OxcBox<'a, ObjectExpression<'a>>) {
+    for prop in &mut object_expression.properties {
+      if let ObjectPropertyKind::ObjectProperty(property) = prop {
+        if let PropertyKey::StringLiteral(string_key) = &mut property.key {
+          self.update_string_expression(string_key);
+        }
+      }
+    }
+  }
+
+  fn update_call_expression(&mut self, call_expression: &mut OxcBox<'a, CallExpression<'a>>) {
+    call_expression.arguments.iter_mut().for_each(|arg| {
+      self.update_expression(arg.as_expression_mut());
+    });
+  }
+
+  fn update_conditional_expression(
+    &mut self,
+    conditional_expression: &mut OxcBox<'a, ConditionalExpression<'a>>,
+  ) {
+    self.update_expression(Some(&mut conditional_expression.consequent));
+    self.update_expression(Some(&mut conditional_expression.alternate));
+  }
+
+  fn update_logical_expression(&mut self, logical_expression: &mut OxcBox<'a, LogicalExpression<'a>>) {
+    if logical_expression.operator == LogicalOperator::Or
+      || logical_expression.operator == LogicalOperator::Coalesce
+    {
+      self.update_expression(Some(&mut logical_expression.left));
+    }
+    self.update_expression(Some(&mut logical_expression.right));
+  }
+
+  fn update_binary_expression(&mut self, binary_expression: &mut OxcBox<'a, BinaryExpression<'a>>) {
+    if BinaryOperator::Addition == binary_expression.operator {
+      self.update_expression(Some(&mut binary_expression.left));
+      self.update_expression(Some(&mut binary_expression.right));
+    }
+  }
+
+  fn update_identifier_expression(&mut self, identifier_expression: &mut IdentifierReference<'a>) {
+    let reference = self
+      .scoping
+      .get_reference(identifier_expression.reference_id());
+    let symbol_id = reference.symbol_id();
+    if symbol_id.is_some() {
+      self
+        .identifier_symbol_ids
+        .push(SymbolStore::new(symbol_id.unwrap(), self.fn_id));
+    }
+  }
+
+  pub fn update_expression(&mut self, expression: Option<&mut Expression<'a>>) {
     if expression.is_none() {
       return;
     };
@@ -65,67 +141,66 @@ impl<'a> AttributeUpdater<'a> {
       Expression::StringLiteral(string_value) => {
         self.update_string_expression(string_value);
       }
+      Expression::ObjectExpression(object_expression) => {
+        self.update_object_expression(object_expression);
+      }
+      Expression::ArrayExpression(array_expression) => {
+        self.update_array_expression(array_expression);
+      }
+      Expression::LogicalExpression(logical_expression) => {
+        self.update_logical_expression(logical_expression);
+      }
+      Expression::ConditionalExpression(conditional_expression) => {
+        self.update_conditional_expression(conditional_expression);
+      }
+      Expression::BinaryExpression(binary_expression) => {
+        self.update_binary_expression(binary_expression);
+      }
+      Expression::CallExpression(call_expression) => {
+        self.update_call_expression(call_expression);
+      }
+      Expression::Identifier(identifier_expression) => {
+        self.update_identifier_expression(identifier_expression);
+      }
       _ => {
-        // println!("Unexpected expression type in className attribute",);
+        println!(
+          "Unexpected expression type in className attribute {:#?}",
+          expression
+        );
       }
     }
   }
 }
 
-impl<'a> VisitMut<'a> for AttributeUpdater<'a> {
+impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
   fn visit_jsx_attribute(&mut self, it: &mut oxc_ast::ast::JSXAttribute<'a>) {
     if let JSXAttributeName::Identifier(ident) = &it.name {
       if ident.name == "className" {
         let value = it.value.as_mut().unwrap();
 
         if let JSXAttributeValue::StringLiteral(string_value) = value {
-          let updated_class_names_str = self.get_updated_classname(&string_value.value);
-          let atom = self.allocator.alloc_str(&updated_class_names_str);
-
-          // Create new StringLiteral with proper JSX attribute value
-          let new_value =
-            self
-              .ast_builder
-              .jsx_attribute_value_string_literal(string_value.span, atom, None);
-
-          it.value = Some(new_value);
+          self.update_string_expression(string_value);
         } else if let JSXAttributeValue::ExpressionContainer(expr_container) = value {
           let expression = &mut expr_container.expression;
           if let JSXExpression::ArrayExpression(array_expression) = expression {
-            array_expression.elements.iter_mut().for_each(|element| {
-              self.update_expression(element.as_expression_mut());
-            });
+            self.update_array_expression(array_expression);
           } else if let JSXExpression::CallExpression(call_expression) = expression {
-            call_expression.arguments.iter_mut().for_each(|arg| {
-              self.update_expression(arg.as_expression_mut());
-            });
+            self.update_call_expression(call_expression);
+          } else if let JSXExpression::LogicalExpression(logical_expression) = expression {
+            self.update_logical_expression(logical_expression);
           } else if let JSXExpression::ConditionalExpression(conditional_expression) = expression {
-            {
-              let consequent = &mut conditional_expression.consequent;
-              self.update_expression(Some(consequent));
-            }
-            {
-              let alternate = &mut conditional_expression.alternate;
-              self.update_expression(Some(alternate));
-            }
+            self.update_conditional_expression(conditional_expression);
+          } else if let JSXExpression::ObjectExpression(object_expression) = expression {
+            self.update_object_expression(object_expression);
+          } else if let JSXExpression::BinaryExpression(binary_expression) = expression {
+            self.update_binary_expression(binary_expression);
           } else if let JSXExpression::Identifier(identifier_expression) = expression {
-            let reference = self
-              .scoping
-              .get_reference(identifier_expression.reference_id());
-            let symbol_id = reference.symbol_id();
-            if symbol_id.is_some() {
-              println!(
-                "Pushing reference name {:#?} with symbol id {:#?}",
-                identifier_expression.name,
-                symbol_id.unwrap(),
-              );
-              self.identifier_symbol_ids.push(symbol_id.unwrap());
-            }
+            self.update_identifier_expression(identifier_expression);
           } else {
-            // println!(
-            //   "ExpressionContainer found in className attribute: {:#?}",
-            //   expr_container
-            // );
+            println!(
+              "ExpressionContainer found in className attribute: {:#?}",
+              expr_container
+            );
           }
         }
       }

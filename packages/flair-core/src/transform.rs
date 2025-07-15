@@ -1,5 +1,8 @@
-use crate::parse_css::parse_css;
-use crate::update_attribute::AttributeUpdater;
+use std::collections::HashMap;
+
+use crate::update_attribute::ClassNameReplacer;
+use crate::{parse_css::parse_css, update_attribute::SymbolStore};
+use lightningcss::css_modules::CssModuleExport;
 use oxc::{
   allocator::Allocator,
   ast::ast::SourceType,
@@ -48,7 +51,8 @@ pub fn transform(options: TransformOptions) -> Option<String> {
   let mut local_class_name_util_functions = vec![];
   let mut extracted_css = vec![];
   let ast_builder = AstBuilder::new(&allocator);
-  let mut symbold_ids_vec: Vec<SymbolId> = vec![];
+  let mut symbold_ids_vec: Vec<SymbolStore> = vec![];
+  let css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>> = HashMap::new();
 
   // Traverse the AST
   let mut visitor = TransformVisitor {
@@ -63,6 +67,7 @@ pub fn transform(options: TransformOptions) -> Option<String> {
     scoping: &scoping,
     identifier_symbol_ids: &mut symbold_ids_vec,
     pass: Pass::First,
+    css_module_exports: css_module_exports,
   };
 
   visitor.begin(&mut program);
@@ -70,18 +75,7 @@ pub fn transform(options: TransformOptions) -> Option<String> {
   let codegen = Codegen::new();
   let result = codegen.build(&program);
 
-  // println!("Transformed code: {}", result.code);
-  // println!("Program: {:#?}", program);
-
-  //   if let Some(output_type) = options.output_type {
-  //     if output_type == "write-css-file" {
-  //       if let Some(output_path) = options.output_path {
-  //         // let css = extracted_css.join("\n");
-  //         // fs::write(output_path, css).expect("Failed to write CSS file");
-  //       }
-  //     }
-  //   }
-  let result: String = "done".to_string();
+  let result: String = result.code;
   Some(result)
 }
 
@@ -95,8 +89,9 @@ struct TransformVisitor<'a> {
   output_type: Option<String>,
   ast_builder: AstBuilder<'a>,
   scoping: &'a Scoping,
-  identifier_symbol_ids: &'a mut Vec<SymbolId>,
+  identifier_symbol_ids: &'a mut Vec<SymbolStore>,
   pass: Pass,
+  css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
 }
 
 impl<'a> TransformVisitor<'a> {
@@ -105,7 +100,6 @@ impl<'a> TransformVisitor<'a> {
 
     self.pass = Pass::Second;
 
-    // println!("Identifiers {:#?}", self.identifier_symbol_ids);
     self.visit_program(program);
   }
 }
@@ -116,14 +110,34 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
       return walk_mut::walk_variable_declaration(self, it);
     }
 
-    it.declarations.iter().for_each(|decl| {
+    it.declarations.iter_mut().for_each(|decl| {
       if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
-        let symbold_id = binding_identifier.symbol_id();
-        if self.identifier_symbol_ids.contains(&symbold_id) {
-          println!(
-            "Symbol ID already exists: {:#?}, {:#?}, {:#?}",
-            self.identifier_symbol_ids, symbold_id, binding_identifier
-          );
+        let symbol_id = binding_identifier.symbol_id();
+        let symbol_store_item = self
+          .identifier_symbol_ids
+          .iter()
+          .find(|s| s.symbol_id == symbol_id);
+
+        if symbol_store_item.is_some() {
+          let css_exports = self.css_module_exports.get(&symbol_store_item.unwrap().fn_id);
+          if css_exports.is_none() {
+            return;
+          }
+          let css_exports = css_exports.unwrap();
+          let identifier_symbol_ids: Vec<SymbolStore> = vec![];
+
+          let mut classname_replacer = ClassNameReplacer {
+            allocator: self.allocator,
+            class_name_map: css_exports.clone(),
+            ast_builder: self.ast_builder,
+            scoping: self.scoping,
+            identifier_symbol_ids: identifier_symbol_ids,
+            fn_id: decl.span.start,
+          };
+
+          if decl.init.is_some() {
+            classname_replacer.update_expression(decl.init.as_mut());
+          }
         }
       }
     });
@@ -148,7 +162,6 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     }
   }
   fn visit_function(&mut self, function: &mut Function<'a>, flags: ScopeFlags) {
-    println!("Pass id is: {:?}", self.pass);
     if self.pass == Pass::Second {
       return walk_mut::walk_function(self, function, flags);
     }
@@ -167,21 +180,27 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
 
     if has_style {
       let parsed_css = parse_css(&css).unwrap();
-      let identifier_symbol_ids: Vec<SymbolId> = vec![];
+      let css_exports = parsed_css.exports.as_ref().unwrap();
+      let identifier_symbol_ids: Vec<SymbolStore> = vec![];
 
-      let mut attribute_updater = AttributeUpdater {
+      let mut classname_replacer = ClassNameReplacer {
         allocator: self.allocator,
-        class_name_map: parsed_css.exports.unwrap(),
+        class_name_map: css_exports.clone(),
         ast_builder: self.ast_builder,
         scoping: self.scoping,
         identifier_symbol_ids: identifier_symbol_ids,
+        fn_id: function.span.start,
       };
 
-      attribute_updater.visit_function_body(body);
+      self
+        .css_module_exports
+        .insert(function.span.start, css_exports.clone());
+
+      classname_replacer.visit_function_body(body);
 
       self
         .identifier_symbol_ids
-        .append(&mut attribute_updater.get_identifier_symbol_ids().to_vec());
+        .append(&mut classname_replacer.get_identifier_symbol_ids().to_vec());
     }
     walk_mut::walk_function(self, function, flags);
   }
