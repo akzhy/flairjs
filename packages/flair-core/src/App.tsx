@@ -18,6 +18,7 @@ function App() {
   };
 
   const reactLogoClassName = "logo react";
+  const headingMain = "heading-main";
 
   return (
     <>
@@ -41,7 +42,8 @@ function App() {
           />
         </a>
       </div>
-      <h1>Vite + React</h1>
+      <h1 className={"heading " + headingMain}>Vite + React</h1>
+      <div className={"spacer" || "separator"}></div>
       <div className={cardClassName}>
         <button
           onClick={() => setCount((count) => count + 1)}
@@ -77,6 +79,23 @@ function App() {
 
           .img-active {
             scale: 2;
+          }
+
+          .heading {
+            font-size: 2rem;
+          }
+
+          .heading-main {
+            color: #3c49db;
+          }
+
+          .spacer {
+            height: 2rem;
+          }
+
+          .separator {
+            height: 2rem;
+            background-color: #3c49db;
           }
 
           .btn {
