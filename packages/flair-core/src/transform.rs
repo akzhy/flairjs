@@ -1,8 +1,11 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
 use lightningcss::css_modules::CssModuleExport;
+use lightningcss::rules::import;
+use napi::bindgen_prelude::Reference;
 use oxc::{
   allocator::Allocator,
   ast::ast::SourceType,
@@ -12,7 +15,8 @@ use oxc::{
   syntax::identifier,
 };
 use oxc_ast::ast::{
-  BindingIdentifier, BindingPatternKind, JSXChild, JSXElementName, JSXExpression,
+  BindingIdentifier, BindingPatternKind, ImportDeclarationSpecifier, JSXChild, JSXElementName,
+  JSXExpression,
 };
 use oxc_ast::ast::{JSXElement, Program};
 use oxc_ast::{ast::Function, AstBuilder};
@@ -23,6 +27,8 @@ enum Pass {
   First,
   Second,
 }
+
+const IMPORT_PATH: &str = "jsx-styled-react";
 
 pub struct TransformOptions {
   pub code: String,
@@ -40,6 +46,8 @@ pub fn transform(options: TransformOptions) -> Option<String> {
   let allocator = Allocator::default();
   let source_type = SourceType::from_path(&options.file_path).unwrap();
 
+  let sourcemap_file_path = options.file_path.clone().replace(".tsx", ".tsx.map");
+
   let ParserReturn { mut program, .. } =
     Parser::new(&allocator, &options.code, source_type).parse();
 
@@ -47,19 +55,21 @@ pub fn transform(options: TransformOptions) -> Option<String> {
 
   let scoping = semantic_builder.semantic.into_scoping();
 
-  let mut local_style_tag_name = "style".to_string();
-  let mut local_class_name_util_functions = vec![];
-  let mut extracted_css = vec![];
+  // let mut local_style_tag_name = "style".to_string();
+  // let mut local_class_name_util_functions = vec![];
+  // let mut extracted_css = vec![];
   let ast_builder = AstBuilder::new(&allocator);
   let mut symbold_ids_vec: Vec<SymbolStore> = vec![];
   let css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>> = HashMap::new();
+  let mut style_tag_symbols: Vec<SymbolId> = vec![];
+  let mut classname_util_symbols: Vec<SymbolId> = vec![];
 
   // Traverse the AST
   let mut visitor = TransformVisitor {
     allocator: &allocator,
-    local_style_tag_name: &mut local_style_tag_name,
-    local_class_name_util_functions: &mut local_class_name_util_functions,
-    extracted_css: &mut extracted_css,
+    // local_style_tag_name: &mut local_style_tag_name,
+    // local_class_name_util_functions: &mut local_class_name_util_functions,
+    // extracted_css: &mut extracted_css,
     file_path: &options.file_path,
     css_preprocessor: &options.css_preprocessor,
     output_type: options.output_type.clone(),
@@ -68,22 +78,31 @@ pub fn transform(options: TransformOptions) -> Option<String> {
     identifier_symbol_ids: &mut symbold_ids_vec,
     pass: Pass::First,
     css_module_exports: css_module_exports,
+    style_tag_symbols,
+    classname_util_symbols,
   };
 
   visitor.begin(&mut program);
 
   let codegen = Codegen::new();
+  let codegen = codegen.with_options(CodegenOptions {
+    source_map_path: Some(PathBuf::from(&sourcemap_file_path)),
+    ..Default::default()
+  });
   let result = codegen.build(&program);
 
-  let result: String = result.code;
-  Some(result)
+  let result_code: String = result.code;
+  // println!("Sourcemap {:#?}", result.map.unwrap().to_json_string());
+  Some(result_code)
 }
 
 struct TransformVisitor<'a> {
   allocator: &'a Allocator,
-  local_style_tag_name: &'a mut String,
-  local_class_name_util_functions: &'a mut Vec<String>,
-  extracted_css: &'a mut Vec<String>,
+  // local_style_tag_name: &'a mut String,
+  style_tag_symbols: Vec<SymbolId>,
+  classname_util_symbols: Vec<SymbolId>,
+  // local_class_name_util_functions: &'a mut Vec<String>,
+  // extracted_css: &'a mut Vec<String>,
   file_path: &'a str,
   css_preprocessor: &'a Option<Box<dyn Fn(String, String) -> String>>,
   output_type: Option<String>,
@@ -105,6 +124,27 @@ impl<'a> TransformVisitor<'a> {
 }
 
 impl<'a> VisitMut<'a> for TransformVisitor<'a> {
+  fn visit_import_declaration(&mut self, it: &mut oxc_ast::ast::ImportDeclaration<'a>) {
+    if it.source.value == IMPORT_PATH {
+      it.specifiers
+        .as_ref()
+        .unwrap()
+        .iter()
+        .for_each(|specifier| {
+          if let ImportDeclarationSpecifier::ImportSpecifier(import_specifier) = specifier {
+            if import_specifier.local.name == "Style" {
+              self
+                .style_tag_symbols
+                .push(import_specifier.local.symbol_id());
+            } else if import_specifier.local.name == "c" {
+              self
+                .classname_util_symbols
+                .push(import_specifier.local.symbol_id());
+            }
+          }
+        });
+    }
+  }
   fn visit_variable_declaration(&mut self, it: &mut oxc_ast::ast::VariableDeclaration<'a>) {
     if self.pass == Pass::First {
       return walk_mut::walk_variable_declaration(self, it);
@@ -119,7 +159,9 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
           .find(|s| s.symbol_id == symbol_id);
 
         if symbol_store_item.is_some() {
-          let css_exports = self.css_module_exports.get(&symbol_store_item.unwrap().fn_id);
+          let css_exports = self
+            .css_module_exports
+            .get(&symbol_store_item.unwrap().fn_id);
           if css_exports.is_none() {
             return;
           }
@@ -133,6 +175,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
             scoping: self.scoping,
             identifier_symbol_ids: identifier_symbol_ids,
             fn_id: decl.span.start,
+            classname_util_symbols: self.classname_util_symbols.clone(),
           };
 
           if decl.init.is_some() {
@@ -152,6 +195,8 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     let mut style_detector = StyleDetector {
       found: &mut has_style,
       css: &mut css,
+      scoping: self.scoping,
+      style_tag_symbols: &self.style_tag_symbols,
     };
 
     let body = it.body.as_ref();
@@ -172,6 +217,8 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     let mut style_detector = StyleDetector {
       found: &mut has_style,
       css: &mut css,
+      scoping: self.scoping,
+      style_tag_symbols: &self.style_tag_symbols,
     };
 
     let body = function.body.as_mut().unwrap();
@@ -190,6 +237,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
         scoping: self.scoping,
         identifier_symbol_ids: identifier_symbol_ids,
         fn_id: function.span.start,
+        classname_util_symbols: self.classname_util_symbols.clone(),
       };
 
       self
@@ -209,6 +257,8 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
 pub struct StyleDetector<'a> {
   found: &'a mut bool,
   css: &'a mut String,
+  scoping: &'a Scoping,
+  style_tag_symbols: &'a Vec<SymbolId>,
 }
 
 impl<'a> Visit<'_> for StyleDetector<'a> {
@@ -216,7 +266,9 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
     let name = &jsx.opening_element.name;
 
     if let JSXElementName::IdentifierReference(ident) = name {
-      if ident.name == "Style" {
+      let reference = self.scoping.get_reference(ident.reference_id());
+      let symbol_id = reference.symbol_id().unwrap();
+      if self.style_tag_symbols.contains(&symbol_id) {
         *self.found = true;
 
         let children_iter = jsx.children.iter();

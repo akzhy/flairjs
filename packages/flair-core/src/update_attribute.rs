@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use lightningcss::css_modules::CssModuleExport;
 use oxc::{
-  ast_visit::VisitMut,
+  ast_visit::{walk_mut, VisitMut},
   semantic::{Scoping, SymbolId},
 };
 use oxc_allocator::Allocator;
@@ -36,6 +36,7 @@ pub struct ClassNameReplacer<'a> {
   pub scoping: &'a Scoping,
   pub identifier_symbol_ids: Vec<SymbolStore>,
   pub fn_id: u32,
+  pub classname_util_symbols: Vec<SymbolId>,
 }
 
 impl<'a> ClassNameReplacer<'a> {
@@ -104,7 +105,10 @@ impl<'a> ClassNameReplacer<'a> {
     self.update_expression(Some(&mut conditional_expression.alternate));
   }
 
-  fn update_logical_expression(&mut self, logical_expression: &mut OxcBox<'a, LogicalExpression<'a>>) {
+  fn update_logical_expression(
+    &mut self,
+    logical_expression: &mut OxcBox<'a, LogicalExpression<'a>>,
+  ) {
     if logical_expression.operator == LogicalOperator::Or
       || logical_expression.operator == LogicalOperator::Coalesce
     {
@@ -173,6 +177,21 @@ impl<'a> ClassNameReplacer<'a> {
 }
 
 impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
+  fn visit_call_expression(&mut self, it: &mut CallExpression<'a>) {
+    if let Expression::Identifier(identifier_calle) = &it.callee {
+      let callee_ref = self.scoping.get_reference(identifier_calle.reference_id());
+      let callee_symbol_id = callee_ref.symbol_id();
+      if callee_symbol_id.is_some() {
+        let callee_symbol_id = callee_symbol_id.unwrap();
+        if self.classname_util_symbols.contains(&callee_symbol_id) {
+          // If the callee is a classname utility function, we can update the arguments
+          it.arguments.iter_mut().for_each(|arg| {
+            self.update_expression(arg.as_expression_mut());
+          });
+        }
+      }
+    }
+  }
   fn visit_jsx_attribute(&mut self, it: &mut oxc_ast::ast::JSXAttribute<'a>) {
     if let JSXAttributeName::Identifier(ident) = &it.name {
       if ident.name == "className" {
@@ -205,5 +224,6 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
         }
       }
     }
+    walk_mut::walk_jsx_attribute(self, it);
   }
 }
