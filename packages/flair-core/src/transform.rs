@@ -4,19 +4,17 @@ use std::path::PathBuf;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
 use lightningcss::css_modules::CssModuleExport;
-use lightningcss::rules::import;
-use napi::bindgen_prelude::Reference;
+use napi::JsFunction;
+use napi_derive::napi;
 use oxc::{
   allocator::Allocator,
   ast::ast::SourceType,
   ast_visit::{walk_mut, Visit, VisitMut},
   parser::{Parser, ParserReturn},
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
-  syntax::identifier,
 };
 use oxc_ast::ast::{
-  BindingIdentifier, BindingPatternKind, ImportDeclarationSpecifier, JSXChild, JSXElementName,
-  JSXExpression,
+  BindingPatternKind, ImportDeclarationSpecifier, JSXChild, JSXElementName, JSXExpression,
 };
 use oxc_ast::ast::{JSXElement, Program};
 use oxc_ast::{ast::Function, AstBuilder};
@@ -33,12 +31,16 @@ const IMPORT_PATH: &str = "jsx-styled-react";
 pub struct TransformOptions {
   pub code: String,
   pub file_path: String,
-  pub css_preprocessor: Option<Box<dyn Fn(String, String) -> String>>,
-  pub output_type: Option<String>, // "inject-import" or "write-css-file"
-  pub output_path: Option<String>,
+  pub css_preprocessor: Option<JsFunction>,
 }
 
-pub fn transform(options: TransformOptions) -> Option<String> {
+#[napi(object)]
+pub struct TransformOutput {
+  pub code: String,
+  pub sourcemap: Option<String>,
+}
+
+pub fn transform(options: TransformOptions) -> Option<TransformOutput> {
   if !options.file_path.ends_with(".tsx") {
     return None;
   }
@@ -61,8 +63,8 @@ pub fn transform(options: TransformOptions) -> Option<String> {
   let ast_builder = AstBuilder::new(&allocator);
   let mut symbold_ids_vec: Vec<SymbolStore> = vec![];
   let css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>> = HashMap::new();
-  let mut style_tag_symbols: Vec<SymbolId> = vec![];
-  let mut classname_util_symbols: Vec<SymbolId> = vec![];
+  let style_tag_symbols: Vec<SymbolId> = vec![];
+  let classname_util_symbols: Vec<SymbolId> = vec![];
 
   // Traverse the AST
   let mut visitor = TransformVisitor {
@@ -70,9 +72,7 @@ pub fn transform(options: TransformOptions) -> Option<String> {
     // local_style_tag_name: &mut local_style_tag_name,
     // local_class_name_util_functions: &mut local_class_name_util_functions,
     // extracted_css: &mut extracted_css,
-    file_path: &options.file_path,
     css_preprocessor: &options.css_preprocessor,
-    output_type: options.output_type.clone(),
     ast_builder,
     scoping: &scoping,
     identifier_symbol_ids: &mut symbold_ids_vec,
@@ -87,13 +87,20 @@ pub fn transform(options: TransformOptions) -> Option<String> {
   let codegen = Codegen::new();
   let codegen = codegen.with_options(CodegenOptions {
     source_map_path: Some(PathBuf::from(&sourcemap_file_path)),
-    ..Default::default()
+    ..CodegenOptions::default()
   });
   let result = codegen.build(&program);
 
   let result_code: String = result.code;
+  let sourcemap: Option<String> = {
+    if result.map.is_some() {
+      Some(result.map.unwrap().to_json_string())
+    } else {
+      None
+    }
+  };
   // println!("Sourcemap {:#?}", result.map.unwrap().to_json_string());
-  Some(result_code)
+  Some(TransformOutput { code: result_code, sourcemap: sourcemap })
 }
 
 struct TransformVisitor<'a> {
@@ -103,9 +110,7 @@ struct TransformVisitor<'a> {
   classname_util_symbols: Vec<SymbolId>,
   // local_class_name_util_functions: &'a mut Vec<String>,
   // extracted_css: &'a mut Vec<String>,
-  file_path: &'a str,
-  css_preprocessor: &'a Option<Box<dyn Fn(String, String) -> String>>,
-  output_type: Option<String>,
+  css_preprocessor: &'a Option<JsFunction>,
   ast_builder: AstBuilder<'a>,
   scoping: &'a Scoping,
   identifier_symbol_ids: &'a mut Vec<SymbolStore>,
@@ -226,6 +231,16 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     style_detector.visit_function_body(&body);
 
     if has_style {
+      // let css_string = {
+      //   if let Some(preprocessor) = &self.css_preprocessor {
+      //     let input_js = create_string(&css).unwrap();
+      //     let result = preprocessor.call(None, &[input_js]).unwrap();
+      //     result.to_string().unwrap()
+      //   } else {
+      //     css
+      //   }
+      // }
+
       let parsed_css = parse_css(&css).unwrap();
       let css_exports = parsed_css.exports.as_ref().unwrap();
       let identifier_symbol_ids: Vec<SymbolStore> = vec![];
