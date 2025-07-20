@@ -1,6 +1,8 @@
 #![deny(clippy::all)]
 
-use crate::transform::TransformOutput;
+use napi::{Env, JsFunction};
+
+use crate::transform::{TransformOptions, TransformOutput};
 
 #[macro_use]
 extern crate napi_derive;
@@ -15,12 +17,12 @@ pub fn sum(a: i32, b: i32) -> i32 {
 }
 
 #[napi]
-pub fn transform_code(code: String, file_path: String) -> Option<TransformOutput> {
+pub fn transform_code(env: Env, options: TransformOptions, css_preprocessor: Option<JsFunction>) -> Option<TransformOutput> {
   let options = transform::TransformOptions {
-    code,
-    file_path,
-    css_preprocessor: None, // Pass a preprocessor function if needed
+    code: options.code,
+    file_path: options.file_path,
+    css_out_dir: options.css_out_dir,
   };
   
-  transform::transform(options)
+  transform::transform(options, css_preprocessor, Some(env))
 }
