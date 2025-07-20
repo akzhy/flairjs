@@ -2,6 +2,7 @@ use lightningcss::{
   css_modules::{self},
   printer::PrinterOptions,
   stylesheet::{ParserOptions, StyleSheet, ToCssResult},
+  targets::{Browsers, Features, Targets},
 };
 
 pub fn parse_css(css: &str) -> Result<ToCssResult, String> {
@@ -12,11 +13,19 @@ pub fn parse_css(css: &str) -> Result<ToCssResult, String> {
     ..Default::default()
   };
 
+  let browsers = Browsers::from_browserslist(vec!["defaults"]).unwrap();
+  let targets = Targets {
+    browsers: browsers,
+    include: Features::default() | Features::Nesting,
+    ..Targets::default()
+  };
+
   let stylesheet =
     StyleSheet::parse(css, parser_options).map_err(|e| format!("Failed to parse CSS: {}", e))?;
 
   let result = stylesheet.to_css(PrinterOptions {
     minify: false,
+    targets: targets,
     ..Default::default()
   });
 
