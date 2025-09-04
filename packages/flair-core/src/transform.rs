@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
 use lightningcss::css_modules::CssModuleExport;
+use napi::Env;
 use napi::JsFunction;
 use napi_derive::napi;
 use oxc::{
@@ -18,16 +19,14 @@ use oxc::{
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
 use oxc_ast::ast::{
-  BindingPatternKind, FunctionBody, ImportDeclarationSpecifier, ImportOrExportKind,
-  JSXChild, JSXElementName, JSXExpression, Statement,
+  AssignmentTarget, BindingPatternKind, Expression, FunctionBody, ImportDeclarationSpecifier,
+  ImportOrExportKind, JSXChild, JSXElementName, JSXExpression, Statement,
 };
 use oxc_ast::ast::{JSXElement, Program};
-use oxc_ast::NONE;
 use oxc_ast::{ast::Function, AstBuilder};
+use oxc_ast::{AstType, NONE};
 use oxc_codegen::{Codegen, CodegenOptions};
 use oxc_span::SPAN;
-use napi::{Env};
-
 
 #[derive(PartialEq, Debug, Clone)]
 enum Pass {
@@ -50,7 +49,11 @@ pub struct TransformOutput {
   pub sourcemap: Option<String>,
 }
 
-pub fn transform(options: TransformOptions, css_preprocessor: Option<JsFunction>, env: Option<Env>) -> Option<TransformOutput> {
+pub fn transform(
+  options: TransformOptions,
+  css_preprocessor: Option<JsFunction>,
+  env: Option<Env>,
+) -> Option<TransformOutput> {
   if !options.file_path.ends_with(".tsx") {
     return None;
   }
@@ -69,31 +72,18 @@ pub fn transform(options: TransformOptions, css_preprocessor: Option<JsFunction>
 
   // let mut local_style_tag_name = "style".to_string();
   // let mut local_class_name_util_functions = vec![];
-  let mut extracted_css = vec![];
   let ast_builder = AstBuilder::new(&allocator);
-  let mut symbold_ids_vec: Vec<SymbolStore> = vec![];
-  let css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>> = HashMap::new();
-  let style_tag_symbols: Vec<SymbolId> = vec![];
-  let classname_util_symbols: Vec<SymbolId> = vec![];
 
   // Traverse the AST
-  let mut visitor = TransformVisitor {
-    allocator: &allocator,
-    // local_style_tag_name: &mut local_style_tag_name,
-    // local_class_name_util_functions: &mut local_class_name_util_functions,
-    extracted_css: &mut extracted_css,
-    css_preprocessor: &css_preprocessor,
+  let mut visitor = TransformVisitor::new(
+    &allocator,
+    &css_preprocessor,
     ast_builder,
-    scoping: &scoping,
-    identifier_symbol_ids: &mut symbold_ids_vec,
-    pass: Pass::First,
-    css_module_exports: css_module_exports,
-    style_tag_symbols,
-    classname_util_symbols,
-    file_path: options.file_path.clone(),
-    css_out_dir: options.css_out_dir.clone(),
-    js_env: env
-  };
+    &scoping,
+    options.file_path.clone(),
+    options.css_out_dir.clone(),
+    env,
+  );
 
   visitor.begin(&mut program);
 
@@ -105,7 +95,7 @@ pub fn transform(options: TransformOptions, css_preprocessor: Option<JsFunction>
   let result = codegen.build(&program);
 
   let result_code: String = result.code;
-  println!("Transformedd result:\n{}", result_code);
+  // println!("Transformedd result:\n{}", result_code);
   let sourcemap: Option<String> = {
     if result.map.is_some() {
       Some(result.map.unwrap().to_json_string())
@@ -126,19 +116,62 @@ struct TransformVisitor<'a> {
   style_tag_symbols: Vec<SymbolId>,
   classname_util_symbols: Vec<SymbolId>,
   // local_class_name_util_functions: &'a mut Vec<String>,
-  extracted_css: &'a mut Vec<String>,
+  extracted_css: Vec<String>,
   css_preprocessor: &'a Option<JsFunction>,
   ast_builder: AstBuilder<'a>,
   scoping: &'a Scoping,
-  identifier_symbol_ids: &'a mut Vec<SymbolStore>,
+  identifier_symbol_ids: Vec<SymbolStore>,
   pass: Pass,
   css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
   file_path: String,
   css_out_dir: String,
   js_env: Option<Env>,
+  function_to_style_mapping: HashMap<SymbolId, Vec<String>>,
+  function_names: Vec<(String, SymbolId)>,
+  functions_stack: Vec<SymbolId>,
 }
 
 impl<'a> TransformVisitor<'a> {
+  fn new(
+    allocator: &'a Allocator,
+    css_preprocessor: &'a Option<JsFunction>,
+    ast_builder: AstBuilder<'a>,
+    scoping: &'a Scoping,
+    file_path: String,
+    css_out_dir: String,
+    js_env: Option<Env>,
+  ) -> Self {
+    let extracted_css = vec![];
+    let symbold_ids_vec: Vec<SymbolStore> = vec![];
+    let css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>> = HashMap::new();
+    let style_tag_symbols: Vec<SymbolId> = vec![];
+    let classname_util_symbols: Vec<SymbolId> = vec![];
+
+    let function_to_style_mapping = HashMap::new();
+    let function_names = vec![];
+
+    let functions_stack = vec![];
+
+    Self {
+      allocator,
+      style_tag_symbols,
+      classname_util_symbols,
+      extracted_css,
+      css_preprocessor,
+      ast_builder,
+      scoping,
+      identifier_symbol_ids: symbold_ids_vec,
+      pass: Pass::First,
+      css_module_exports,
+      file_path,
+      css_out_dir,
+      js_env,
+      function_names,
+      function_to_style_mapping,
+      functions_stack,
+    }
+  }
+
   fn begin(&mut self, program: &mut Program<'a>) {
     self.visit_program(program);
 
@@ -168,7 +201,11 @@ impl<'a> TransformVisitor<'a> {
 
     let file = File::create(format!("{}/{}", self.css_out_dir, hash_string));
     if file.is_err() {
-      eprintln!("Failed to create file in css_out_dir: {}, reason {:#?}", self.css_out_dir, file.err());
+      eprintln!(
+        "Failed to create file in css_out_dir: {}, reason {:#?}",
+        self.css_out_dir,
+        file.err()
+      );
       return;
     }
     file
@@ -198,7 +235,14 @@ impl<'a> TransformVisitor<'a> {
           if let Some(preprocessor) = &self.css_preprocessor {
             let input_js = self.js_env.as_ref().unwrap().create_string(&css).unwrap();
             let result = preprocessor.call(None, &[input_js]).unwrap();
-            let returned_string = result.coerce_to_string().unwrap().into_utf8().unwrap().as_str().unwrap().to_owned();
+            let returned_string = result
+              .coerce_to_string()
+              .unwrap()
+              .into_utf8()
+              .unwrap()
+              .as_str()
+              .unwrap()
+              .to_owned();
 
             returned_string
           } else {
@@ -239,6 +283,21 @@ impl<'a> TransformVisitor<'a> {
 }
 
 impl<'a> VisitMut<'a> for TransformVisitor<'a> {
+  fn leave_node(&mut self, kind: oxc_ast::AstType) {
+    if self.pass == Pass::Second {
+      return;
+    }
+    match kind {
+      AstType::Function => {
+        self.functions_stack.pop();
+      }
+      AstType::ArrowFunctionExpression => {
+        self.functions_stack.pop();
+      }
+      _ => {}
+    }
+  }
+
   fn visit_import_declaration(&mut self, it: &mut oxc_ast::ast::ImportDeclaration<'a>) {
     if it.source.value == IMPORT_PATH {
       it.specifiers
@@ -262,6 +321,23 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   }
   fn visit_variable_declaration(&mut self, it: &mut oxc_ast::ast::VariableDeclaration<'a>) {
     if self.pass == Pass::First {
+      it.declarations.iter().for_each(|decl| {
+        if let Some(init) = &decl.init {
+          match init {
+            Expression::FunctionExpression(_) | Expression::ArrowFunctionExpression(_) => {
+              if let BindingPatternKind::BindingIdentifier(ident) = &decl.id.kind {
+                self
+                  .function_names
+                  .push((ident.name.to_string(), ident.symbol_id()));
+
+                self.functions_stack.push(ident.symbol_id());
+              }
+            }
+            _ => {}
+          }
+        }
+      });
+
       return walk_mut::walk_variable_declaration(self, it);
     }
 
@@ -318,10 +394,102 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
       return walk_mut::walk_function(self, function, flags);
     }
 
+    let func_id = function.id.as_ref().unwrap();
+    self
+      .function_names
+      .push((func_id.name.to_string(), func_id.symbol_id()));
+
+    self.functions_stack.push(func_id.symbol_id());
+
     let body = function.body.as_mut().unwrap();
     self.process_function_body(body, function.span.start);
 
     walk_mut::walk_function(self, function, flags);
+  }
+
+  fn visit_jsx_element(&mut self, jsx: &mut JSXElement<'a>) {
+    let name = &jsx.opening_element.name;
+
+    if let JSXElementName::IdentifierReference(ident) = name {
+      let reference = self.scoping.get_reference(ident.reference_id());
+      let symbol_id = reference.symbol_id().unwrap();
+      if self.style_tag_symbols.contains(&symbol_id) {
+        let children_iter = jsx.children.iter();
+
+        let mut extracted_css: String = "".to_string();
+
+        for child in children_iter {
+          if let JSXChild::Text(child_text) = child {
+            extracted_css.push_str(&child_text.value);
+          } else if let JSXChild::ExpressionContainer(child_expression) = child {
+            let expression = &child_expression.expression;
+            if let JSXExpression::TemplateLiteral(template_expression) = expression {
+              let template_expression_value = template_expression
+                .quasis
+                .iter()
+                .map(|elem| elem.value.clone().raw.into_string())
+                .collect::<Vec<String>>()
+                .join("");
+
+              extracted_css.push_str(&template_expression_value);
+            }
+          }
+        }
+
+        if let Some(last_function) = self.functions_stack.last() {
+          self
+            .function_to_style_mapping
+            .insert(last_function.clone(), vec![extracted_css]);
+        }
+      }
+    }
+  }
+
+  fn visit_expression(&mut self, it: &mut oxc_ast::ast::Expression<'a>) {
+    if self.pass != Pass::First {
+      return walk_mut::walk_expression(self, it);
+    }
+    if let Expression::AssignmentExpression(assign) = &it {
+      if let AssignmentTarget::StaticMemberExpression(static_member) = &assign.left {
+        if let Expression::Identifier(ident) = &static_member.object {
+          let reference = ident.reference_id();
+          let symbol_id = self.scoping.get_reference(reference).symbol_id().unwrap();
+          if self
+            .function_names
+            .contains(&(ident.name.to_string(), symbol_id))
+            && &static_member.property.name.to_string() == "flair"
+          {
+            let content = &assign.right;
+            let mut extracted_css = String::new();
+            if let Expression::StringLiteral(string_value) = content {
+              extracted_css.push_str(&string_value.value.to_string());
+            } else if let Expression::TemplateLiteral(template_expression) = content {
+              let template_expression_value = template_expression
+                .quasis
+                .iter()
+                .map(|elem| elem.value.clone().raw.into_string())
+                .collect::<Vec<String>>()
+                .join("");
+
+              extracted_css.push_str(&template_expression_value);
+
+              if self.function_to_style_mapping.contains_key(&symbol_id) {
+                self
+                  .function_to_style_mapping
+                  .get_mut(&symbol_id)
+                  .unwrap()
+                  .push(extracted_css);
+              } else {
+                self
+                  .function_to_style_mapping
+                  .insert(symbol_id, vec![extracted_css]);
+              }
+            }
+          }
+        }
+      }
+    }
+    walk_mut::walk_expression(self, it);
   }
 }
 
