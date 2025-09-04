@@ -4,6 +4,10 @@ const { readFileSync } = require("fs");
 const appCode = readFileSync("./src/App.tsx", "utf-8");
 
 console.time("Transforming code");
-const transformedCode = transformCode(appCode, "./src/App.tsx");
+const transformedCode = transformCode({
+  code: appCode,
+  filePath: "./src/App.tsx",
+  cssOutDir: "./out"
+});
 // console.log(transformedCode.sourcemap)
-console.timeEnd("Transforming code");
+// console.log("Transforming code \n", transformedCode);
