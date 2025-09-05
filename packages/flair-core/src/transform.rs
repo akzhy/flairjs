@@ -5,6 +5,8 @@ use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::path::PathBuf;
 
+use crate::flair_property::FlairProperty;
+use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
 use lightningcss::css_modules::CssModuleExport;
@@ -18,13 +20,12 @@ use oxc::{
   parser::{Parser, ParserReturn},
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
+use oxc_ast::ast::Program;
 use oxc_ast::ast::{
-  AssignmentTarget, BindingPatternKind, Expression, FunctionBody, ImportDeclarationSpecifier,
-  ImportOrExportKind, JSXChild, JSXElementName, JSXExpression, Statement,
+  BindingPatternKind, FunctionBody, ImportDeclarationSpecifier, ImportOrExportKind, Statement,
 };
-use oxc_ast::ast::{JSXElement, Program};
+use oxc_ast::NONE;
 use oxc_ast::{ast::Function, AstBuilder};
-use oxc_ast::{AstType, NONE};
 use oxc_codegen::{Codegen, CodegenOptions};
 use oxc_span::SPAN;
 
@@ -61,7 +62,7 @@ pub fn transform(
   let allocator = Allocator::default();
   let source_type = SourceType::from_path(&options.file_path).unwrap();
 
-  let sourcemap_file_path = options.file_path.clone().replace(".tsx", ".tsx.map");
+  let sourcemap_file_path = options.file_path.clone();
 
   let ParserReturn { mut program, .. } =
     Parser::new(&allocator, &options.code, source_type).parse();
@@ -126,9 +127,7 @@ struct TransformVisitor<'a> {
   file_path: String,
   css_out_dir: String,
   js_env: Option<Env>,
-  function_to_style_mapping: HashMap<SymbolId, Vec<String>>,
-  function_names: Vec<(String, SymbolId)>,
-  functions_stack: Vec<SymbolId>,
+  function_id_to_raw_css_mapping: HashMap<u32, Vec<String>>,
 }
 
 impl<'a> TransformVisitor<'a> {
@@ -147,10 +146,7 @@ impl<'a> TransformVisitor<'a> {
     let style_tag_symbols: Vec<SymbolId> = vec![];
     let classname_util_symbols: Vec<SymbolId> = vec![];
 
-    let function_to_style_mapping = HashMap::new();
-    let function_names = vec![];
-
-    let functions_stack = vec![];
+    let function_id_to_style_mapping = HashMap::new();
 
     Self {
       allocator,
@@ -166,24 +162,87 @@ impl<'a> TransformVisitor<'a> {
       file_path,
       css_out_dir,
       js_env,
-      function_names,
-      function_to_style_mapping,
-      functions_stack,
+      function_id_to_raw_css_mapping: function_id_to_style_mapping,
     }
   }
 
   fn begin(&mut self, program: &mut Program<'a>) {
     self.visit_program(program);
 
-    self.pass = Pass::Second;
+    let mut flair_property_visitor = FlairProperty::new(&self.scoping);
+    flair_property_visitor.visit_program(program);
 
-    self.visit_program(program);
+    let flair_styles = flair_property_visitor.get_style();
+
+    flair_styles.iter().for_each(|(span_start, style)| {
+      if self.function_id_to_raw_css_mapping.contains_key(span_start) {
+        self
+          .function_id_to_raw_css_mapping
+          .get_mut(span_start)
+          .unwrap()
+          .push(style.to_string());
+        return;
+      }
+
+      self
+        .function_id_to_raw_css_mapping
+        .insert(*span_start, vec![style.to_string()]);
+    });
+
+    self
+      .function_id_to_raw_css_mapping
+      .iter()
+      .for_each(|(fn_id, styles)| {
+        let css = styles.join("\n");
+
+        let css_string = {
+          if self.js_env.is_some() {
+            if let Some(preprocessor) = &self.css_preprocessor {
+              let input_js = self.js_env.as_ref().unwrap().create_string(&css).unwrap();
+              let result = preprocessor.call(None, &[input_js]).unwrap();
+              let returned_string = result
+                .coerce_to_string()
+                .unwrap()
+                .into_utf8()
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_owned();
+
+              returned_string
+            } else {
+              css.to_string()
+            }
+          } else {
+            css.to_string()
+          }
+        };
+
+        let parsed_css = parse_css(&css_string).unwrap();
+        let css_exports = parsed_css.exports.as_ref().unwrap();
+
+        self.css_module_exports.insert(*fn_id, css_exports.clone());
+
+        self.extracted_css.push(parsed_css.code);
+      });
+
+    // //   let parsed_css = parse_css(&css_string).unwrap();
+    // //   let css_exports = parsed_css.exports.as_ref().unwrap();
+
+    // self.pass = Pass::Second;
+
+    // self.visit_program(program);
+
+    // self.pass = Pass::Third;
+    // self.visit_program(program);
+    println!("Extracted CSS: {:?}", self.extracted_css);
 
     let hash = {
       let mut hasher = DefaultHasher::new();
       self.file_path.hash(&mut hasher);
       hasher.finish()
     };
+
     let hash_string = format!("{:x}.css", hash);
     let import_path = format!("jsx-styled-vite-plugin/cached-css/{}", hash_string);
     let import_statement = Statement::from(
@@ -217,87 +276,23 @@ impl<'a> TransformVisitor<'a> {
   }
 
   fn process_function_body(&mut self, body: &mut FunctionBody<'a>, fn_start: u32) {
-    let mut has_style = false;
-    let mut css: String = "".to_string();
+    match self.pass {
+      Pass::First => {
+        let mut style_detector = StyleDetector::new(&self.scoping, &self.style_tag_symbols);
+        style_detector.visit_function_body(&body);
 
-    let mut style_detector = StyleDetector {
-      found: &mut has_style,
-      css: &mut css,
-      scoping: self.scoping,
-      style_tag_symbols: &self.style_tag_symbols,
-    };
-
-    style_detector.visit_function_body(&body);
-
-    if has_style {
-      let css_string = {
-        if self.js_env.is_some() {
-          if let Some(preprocessor) = &self.css_preprocessor {
-            let input_js = self.js_env.as_ref().unwrap().create_string(&css).unwrap();
-            let result = preprocessor.call(None, &[input_js]).unwrap();
-            let returned_string = result
-              .coerce_to_string()
-              .unwrap()
-              .into_utf8()
-              .unwrap()
-              .as_str()
-              .unwrap()
-              .to_owned();
-
-            returned_string
-          } else {
-            css
-          }
-        } else {
-          css
+        if style_detector.has_style {
+          self
+            .function_id_to_raw_css_mapping
+            .insert(fn_start, style_detector.css);
         }
-      };
-
-      let parsed_css = parse_css(&css_string).unwrap();
-      let css_exports = parsed_css.exports.as_ref().unwrap();
-      let identifier_symbol_ids: Vec<SymbolStore> = vec![];
-
-      let mut classname_replacer = ClassNameReplacer {
-        allocator: self.allocator,
-        class_name_map: css_exports.clone(),
-        ast_builder: self.ast_builder,
-        scoping: self.scoping,
-        identifier_symbol_ids: identifier_symbol_ids,
-        fn_id: fn_start,
-        classname_util_symbols: self.classname_util_symbols.clone(),
-      };
-
-      self
-        .css_module_exports
-        .insert(fn_start, css_exports.clone());
-
-      classname_replacer.visit_function_body(body);
-
-      self
-        .identifier_symbol_ids
-        .append(&mut classname_replacer.get_identifier_symbol_ids().to_vec());
-
-      self.extracted_css.push(parsed_css.code);
+      }
+      _ => {}
     }
   }
 }
 
 impl<'a> VisitMut<'a> for TransformVisitor<'a> {
-  fn leave_node(&mut self, kind: oxc_ast::AstType) {
-    if self.pass == Pass::Second {
-      return;
-    }
-    match kind {
-      AstType::Function => {
-        self.functions_stack.pop();
-      }
-      AstType::ArrowFunctionExpression => {
-        self.functions_stack.pop();
-      }
-      _ => {}
-    }
-  }
-
   fn visit_import_declaration(&mut self, it: &mut oxc_ast::ast::ImportDeclaration<'a>) {
     if it.source.value == IMPORT_PATH {
       it.specifiers
@@ -319,28 +314,8 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
         });
     }
   }
+
   fn visit_variable_declaration(&mut self, it: &mut oxc_ast::ast::VariableDeclaration<'a>) {
-    if self.pass == Pass::First {
-      it.declarations.iter().for_each(|decl| {
-        if let Some(init) = &decl.init {
-          match init {
-            Expression::FunctionExpression(_) | Expression::ArrowFunctionExpression(_) => {
-              if let BindingPatternKind::BindingIdentifier(ident) = &decl.id.kind {
-                self
-                  .function_names
-                  .push((ident.name.to_string(), ident.symbol_id()));
-
-                self.functions_stack.push(ident.symbol_id());
-              }
-            }
-            _ => {}
-          }
-        }
-      });
-
-      return walk_mut::walk_variable_declaration(self, it);
-    }
-
     it.declarations.iter_mut().for_each(|decl| {
       if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
         let symbol_id = binding_identifier.symbol_id();
@@ -376,6 +351,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
       }
     });
   }
+
   fn visit_arrow_function_expression(
     &mut self,
     it: &mut oxc_ast::ast::ArrowFunctionExpression<'a>,
@@ -389,157 +365,15 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
 
     walk_mut::walk_arrow_function_expression(self, it);
   }
+
   fn visit_function(&mut self, function: &mut Function<'a>, flags: ScopeFlags) {
     if self.pass == Pass::Second {
       return walk_mut::walk_function(self, function, flags);
     }
-
-    let func_id = function.id.as_ref().unwrap();
-    self
-      .function_names
-      .push((func_id.name.to_string(), func_id.symbol_id()));
-
-    self.functions_stack.push(func_id.symbol_id());
 
     let body = function.body.as_mut().unwrap();
     self.process_function_body(body, function.span.start);
 
     walk_mut::walk_function(self, function, flags);
   }
-
-  fn visit_jsx_element(&mut self, jsx: &mut JSXElement<'a>) {
-    let name = &jsx.opening_element.name;
-
-    if let JSXElementName::IdentifierReference(ident) = name {
-      let reference = self.scoping.get_reference(ident.reference_id());
-      let symbol_id = reference.symbol_id().unwrap();
-      if self.style_tag_symbols.contains(&symbol_id) {
-        let children_iter = jsx.children.iter();
-
-        let mut extracted_css: String = "".to_string();
-
-        for child in children_iter {
-          if let JSXChild::Text(child_text) = child {
-            extracted_css.push_str(&child_text.value);
-          } else if let JSXChild::ExpressionContainer(child_expression) = child {
-            let expression = &child_expression.expression;
-            if let JSXExpression::TemplateLiteral(template_expression) = expression {
-              let template_expression_value = template_expression
-                .quasis
-                .iter()
-                .map(|elem| elem.value.clone().raw.into_string())
-                .collect::<Vec<String>>()
-                .join("");
-
-              extracted_css.push_str(&template_expression_value);
-            }
-          }
-        }
-
-        if let Some(last_function) = self.functions_stack.last() {
-          self
-            .function_to_style_mapping
-            .insert(last_function.clone(), vec![extracted_css]);
-        }
-      }
-    }
-  }
-
-  fn visit_expression(&mut self, it: &mut oxc_ast::ast::Expression<'a>) {
-    if self.pass != Pass::First {
-      return walk_mut::walk_expression(self, it);
-    }
-    if let Expression::AssignmentExpression(assign) = &it {
-      if let AssignmentTarget::StaticMemberExpression(static_member) = &assign.left {
-        if let Expression::Identifier(ident) = &static_member.object {
-          let reference = ident.reference_id();
-          let symbol_id = self.scoping.get_reference(reference).symbol_id().unwrap();
-          if self
-            .function_names
-            .contains(&(ident.name.to_string(), symbol_id))
-            && &static_member.property.name.to_string() == "flair"
-          {
-            let content = &assign.right;
-            let mut extracted_css = String::new();
-            if let Expression::StringLiteral(string_value) = content {
-              extracted_css.push_str(&string_value.value.to_string());
-            } else if let Expression::TemplateLiteral(template_expression) = content {
-              let template_expression_value = template_expression
-                .quasis
-                .iter()
-                .map(|elem| elem.value.clone().raw.into_string())
-                .collect::<Vec<String>>()
-                .join("");
-
-              extracted_css.push_str(&template_expression_value);
-
-              if self.function_to_style_mapping.contains_key(&symbol_id) {
-                self
-                  .function_to_style_mapping
-                  .get_mut(&symbol_id)
-                  .unwrap()
-                  .push(extracted_css);
-              } else {
-                self
-                  .function_to_style_mapping
-                  .insert(symbol_id, vec![extracted_css]);
-              }
-            }
-          }
-        }
-      }
-    }
-    walk_mut::walk_expression(self, it);
-  }
-}
-
-pub struct StyleDetector<'a> {
-  found: &'a mut bool,
-  css: &'a mut String,
-  scoping: &'a Scoping,
-  style_tag_symbols: &'a Vec<SymbolId>,
-}
-
-impl<'a> Visit<'_> for StyleDetector<'a> {
-  fn visit_jsx_element(&mut self, jsx: &JSXElement<'_>) {
-    let name = &jsx.opening_element.name;
-
-    if let JSXElementName::IdentifierReference(ident) = name {
-      let reference = self.scoping.get_reference(ident.reference_id());
-      let symbol_id = reference.symbol_id().unwrap();
-      if self.style_tag_symbols.contains(&symbol_id) {
-        *self.found = true;
-
-        let children_iter = jsx.children.iter();
-
-        let mut extracted_css: String = "".to_string();
-
-        for child in children_iter {
-          if let JSXChild::Text(child_text) = child {
-            extracted_css.push_str(&child_text.value);
-          } else if let JSXChild::ExpressionContainer(child_expression) = child {
-            let expression = &child_expression.expression;
-            if let JSXExpression::TemplateLiteral(template_expression) = expression {
-              let template_expression_value = template_expression
-                .quasis
-                .iter()
-                .map(|elem| elem.value.clone().raw.into_string())
-                .collect::<Vec<String>>()
-                .join("");
-
-              extracted_css.push_str(&template_expression_value);
-            }
-          }
-        }
-        *self.css = extracted_css;
-      }
-    }
-  }
-}
-
-fn get_string_hash(s: &str) -> String {
-  let mut hasher = DefaultHasher::new();
-  s.hash(&mut hasher);
-  let hash = hasher.finish();
-  format!("{:x}", hash) // Converts the u64 hash to a hexadecimal string
 }
