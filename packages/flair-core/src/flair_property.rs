@@ -11,7 +11,7 @@ use std::collections::HashMap;
 
 pub struct FlairProperty<'a> {
   scoping: &'a Scoping,
-  style: HashMap<SymbolId, String>,
+  style: HashMap<u32, String>,
   symbol_to_span_start: HashMap<SymbolId, u32>,
 }
 
@@ -23,15 +23,17 @@ impl<'a> FlairProperty<'a> {
       symbol_to_span_start: HashMap::new(),
     }
   }
+
+  pub fn get_style(&self) -> &HashMap<u32, String> {
+    &self.style
+  }
 }
 
 impl<'a> Visit<'a> for FlairProperty<'a> {
-
   fn visit_variable_declaration(&mut self, it: &VariableDeclaration<'a>) {
     it.declarations.iter().for_each(|decl| {
       if let Some(init) = &decl.init {
         if let BindingPatternKind::BindingIdentifier(ident) = &decl.id.kind {
-
           let item = get_item(init);
 
           if let Some(span_start) = item {
@@ -96,7 +98,10 @@ impl<'a> Visit<'a> for FlairProperty<'a> {
       }
     };
 
-    self.style.insert(symbol_id, extracted_css);
+    self.style.insert(
+      self.symbol_to_span_start.get(&symbol_id).unwrap().clone(),
+      extracted_css,
+    );
     walk::walk_expression(self, it)
   }
 }
