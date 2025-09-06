@@ -6,22 +6,32 @@ use oxc_ast::ast::{JSXChild, JSXElement, JSXElementName, JSXExpression};
 
 pub struct StyleDetector<'a> {
   scoping: &'a Scoping,
-  style_tag_symbols: &'a Vec<SymbolId>,
+  style_tag_import_symbols: &'a Vec<SymbolId>,
+  style_tag_symbol_ids: Vec<u32>,
   pub css: Vec<String>,
   pub has_style: bool,
 }
 
 impl StyleDetector<'_> {
-  pub fn new<'a>(scoping: &'a Scoping, style_tag_symbols: &'a Vec<SymbolId>) -> StyleDetector<'a> {
+  pub fn new<'a>(
+    scoping: &'a Scoping,
+    style_tag_import_symbols: &'a Vec<SymbolId>,
+  ) -> StyleDetector<'a> {
     let has_style = false;
     let css = vec![];
+    let style_tag_symbol_ids = vec![];
 
     StyleDetector {
       has_style,
       css,
       scoping,
-      style_tag_symbols,
+      style_tag_import_symbols,
+      style_tag_symbol_ids
     }
+  }
+
+  pub fn get_style_tag_symbol_ids(&self) -> Vec<u32> {
+    self.style_tag_symbol_ids.to_vec()
   }
 }
 
@@ -32,8 +42,11 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
     if let JSXElementName::IdentifierReference(ident) = name {
       let reference = self.scoping.get_reference(ident.reference_id());
       let symbol_id = reference.symbol_id().unwrap();
-      if self.style_tag_symbols.contains(&symbol_id) {
+
+      if self.style_tag_import_symbols.contains(&symbol_id) {
         self.has_style = true;
+
+        self.style_tag_symbol_ids.push(jsx.span.start);
 
         let children_iter = jsx.children.iter();
 
