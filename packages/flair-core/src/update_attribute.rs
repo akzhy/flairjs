@@ -37,6 +37,7 @@ pub struct ClassNameReplacer<'a> {
   pub identifier_symbol_ids: Vec<SymbolStore>,
   pub fn_id: u32,
   pub classname_util_symbols: Vec<SymbolId>,
+  pub variable_linking: HashMap<SymbolId, SymbolId>,
 }
 
 impl<'a> ClassNameReplacer<'a> {
@@ -124,15 +125,24 @@ impl<'a> ClassNameReplacer<'a> {
     }
   }
 
+  fn get_resolved_symbol_id(&self, symbol_id: SymbolId) -> SymbolId {
+    if self.variable_linking.contains_key(&symbol_id) {
+      let linked_symbol_id = self.variable_linking.get(&symbol_id).unwrap();
+      return self.get_resolved_symbol_id(*linked_symbol_id);
+    }
+    symbol_id
+  }
+
   fn update_identifier_expression(&mut self, identifier_expression: &mut IdentifierReference<'a>) {
     let reference = self
       .scoping
       .get_reference(identifier_expression.reference_id());
     let symbol_id = reference.symbol_id();
     if symbol_id.is_some() {
+      let resolved_symbol_id = self.get_resolved_symbol_id(symbol_id.unwrap());
       self
         .identifier_symbol_ids
-        .push(SymbolStore::new(symbol_id.unwrap(), self.fn_id));
+        .push(SymbolStore::new(resolved_symbol_id, self.fn_id));
     }
   }
 
