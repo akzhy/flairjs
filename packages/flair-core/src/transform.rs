@@ -20,10 +20,11 @@ use oxc::{
   parser::{Parser, ParserReturn},
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
-use oxc_ast::ast::Program;
 use oxc_ast::ast::{
-  BindingPatternKind, FunctionBody, ImportDeclarationSpecifier, ImportOrExportKind, Statement,
+  BindingPatternKind, FunctionBody, ImportDeclarationSpecifier, ImportOrExportKind, JSXChild,
+  Statement,
 };
+use oxc_ast::ast::{Expression, Program};
 use oxc_ast::NONE;
 use oxc_ast::{ast::Function, AstBuilder};
 use oxc_codegen::{Codegen, CodegenOptions};
@@ -115,7 +116,7 @@ pub fn transform(
 struct TransformVisitor<'a> {
   allocator: &'a Allocator,
   // local_style_tag_name: &'a mut String,
-  style_tag_symbols: Vec<SymbolId>,
+  style_tag_import_symbols: Vec<SymbolId>,
   classname_util_symbols: Vec<SymbolId>,
   // local_class_name_util_functions: &'a mut Vec<String>,
   extracted_css: Vec<String>,
@@ -130,6 +131,8 @@ struct TransformVisitor<'a> {
   js_env: Option<Env>,
   function_id_to_raw_css_mapping: HashMap<u32, Vec<String>>,
   variable_linking: HashMap<SymbolId, SymbolId>,
+  flair_property_visitor: FlairProperty<'a>,
+  style_tag_symbols: Vec<u32>,
 }
 
 impl<'a> TransformVisitor<'a> {
@@ -143,16 +146,19 @@ impl<'a> TransformVisitor<'a> {
     js_env: Option<Env>,
   ) -> Self {
     let extracted_css = vec![];
-    let symbold_ids_vec: Vec<SymbolStore> = vec![];
+    let identifier_symbol_ids: Vec<SymbolStore> = vec![];
     let css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>> = HashMap::new();
-    let style_tag_symbols: Vec<SymbolId> = vec![];
+    let style_tag_symbols: Vec<u32> = vec![];
+    let style_tag_import_symbols: Vec<SymbolId> = vec![];
     let classname_util_symbols: Vec<SymbolId> = vec![];
 
     let function_id_to_style_mapping = HashMap::new();
     let variable_linking = HashMap::new();
+    let flair_property_visitor = FlairProperty::new(&scoping, &allocator);
 
     Self {
       allocator,
+      style_tag_import_symbols,
       style_tag_symbols,
       classname_util_symbols,
       extracted_css,
@@ -160,23 +166,21 @@ impl<'a> TransformVisitor<'a> {
       css_preprocessor,
       ast_builder,
       scoping,
-      identifier_symbol_ids: symbold_ids_vec,
+      identifier_symbol_ids,
       pass: Pass::First,
       css_module_exports,
       file_path,
       css_out_dir,
       js_env,
       function_id_to_raw_css_mapping: function_id_to_style_mapping,
+      flair_property_visitor,
     }
   }
 
   fn begin(&mut self, program: &mut Program<'a>) {
     self.visit_program(program);
 
-    let mut flair_property_visitor = FlairProperty::new(&self.scoping);
-    flair_property_visitor.visit_program(program);
-
-    let flair_styles = flair_property_visitor.get_style();
+    let flair_styles = self.flair_property_visitor.get_style();
 
     flair_styles.iter().for_each(|(span_start, style)| {
       if self.function_id_to_raw_css_mapping.contains_key(span_start) {
@@ -281,10 +285,11 @@ impl<'a> TransformVisitor<'a> {
   fn process_function_body(&mut self, body: &mut FunctionBody<'a>, fn_start: u32) {
     match self.pass {
       Pass::First => {
-        let mut style_detector = StyleDetector::new(&self.scoping, &self.style_tag_symbols);
+        let mut style_detector = StyleDetector::new(&self.scoping, &self.style_tag_import_symbols);
         style_detector.visit_function_body(&body);
 
         if style_detector.has_style {
+          self.style_tag_symbols = style_detector.get_style_tag_symbol_ids();
           self
             .function_id_to_raw_css_mapping
             .insert(fn_start, style_detector.css);
@@ -309,7 +314,6 @@ impl<'a> TransformVisitor<'a> {
         classname_replacer.visit_function_body(body);
 
         self.identifier_symbol_ids = classname_replacer.get_identifier_symbol_ids().to_vec();
-
       }
       Pass::Third => {}
     }
@@ -327,7 +331,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
           if let ImportDeclarationSpecifier::ImportSpecifier(import_specifier) = specifier {
             if import_specifier.local.name == "Style" {
               self
-                .style_tag_symbols
+                .style_tag_import_symbols
                 .push(import_specifier.local.symbol_id());
             } else if import_specifier.local.name == "c" {
               self
@@ -357,6 +361,8 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
             }
           }
         });
+
+        self.flair_property_visitor.visit_variable_declaration(it);
       }
       Pass::Second => {}
       Pass::Third => {
@@ -401,6 +407,35 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     walk_mut::walk_variable_declaration(self, it);
   }
 
+  fn visit_expression(&mut self, it: &mut Expression<'a>) {
+    if self.pass == Pass::First {
+      self.flair_property_visitor.visit_expression(it);
+    } else if self.pass == Pass::Second {
+      if let Expression::JSXElement(jsx) = it {
+        jsx.children.retain_mut(|child| {
+          if let JSXChild::Element(element) = child {
+            if self.style_tag_symbols.contains(&element.span.start) {
+              return false;
+            }
+            return true;
+          }
+          true
+        });
+      } else if let Expression::JSXFragment(jsx) = it {
+        jsx.children.retain_mut(|child| {
+          if let JSXChild::Element(element) = child {
+            if self.style_tag_symbols.contains(&element.span.start) {
+              return false;
+            }
+            return true;
+          }
+          true
+        });
+      }
+    }
+    walk_mut::walk_expression(self, it);
+  }
+
   fn visit_arrow_function_expression(
     &mut self,
     it: &mut oxc_ast::ast::ArrowFunctionExpression<'a>,
@@ -414,6 +449,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   fn visit_function(&mut self, function: &mut Function<'a>, flags: ScopeFlags) {
     let body = function.body.as_mut().unwrap();
     self.process_function_body(body, function.span.start);
+    self.flair_property_visitor.visit_function(function);
 
     walk_mut::walk_function(self, function, flags);
   }
