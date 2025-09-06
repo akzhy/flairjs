@@ -211,25 +211,35 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
           self.update_string_expression(string_value);
         } else if let JSXAttributeValue::ExpressionContainer(expr_container) = value {
           let expression = &mut expr_container.expression;
-          if let JSXExpression::ArrayExpression(array_expression) = expression {
-            self.update_array_expression(array_expression);
-          } else if let JSXExpression::CallExpression(call_expression) = expression {
-            self.update_call_expression(call_expression);
-          } else if let JSXExpression::LogicalExpression(logical_expression) = expression {
-            self.update_logical_expression(logical_expression);
-          } else if let JSXExpression::ConditionalExpression(conditional_expression) = expression {
-            self.update_conditional_expression(conditional_expression);
-          } else if let JSXExpression::ObjectExpression(object_expression) = expression {
-            self.update_object_expression(object_expression);
-          } else if let JSXExpression::BinaryExpression(binary_expression) = expression {
-            self.update_binary_expression(binary_expression);
-          } else if let JSXExpression::Identifier(identifier_expression) = expression {
-            self.update_identifier_expression(identifier_expression);
-          } else {
-            println!(
-              "ExpressionContainer found in className attribute: {:#?}",
-              expr_container
-            );
+
+          match expression {
+            JSXExpression::ArrayExpression(array_expression) => {
+              self.update_array_expression(array_expression);
+            }
+            JSXExpression::CallExpression(call_expression) => {
+              self.update_call_expression(call_expression);
+            }
+            JSXExpression::LogicalExpression(logical_expression) => {
+              self.update_logical_expression(logical_expression);
+            }
+            JSXExpression::ConditionalExpression(conditional_expression) => {
+              self.update_conditional_expression(conditional_expression);
+            }
+            JSXExpression::ObjectExpression(object_expression) => {
+              self.update_object_expression(object_expression);
+            }
+            JSXExpression::BinaryExpression(binary_expression) => {
+              self.update_binary_expression(binary_expression);
+            }
+            JSXExpression::Identifier(identifier_expression) => {
+              self.update_identifier_expression(identifier_expression);
+            }
+            _ => {
+              println!(
+                "ExpressionContainer found in className attribute: {:#?}",
+                expr_container
+              );
+            }
           }
         }
       }
