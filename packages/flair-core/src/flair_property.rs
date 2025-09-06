@@ -1,9 +1,9 @@
-use oxc::ast_visit::walk;
-use oxc::ast_visit::Visit;
-use oxc::semantic::ScopeFlags;
 use oxc::semantic::Scoping;
 use oxc::semantic::SymbolId;
+use oxc_allocator::Allocator;
+use oxc_allocator::Box as OxcBox;
 use oxc_ast::ast::BindingPatternKind;
+use oxc_ast::ast::BooleanLiteral;
 use oxc_ast::ast::Function;
 use oxc_ast::ast::VariableDeclaration;
 use oxc_ast::ast::{AssignmentTarget, Expression};
@@ -13,24 +13,24 @@ pub struct FlairProperty<'a> {
   scoping: &'a Scoping,
   style: HashMap<u32, String>,
   symbol_to_span_start: HashMap<SymbolId, u32>,
+  allocator: &'a Allocator,
 }
 
 impl<'a> FlairProperty<'a> {
-  pub fn new(scoping: &'a Scoping) -> FlairProperty<'a> {
+  pub fn new(scoping: &'a Scoping, allocator: &'a Allocator) -> FlairProperty<'a> {
     FlairProperty {
       scoping,
       style: HashMap::new(),
       symbol_to_span_start: HashMap::new(),
+      allocator,
     }
   }
 
   pub fn get_style(&self) -> &HashMap<u32, String> {
     &self.style
   }
-}
 
-impl<'a> Visit<'a> for FlairProperty<'a> {
-  fn visit_variable_declaration(&mut self, it: &VariableDeclaration<'a>) {
+  pub fn visit_variable_declaration(&mut self, it: &mut VariableDeclaration<'a>) {
     it.declarations.iter().for_each(|decl| {
       if let Some(init) = &decl.init {
         if let BindingPatternKind::BindingIdentifier(ident) = &decl.id.kind {
@@ -44,31 +44,27 @@ impl<'a> Visit<'a> for FlairProperty<'a> {
         }
       }
     });
-
-    walk::walk_variable_declaration(self, it)
   }
 
-  fn visit_function(&mut self, it: &Function<'a>, flags: ScopeFlags) {
+  pub fn visit_function(&mut self, it: &mut Function<'a>) {
     if let Some(name) = &it.id {
       self
         .symbol_to_span_start
         .insert(name.symbol_id(), it.span.start);
     }
-
-    walk::walk_function(self, it, flags);
   }
 
-  fn visit_expression(&mut self, it: &Expression<'a>) {
+  pub fn visit_expression(&mut self, it: &mut Expression<'a>) {
     let Expression::AssignmentExpression(assign) = it else {
-      return walk::walk_expression(self, it);
+      return;
     };
 
     let AssignmentTarget::StaticMemberExpression(static_member) = &assign.left else {
-      return walk::walk_expression(self, it);
+      return;
     };
 
     let Expression::Identifier(ident) = &static_member.object else {
-      return walk::walk_expression(self, it);
+      return;
     };
 
     let reference = ident.reference_id();
@@ -77,7 +73,7 @@ impl<'a> Visit<'a> for FlairProperty<'a> {
     if !self.symbol_to_span_start.contains_key(&symbol_id)
       || static_member.property.name.as_str() != "flair"
     {
-      return walk::walk_expression(self, it);
+      return;
     }
 
     let content = &assign.right;
@@ -94,7 +90,7 @@ impl<'a> Visit<'a> for FlairProperty<'a> {
         template_value
       }
       _ => {
-        return walk::walk_expression(self, it);
+        return;
       }
     };
 
@@ -102,7 +98,14 @@ impl<'a> Visit<'a> for FlairProperty<'a> {
       self.symbol_to_span_start.get(&symbol_id).unwrap().clone(),
       extracted_css,
     );
-    walk::walk_expression(self, it)
+
+    *it = Expression::BooleanLiteral(OxcBox::new_in(
+      BooleanLiteral {
+        span: assign.span,
+        value: false,
+      },
+      self.allocator,
+    ));
   }
 }
 
