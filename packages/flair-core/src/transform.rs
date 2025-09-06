@@ -33,6 +33,7 @@ use oxc_span::SPAN;
 enum Pass {
   First,
   Second,
+  Third,
 }
 
 const IMPORT_PATH: &str = "jsx-styled-react";
@@ -128,6 +129,7 @@ struct TransformVisitor<'a> {
   css_out_dir: String,
   js_env: Option<Env>,
   function_id_to_raw_css_mapping: HashMap<u32, Vec<String>>,
+  variable_linking: HashMap<SymbolId, SymbolId>,
 }
 
 impl<'a> TransformVisitor<'a> {
@@ -147,12 +149,14 @@ impl<'a> TransformVisitor<'a> {
     let classname_util_symbols: Vec<SymbolId> = vec![];
 
     let function_id_to_style_mapping = HashMap::new();
+    let variable_linking = HashMap::new();
 
     Self {
       allocator,
       style_tag_symbols,
       classname_util_symbols,
       extracted_css,
+      variable_linking,
       css_preprocessor,
       ast_builder,
       scoping,
@@ -229,13 +233,12 @@ impl<'a> TransformVisitor<'a> {
     // //   let parsed_css = parse_css(&css_string).unwrap();
     // //   let css_exports = parsed_css.exports.as_ref().unwrap();
 
-    // self.pass = Pass::Second;
+    self.pass = Pass::Second;
 
-    // self.visit_program(program);
+    self.visit_program(program);
 
-    // self.pass = Pass::Third;
-    // self.visit_program(program);
-    println!("Extracted CSS: {:?}", self.extracted_css);
+    self.pass = Pass::Third;
+    self.visit_program(program);
 
     let hash = {
       let mut hasher = DefaultHasher::new();
@@ -287,7 +290,28 @@ impl<'a> TransformVisitor<'a> {
             .insert(fn_start, style_detector.css);
         }
       }
-      _ => {}
+      Pass::Second => {
+        let mut classname_replacer = ClassNameReplacer {
+          allocator: self.allocator,
+          class_name_map: self
+            .css_module_exports
+            .get(&fn_start)
+            .cloned()
+            .unwrap_or_default(),
+          ast_builder: self.ast_builder,
+          scoping: self.scoping,
+          identifier_symbol_ids: self.identifier_symbol_ids.clone(),
+          fn_id: fn_start,
+          classname_util_symbols: self.classname_util_symbols.clone(),
+          variable_linking: self.variable_linking.clone(),
+        };
+
+        classname_replacer.visit_function_body(body);
+
+        self.identifier_symbol_ids = classname_replacer.get_identifier_symbol_ids().to_vec();
+
+      }
+      Pass::Third => {}
     }
   }
 }
@@ -316,50 +340,71 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   }
 
   fn visit_variable_declaration(&mut self, it: &mut oxc_ast::ast::VariableDeclaration<'a>) {
-    it.declarations.iter_mut().for_each(|decl| {
-      if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
-        let symbol_id = binding_identifier.symbol_id();
-        let symbol_store_item = self
-          .identifier_symbol_ids
-          .iter()
-          .find(|s| s.symbol_id == symbol_id);
+    match self.pass {
+      Pass::First => {
+        it.declarations.iter_mut().for_each(|decl| {
+          if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
+            if let Some(init) = &decl.init {
+              if let oxc_ast::ast::Expression::Identifier(identifier) = init {
+                let symbol_id = binding_identifier.symbol_id();
+                let reference = self.scoping.get_reference(identifier.reference_id());
+                let init_symbol_id = reference.symbol_id();
 
-        if symbol_store_item.is_some() {
-          let css_exports = self
-            .css_module_exports
-            .get(&symbol_store_item.unwrap().fn_id);
-          if css_exports.is_none() {
-            return;
+                if let Some(init_symbol_id) = init_symbol_id {
+                  self.variable_linking.insert(symbol_id, init_symbol_id);
+                }
+              }
+            }
           }
-          let css_exports = css_exports.unwrap();
-          let identifier_symbol_ids: Vec<SymbolStore> = vec![];
-
-          let mut classname_replacer = ClassNameReplacer {
-            allocator: self.allocator,
-            class_name_map: css_exports.clone(),
-            ast_builder: self.ast_builder,
-            scoping: self.scoping,
-            identifier_symbol_ids: identifier_symbol_ids,
-            fn_id: decl.span.start,
-            classname_util_symbols: self.classname_util_symbols.clone(),
-          };
-
-          if decl.init.is_some() {
-            classname_replacer.update_expression(decl.init.as_mut());
-          }
-        }
+        });
       }
-    });
+      Pass::Second => {}
+      Pass::Third => {
+        it.declarations.iter_mut().for_each(|decl| {
+          if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
+            let symbol_id = binding_identifier.symbol_id();
+            let symbol_store_item = self
+              .identifier_symbol_ids
+              .iter()
+              .find(|s| s.symbol_id == symbol_id);
+
+            if symbol_store_item.is_some() {
+              let css_exports = self
+                .css_module_exports
+                .get(&symbol_store_item.unwrap().fn_id);
+              if css_exports.is_none() {
+                return;
+              }
+              let css_exports = css_exports.unwrap();
+              let identifier_symbol_ids: Vec<SymbolStore> = vec![];
+
+              let mut classname_replacer = ClassNameReplacer {
+                allocator: self.allocator,
+                class_name_map: css_exports.clone(),
+                ast_builder: self.ast_builder,
+                scoping: self.scoping,
+                identifier_symbol_ids: identifier_symbol_ids,
+                fn_id: decl.span.start,
+                classname_util_symbols: self.classname_util_symbols.clone(),
+                variable_linking: self.variable_linking.clone(),
+              };
+
+              if decl.init.is_some() {
+                classname_replacer.update_expression(decl.init.as_mut());
+              }
+            }
+          }
+        });
+      }
+    }
+
+    walk_mut::walk_variable_declaration(self, it);
   }
 
   fn visit_arrow_function_expression(
     &mut self,
     it: &mut oxc_ast::ast::ArrowFunctionExpression<'a>,
   ) {
-    if self.pass == Pass::Second {
-      return walk_mut::walk_arrow_function_expression(self, it);
-    }
-
     let body = it.body.as_mut();
     self.process_function_body(body, it.span.start);
 
@@ -367,10 +412,6 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   }
 
   fn visit_function(&mut self, function: &mut Function<'a>, flags: ScopeFlags) {
-    if self.pass == Pass::Second {
-      return walk_mut::walk_function(self, function, flags);
-    }
-
     let body = function.body.as_mut().unwrap();
     self.process_function_body(body, function.span.start);
 
