@@ -2,7 +2,7 @@ use oxc::{
   ast_visit::{walk, Visit},
   semantic::{Scoping, SymbolId},
 };
-use oxc_ast::ast::{JSXChild, JSXElement, JSXElementName, JSXExpression};
+use oxc::ast::ast::{JSXChild, JSXElement, JSXElementName, JSXExpression};
 
 pub struct StyleDetector<'a> {
   scoping: &'a Scoping,
@@ -26,7 +26,7 @@ impl StyleDetector<'_> {
       css,
       scoping,
       style_tag_import_symbols,
-      style_tag_symbol_ids
+      style_tag_symbol_ids,
     }
   }
 

@@ -10,9 +10,17 @@ use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
 use lightningcss::css_modules::CssModuleExport;
+use napi::bindgen_prelude::Function as JsFunction;
 use napi::Env;
-use napi::JsFunction;
 use napi_derive::napi;
+use oxc::ast::ast::{
+  ArrowFunctionExpression, BindingPatternKind, FunctionBody, ImportDeclaration, ImportDeclarationSpecifier, ImportOrExportKind, JSXChild, Statement, VariableDeclaration
+};
+use oxc::ast::ast::{Expression, Program};
+use oxc::ast::NONE;
+use oxc::ast::{ast::Function, AstBuilder};
+use oxc::codegen::{Codegen, CodegenOptions};
+use oxc::span::SPAN;
 use oxc::{
   allocator::Allocator,
   ast::ast::SourceType,
@@ -20,15 +28,6 @@ use oxc::{
   parser::{Parser, ParserReturn},
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
-use oxc_ast::ast::{
-  BindingPatternKind, FunctionBody, ImportDeclarationSpecifier, ImportOrExportKind, JSXChild,
-  Statement,
-};
-use oxc_ast::ast::{Expression, Program};
-use oxc_ast::NONE;
-use oxc_ast::{ast::Function, AstBuilder};
-use oxc_codegen::{Codegen, CodegenOptions};
-use oxc_span::SPAN;
 
 #[derive(PartialEq, Debug, Clone)]
 enum Pass {
@@ -54,7 +53,7 @@ pub struct TransformOutput {
 
 pub fn transform(
   options: TransformOptions,
-  css_preprocessor: Option<JsFunction>,
+  css_preprocessor: Option<JsFunction<String, String>>,
   env: Option<Env>,
 ) -> Option<TransformOutput> {
   if !options.file_path.ends_with(".tsx") {
@@ -120,7 +119,7 @@ struct TransformVisitor<'a> {
   classname_util_symbols: Vec<SymbolId>,
   // local_class_name_util_functions: &'a mut Vec<String>,
   extracted_css: Vec<String>,
-  css_preprocessor: &'a Option<JsFunction>,
+  css_preprocessor: &'a Option<JsFunction<'a, String, String>>,
   ast_builder: AstBuilder<'a>,
   scoping: &'a Scoping,
   identifier_symbol_ids: Vec<SymbolStore>,
@@ -138,7 +137,7 @@ struct TransformVisitor<'a> {
 impl<'a> TransformVisitor<'a> {
   fn new(
     allocator: &'a Allocator,
-    css_preprocessor: &'a Option<JsFunction>,
+    css_preprocessor: &'a Option<JsFunction<'a, String, String>>,
     ast_builder: AstBuilder<'a>,
     scoping: &'a Scoping,
     file_path: String,
@@ -206,18 +205,8 @@ impl<'a> TransformVisitor<'a> {
         let css_string = {
           if self.js_env.is_some() {
             if let Some(preprocessor) = &self.css_preprocessor {
-              let input_js = self.js_env.as_ref().unwrap().create_string(&css).unwrap();
-              let result = preprocessor.call(None, &[input_js]).unwrap();
-              let returned_string = result
-                .coerce_to_string()
-                .unwrap()
-                .into_utf8()
-                .unwrap()
-                .as_str()
-                .unwrap()
-                .to_owned();
-
-              returned_string
+              let result = preprocessor.call(css).unwrap();
+              result
             } else {
               css.to_string()
             }
@@ -321,7 +310,7 @@ impl<'a> TransformVisitor<'a> {
 }
 
 impl<'a> VisitMut<'a> for TransformVisitor<'a> {
-  fn visit_import_declaration(&mut self, it: &mut oxc_ast::ast::ImportDeclaration<'a>) {
+  fn visit_import_declaration(&mut self, it: &mut ImportDeclaration<'a>) {
     if it.source.value == IMPORT_PATH {
       it.specifiers
         .as_ref()
@@ -343,13 +332,13 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     }
   }
 
-  fn visit_variable_declaration(&mut self, it: &mut oxc_ast::ast::VariableDeclaration<'a>) {
+  fn visit_variable_declaration(&mut self, it: &mut VariableDeclaration<'a>) {
     match self.pass {
       Pass::First => {
         it.declarations.iter_mut().for_each(|decl| {
           if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
             if let Some(init) = &decl.init {
-              if let oxc_ast::ast::Expression::Identifier(identifier) = init {
+              if let Expression::Identifier(identifier) = init {
                 let symbol_id = binding_identifier.symbol_id();
                 let reference = self.scoping.get_reference(identifier.reference_id());
                 let init_symbol_id = reference.symbol_id();
@@ -438,7 +427,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
 
   fn visit_arrow_function_expression(
     &mut self,
-    it: &mut oxc_ast::ast::ArrowFunctionExpression<'a>,
+    it: &mut ArrowFunctionExpression<'a>,
   ) {
     let body = it.body.as_mut();
     self.process_function_body(body, it.span.start);

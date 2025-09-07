@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use napi::{Env, JsFunction};
+use napi::{bindgen_prelude::Function, Env };
 
 use crate::transform::{TransformOptions, TransformOutput};
 
@@ -20,7 +20,7 @@ pub mod update_attribute;
 pub fn transform_code(
   env: Env,
   options: TransformOptions,
-  css_preprocessor: Option<JsFunction>,
+  css_preprocessor: Option<Function<String, String>>,
 ) -> Option<TransformOutput> {
   let time = Instant::now();
   println!("Starting transformation...");

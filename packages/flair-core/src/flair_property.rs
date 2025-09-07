@@ -1,12 +1,12 @@
 use oxc::semantic::Scoping;
 use oxc::semantic::SymbolId;
-use oxc_allocator::Allocator;
-use oxc_allocator::Box as OxcBox;
-use oxc_ast::ast::BindingPatternKind;
-use oxc_ast::ast::BooleanLiteral;
-use oxc_ast::ast::Function;
-use oxc_ast::ast::VariableDeclaration;
-use oxc_ast::ast::{AssignmentTarget, Expression};
+use oxc::allocator::Allocator;
+use oxc::allocator::Box as OxcBox;
+use oxc::ast::ast::BindingPatternKind;
+use oxc::ast::ast::BooleanLiteral;
+use oxc::ast::ast::Function;
+use oxc::ast::ast::VariableDeclaration;
+use oxc::ast::ast::{AssignmentTarget, Expression};
 use std::collections::HashMap;
 
 pub struct FlairProperty<'a> {

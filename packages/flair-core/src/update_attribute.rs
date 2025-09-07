@@ -2,12 +2,11 @@ use std::collections::HashMap;
 
 use lightningcss::css_modules::CssModuleExport;
 use oxc::{
-  ast_visit::{walk_mut, VisitMut},
-  semantic::{Scoping, SymbolId},
+  ast::ast::JSXAttribute, ast_visit::{walk_mut, VisitMut}, semantic::{Scoping, SymbolId}
 };
-use oxc_allocator::Allocator;
-use oxc_allocator::Box as OxcBox;
-use oxc_ast::{
+use oxc::allocator::Allocator;
+use oxc::allocator::Box as OxcBox;
+use oxc::ast::{
   ast::{
     ArrayExpression, BinaryExpression, BinaryOperator, CallExpression, ConditionalExpression,
     Expression, IdentifierReference, JSXAttributeName, JSXAttributeValue, JSXExpression,
@@ -177,10 +176,10 @@ impl<'a> ClassNameReplacer<'a> {
         self.update_identifier_expression(identifier_expression);
       }
       _ => {
-        println!(
-          "Unexpected expression type in className attribute {:#?}",
-          expression
-        );
+        // println!(
+        //   "Unexpected expression type in className attribute {:#?}",
+        //   expression
+        // );
       }
     }
   }
@@ -201,8 +200,9 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
         }
       }
     }
+    walk_mut::walk_call_expression(self, it);
   }
-  fn visit_jsx_attribute(&mut self, it: &mut oxc_ast::ast::JSXAttribute<'a>) {
+  fn visit_jsx_attribute(&mut self, it: &mut JSXAttribute<'a>) {
     if let JSXAttributeName::Identifier(ident) = &it.name {
       if ident.name == "className" {
         let value = it.value.as_mut().unwrap();
@@ -235,10 +235,10 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
               self.update_identifier_expression(identifier_expression);
             }
             _ => {
-              println!(
-                "ExpressionContainer found in className attribute: {:#?}",
-                expr_container
-              );
+              // println!(
+              //   "ExpressionContainer found in className attribute: {:#?}",
+              //   expr_container
+              // );
             }
           }
         }
