@@ -240,7 +240,7 @@ impl<'a> TransformVisitor<'a> {
     };
 
     let hash_string = format!("{:x}.css", hash);
-    let import_path = format!("jsx-styled-vite-plugin/cached-css/{}", hash_string);
+    let import_path = format!("@flairjs/css/cached-css/{}", hash_string);
     let import_statement = Statement::from(
       self.ast_builder.module_declaration_import_declaration(
         SPAN,
