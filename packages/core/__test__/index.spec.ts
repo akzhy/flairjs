@@ -10,6 +10,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const styleTagContent = readFileSync(path.resolve(__dirname, './utils/style-tag.tsx'), 'utf-8')
 const flairPropertyContent = readFileSync(path.resolve(__dirname, './utils/flair-string.tsx'), 'utf-8')
+const flairPropertyObjectContent = readFileSync(path.resolve(__dirname, './utils/flair-obj.tsx'), 'utf-8')
 
 test('style Tag is working', () => {
   const result = transformCode({
@@ -26,6 +27,18 @@ test('style Tag is working', () => {
 test('flair property string is working', () => {
   const result = transformCode({
     code: flairPropertyContent,
+    filePath: 'index.tsx',
+    cssOutDir: path.resolve(__dirname, './.css'),
+  })
+  if (!result) {
+    throw new Error('transformCode returned null or undefined')
+  }
+  expect(result.code).toMatchSnapshot()
+});
+
+test('flair property object is working', () => {
+  const result = transformCode({
+    code: flairPropertyObjectContent,
     filePath: 'index.tsx',
     cssOutDir: path.resolve(__dirname, './.css'),
   })
