@@ -1,12 +1,15 @@
-use oxc::semantic::Scoping;
-use oxc::semantic::SymbolId;
 use oxc::allocator::Allocator;
 use oxc::allocator::Box as OxcBox;
 use oxc::ast::ast::BindingPatternKind;
 use oxc::ast::ast::BooleanLiteral;
 use oxc::ast::ast::Function;
+use oxc::ast::ast::ObjectExpression;
+use oxc::ast::ast::ObjectPropertyKind;
+use oxc::ast::ast::PropertyKey;
 use oxc::ast::ast::VariableDeclaration;
 use oxc::ast::ast::{AssignmentTarget, Expression};
+use oxc::semantic::Scoping;
+use oxc::semantic::SymbolId;
 use std::collections::HashMap;
 
 pub struct FlairProperty<'a> {
@@ -77,7 +80,7 @@ impl<'a> FlairProperty<'a> {
     }
 
     let content = &assign.right;
-    let extracted_css = match content {
+    let extracted_css: String = match content {
       Expression::StringLiteral(string_value) => string_value.value.to_string(),
       Expression::TemplateLiteral(template_expression) => {
         let template_value = template_expression
@@ -89,9 +92,25 @@ impl<'a> FlairProperty<'a> {
 
         template_value
       }
-      _ => {
-        return;
+      Expression::CallExpression(call_expr) => {
+        match (
+          &call_expr.callee,
+          call_expr
+            .arguments
+            .get(0)
+            .and_then(|arg| arg.as_expression()),
+        ) {
+          (Expression::Identifier(identifier_calle), Some(Expression::ObjectExpression(obj)))
+            if identifier_calle.name == "flair" =>
+          {
+            let style = build_style_string_from_object(obj);
+            println!("Extracted style: {:#?}", style);
+            style
+          }
+          _ => String::from(""),
+        }
       }
+      _ => String::from(""),
     };
 
     self.style.insert(
@@ -131,4 +150,46 @@ fn get_item(expression: &Expression) -> Option<u32> {
     }
     _ => None,
   }
+}
+
+fn build_style_string_from_object(object_expression: &ObjectExpression) -> String {
+  let mut style_string = String::new();
+
+  for prop in &object_expression.properties {
+    if let ObjectPropertyKind::ObjectProperty(object_property) = prop {
+      let key = match &object_property.key {
+        PropertyKey::StringLiteral(string_key) => Some(string_key.value.as_str()),
+        PropertyKey::StaticIdentifier(identifier) => Some(identifier.name.as_str()),
+        _ => None,
+      };
+
+      let mut separator = String::from(":");
+      let mut suffix = String::from(";");
+
+      if let Some(key) = key {
+        let value = match &object_property.value {
+          Expression::StringLiteral(string_literal) => string_literal.value.to_string(),
+          Expression::NumericLiteral(numeric_literal) => numeric_literal.value.to_string(),
+          Expression::BooleanLiteral(boolean_literal) => {
+            if boolean_literal.value {
+              "true".to_string()
+            } else {
+              "false".to_string()
+            }
+          }
+          Expression::ObjectExpression(nested_object) => {
+            let object = nested_object.as_ref();
+            separator = String::from(" ");
+            suffix = String::from("");
+            format!("{{ {} }}", build_style_string_from_object(object))
+          }
+          _ => "".to_string(),
+        };
+
+        style_string.push_str(&format!("{}{separator} {}{suffix}\n", key, value));
+      }
+    }
+  }
+
+  style_string
 }
