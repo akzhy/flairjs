@@ -215,7 +215,13 @@ impl<'a> TransformVisitor<'a> {
           }
         };
 
-        let parsed_css = parse_css(&css_string).unwrap();
+        let parsed_css = parse_css(&css_string);
+
+        if let Err(err) = parsed_css {
+          eprintln!("Failed to parse CSS in function starting at {}: {:#?}. CSS: {}", fn_id, err, css_string);
+          return;
+        }
+        let parsed_css = parsed_css.unwrap();
         let css_exports = parsed_css.exports.as_ref().unwrap();
 
         self.css_module_exports.insert(*fn_id, css_exports.clone());
