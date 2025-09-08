@@ -1,9 +1,9 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`flair property string is working 1`] = `
-"import "jsx-styled-vite-plugin/cached-css/6091365a83003455.css";
+"import "@flairjs/css/cached-css/6091365a83003455.css";
 import clsx from "clsx";
-import { c, cn } from "jsx-styled-react";
+import { c, cn } from "@flairjs/react";
 import { useState } from "react";
 export const TestCaseComponent = () => {
 	const [case5, setCase5] = useState(false);
@@ -69,9 +69,9 @@ false;
 `;
 
 exports[`style Tag is working 1`] = `
-"import "jsx-styled-vite-plugin/cached-css/6091365a83003455.css";
+"import "@flairjs/css/cached-css/6091365a83003455.css";
 import clsx from "clsx";
-import { Style, c, cn } from "jsx-styled-react";
+import { Style, c, cn } from "@flairjs/react";
 import { useState } from "react";
 export const TestCaseComponent = () => {
 	const [case5, setCase5] = useState(false);

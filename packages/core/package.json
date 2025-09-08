@@ -65,6 +65,7 @@
   "devDependencies": {
     "@emnapi/core": "^1.4.5",
     "@emnapi/runtime": "^1.4.5",
+    "@flairjs/react": "workspace:*",
     "@napi-rs/cli": "^3.0.3",
     "@oxc-node/core": "^0.0.32",
     "@taplo/cli": "^0.7.0",

@@ -36,7 +36,7 @@ enum Pass {
   Third,
 }
 
-const IMPORT_PATH: &str = "jsx-styled-react";
+const IMPORT_PATH: &str = "@flairjs/react";
 
 #[napi(object)]
 pub struct TransformOptions {

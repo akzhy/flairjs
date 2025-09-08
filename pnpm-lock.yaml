@@ -16,6 +16,9 @@ importers:
       '@emnapi/runtime':
         specifier: ^1.4.5
         version: 1.5.0
+      '@flairjs/react':
+        specifier: workspace:*
+        version: link:../react-lib
       '@napi-rs/cli':
         specifier: ^3.0.3
         version: 3.1.5(@emnapi/runtime@1.5.0)(@types/node@22.18.1)
@@ -71,6 +74,9 @@ importers:
       '@types/react':
         specifier: ^19.1.0
         version: 19.1.12
+      csstype:
+        specifier: ^3.1.3
+        version: 3.1.3
       react:
         specifier: ^19.1.0
         version: 19.1.1

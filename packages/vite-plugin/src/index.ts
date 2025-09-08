@@ -1,4 +1,4 @@
-import { transform } from "jsx-styled-core";
+import { transformCode } from "@flairjs/core";
 import type { Plugin } from "vite";
 import { writeFileSync } from "fs";
 
@@ -11,10 +11,11 @@ export default function jsxStyledVitePlugin({
     name: "vite-plugin-jsx-styled",
     enforce: "pre",
     transform(code, id) {
-      const result = transform({
+      const result = transformCode({
         code,
         filePath: id,
-        cssPreprocessor,
+        // cssPreprocessor,
+        cssOutDir: ''
       });
 
       
