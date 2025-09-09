@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use lightningcss::css_modules::CssModuleExport;
 use oxc::allocator::Allocator;
 use oxc::allocator::Box as OxcBox;
+use oxc::ast::ast::StaticMemberExpression;
 use oxc::ast::ast::TemplateLiteral;
 use oxc::ast::{
   ast::{
@@ -95,6 +96,31 @@ impl<'a> ClassNameReplacer<'a> {
   }
 
   fn update_call_expression(&mut self, call_expression: &mut OxcBox<'a, CallExpression<'a>>) {
+    // Handling [].join(" ")
+    let CallExpression { callee, arguments, .. } = call_expression.as_mut();
+
+    if let Expression::StaticMemberExpression(static_member) = callee {
+      let StaticMemberExpression { property, object, .. } = static_member.as_mut();
+     
+      if let Expression::ArrayExpression(array_expression) = object {
+        let is_string_join = arguments.get(0).map_or(false, |arg| {
+          if let Some(expr) = arg.as_expression() {
+            if let Expression::StringLiteral(string_lit) = expr {
+              return string_lit.value.as_str() == " ";
+            }
+          }
+          false
+        });
+
+        if property.name == "join" && is_string_join {
+          array_expression.elements.iter_mut().for_each(|element| {
+            self.update_expression(element.as_expression_mut());
+          });
+          return;
+        }
+      }
+    }
+
     call_expression.arguments.iter_mut().for_each(|arg| {
       self.update_expression(arg.as_expression_mut());
     });
