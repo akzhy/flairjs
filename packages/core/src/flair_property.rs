@@ -104,7 +104,6 @@ impl<'a> FlairProperty<'a> {
             if identifier_calle.name == "flair" =>
           {
             let style = build_style_string_from_object(obj);
-            println!("Extracted style: {:#?}", style);
             style
           }
           _ => String::from(""),
