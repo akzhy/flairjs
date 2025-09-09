@@ -152,6 +152,24 @@ fn get_item(expression: &Expression) -> Option<u32> {
   }
 }
 
+fn camel_case_to_kebab_case(input: &str) -> String {
+  let mut result = String::new();
+  let mut chars = input.chars().peekable();
+  
+  while let Some(ch) = chars.next() {
+    if ch.is_uppercase() {
+      if !result.is_empty() {
+        result.push('-');
+      }
+      result.push(ch.to_lowercase().next().unwrap());
+    } else {
+      result.push(ch);
+    }
+  }
+  
+  result
+}
+
 fn build_style_string_from_object(object_expression: &ObjectExpression) -> String {
   let mut style_string = String::new();
 
@@ -186,7 +204,19 @@ fn build_style_string_from_object(object_expression: &ObjectExpression) -> Strin
           _ => "".to_string(),
         };
 
-        style_string.push_str(&format!("{}{separator} {}{suffix}\n", key, value));
+        // Convert camelCase to kebab-case only for CSS properties (when value is not an object)
+        let css_property_name = match &object_property.value {
+          Expression::ObjectExpression(_) => {
+            // This is a selector (nested object), don't convert the key
+            key.to_string()
+          }
+          _ => {
+            // This is a CSS property (string/number/boolean value), convert camelCase to kebab-case
+            camel_case_to_kebab_case(key)
+          }
+        };
+
+        style_string.push_str(&format!("{}{separator} {}{suffix}\n", css_property_name, value));
       }
     }
   }
