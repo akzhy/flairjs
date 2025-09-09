@@ -82,6 +82,7 @@ export const TestCaseComponent = () => {
       <div className={case13}>Case13</div>
       <div className={clsx(case14, 'case-14-2')}>Case14</div>
       <div className={case15Handler()}>Case15</div>
+      <div className={`case-16 case-16-1`}>Case16</div>
     </>
   )
 }
@@ -187,5 +188,9 @@ TestCaseComponent.flair = /*css*/ `
 
 .case-15 {
   color: rgb(255, 0, 15);
+}
+
+.case-16 {
+  color: rgb(255, 0, 16);
 }
 `;

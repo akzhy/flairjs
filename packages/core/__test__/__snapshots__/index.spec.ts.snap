@@ -62,6 +62,7 @@ export const TestCaseComponent = () => {
       <div className={case13}>Case13</div>
       <div className={clsx(case14, "case-14-2")}>Case14</div>
       <div className={case15Handler()}>Case15</div>
+      <div className={\`_8Z4fiW_case-16 case-16-1\`}>Case16</div>
     </>;
 };
 false;
@@ -130,6 +131,7 @@ export const TestCaseComponent = () => {
       <div className={case13}>Case13</div>
       <div className={clsx(case14, "case-14-2")}>Case14</div>
       <div className={case15Handler()}>Case15</div>
+      <div className={\`_8Z4fiW_case-16 case-16-1\`}>Case16</div>
     </>;
 };
 false;
@@ -198,6 +200,7 @@ export const TestCaseComponent = () => {
       <div className={case13}>Case13</div>
       <div className={clsx(case14, "case-14-2")}>Case14</div>
       <div className={case15Handler()}>Case15</div>
+      <div className={\`_8Z4fiW_case-16 case-16-1\`}>Case16</div>
       
     </>;
 };
