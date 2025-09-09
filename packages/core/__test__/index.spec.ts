@@ -1,7 +1,7 @@
 import { test, expect } from 'vitest'
 
 import { transformCode } from '../index'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 import path from 'node:path'
@@ -42,6 +42,17 @@ test('flair property object is working', () => {
     filePath: 'index.tsx',
     cssOutDir: path.resolve(__dirname, './.css'),
   })
+  const cssFiles = readdirSync(path.resolve(__dirname, './.css')).filter(f => f.endsWith('.css'));
+  const cssContent = readFileSync(path.resolve(__dirname, './.css', cssFiles[0]), 'utf-8');
+
+  transformCode({
+    code: styleTagContent,
+    filePath: 'index.tsx',
+    cssOutDir: path.resolve(__dirname, './.css'),
+  })
+  const styleTagCssContent = readFileSync(path.resolve(__dirname, './.css', cssFiles[0]), 'utf-8');
+  expect(cssContent).toBe(styleTagCssContent)
+  
   if (!result) {
     throw new Error('transformCode returned null or undefined')
   }
