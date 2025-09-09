@@ -43,7 +43,7 @@ export const TestCaseComponent = () => {
 	], { [case6_4]: true })}>
         Case6
       </div>
-      <div className={["case-7", "case-7-1"].join(" ")}>Case7</div>
+      <div className={["case-7", "_8Z4fiW_case-7-1"].join(" ")}>Case7</div>
       <button className={case8 ? "_8Z4fiW_case-8 _8Z4fiW_case-8-1" : "_8Z4fiW_case-8 _8Z4fiW_case-8-2"} onClick={() => {
 		setCase8((p) => !p);
 	}}>
@@ -112,7 +112,7 @@ export const TestCaseComponent = () => {
 	], { [case6_4]: true })}>
         Case6
       </div>
-      <div className={["case-7", "case-7-1"].join(" ")}>Case7</div>
+      <div className={["case-7", "_8Z4fiW_case-7-1"].join(" ")}>Case7</div>
       <button className={case8 ? "_8Z4fiW_case-8 _8Z4fiW_case-8-1" : "_8Z4fiW_case-8 _8Z4fiW_case-8-2"} onClick={() => {
 		setCase8((p) => !p);
 	}}>
@@ -181,7 +181,7 @@ export const TestCaseComponent = () => {
 	], { [case6_4]: true })}>
         Case6
       </div>
-      <div className={["case-7", "case-7-1"].join(" ")}>Case7</div>
+      <div className={["case-7", "_8Z4fiW_case-7-1"].join(" ")}>Case7</div>
       <button className={case8 ? "_8Z4fiW_case-8 _8Z4fiW_case-8-1" : "_8Z4fiW_case-8 _8Z4fiW_case-8-2"} onClick={() => {
 		setCase8((p) => !p);
 	}}>
