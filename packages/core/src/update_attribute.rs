@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
 use lightningcss::css_modules::CssModuleExport;
-use oxc::{
-  ast::ast::JSXAttribute, ast_visit::{walk_mut, VisitMut}, semantic::{Scoping, SymbolId}
-};
 use oxc::allocator::Allocator;
 use oxc::allocator::Box as OxcBox;
+use oxc::ast::ast::TemplateLiteral;
 use oxc::ast::{
   ast::{
     ArrayExpression, BinaryExpression, BinaryOperator, CallExpression, ConditionalExpression,
@@ -14,6 +12,11 @@ use oxc::ast::{
     StringLiteral,
   },
   AstBuilder,
+};
+use oxc::{
+  ast::ast::JSXAttribute,
+  ast_visit::{walk_mut, VisitMut},
+  semantic::{Scoping, SymbolId},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -49,7 +52,7 @@ impl<'a> ClassNameReplacer<'a> {
   }
 
   fn get_updated_classname(&self, class_name: &str) -> String {
-    let class_names: Vec<&str> = class_name.split_whitespace().collect();
+    let class_names: Vec<&str> = class_name.split(' ').collect();
     let mut updated_class_names = Vec::new();
 
     for class_name in class_names {
@@ -145,6 +148,19 @@ impl<'a> ClassNameReplacer<'a> {
     }
   }
 
+  fn update_template_expression(&mut self, template_expression: &mut OxcBox<'a, TemplateLiteral<'a>>) {
+    template_expression.quasis.iter_mut().for_each(|elem| {
+      let updated_class_names_str = self.get_updated_classname(&elem.value.raw);
+      let atom = self
+        .ast_builder
+        .atom(self.allocator.alloc_str(&updated_class_names_str));
+      elem.value.raw = atom;
+    });
+    template_expression.expressions.iter_mut().for_each(|expr| {
+      self.update_expression(Some(expr));
+    });
+  }
+
   pub fn update_expression(&mut self, expression: Option<&mut Expression<'a>>) {
     if expression.is_none() {
       return;
@@ -175,11 +191,14 @@ impl<'a> ClassNameReplacer<'a> {
       Expression::Identifier(identifier_expression) => {
         self.update_identifier_expression(identifier_expression);
       }
+      Expression::TemplateLiteral(template_expression) => {
+        self.update_template_expression(template_expression);
+      }
       _ => {
-        // println!(
-        //   "Unexpected expression type in className attribute {:#?}",
-        //   expression
-        // );
+        println!(
+          "Unexpected expression type in className attribute {:#?}",
+          expression
+        );
       }
     }
   }
