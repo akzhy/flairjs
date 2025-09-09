@@ -253,11 +253,14 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
             JSXExpression::Identifier(identifier_expression) => {
               self.update_identifier_expression(identifier_expression);
             }
+            JSXExpression::TemplateLiteral(template_expression) => {
+              self.update_template_expression(template_expression);
+            }
             _ => {
-              // println!(
-              //   "ExpressionContainer found in className attribute: {:#?}",
-              //   expr_container
-              // );
+              println!(
+                "ExpressionContainer found in className attribute: {:#?}",
+                expr_container
+              );
             }
           }
         }
