@@ -146,8 +146,14 @@ TestCaseComponent.flair = flair({
   '.case-11-1': {
     color: 'rgb(255, 0, 11)',
   },
+  '.case-11-2': {
+    backgroundColor: 'rgb(255, 0, 11)',
+  },
   '.case-12-1': {
     color: 'rgb(255, 0, 12)',
+  },
+  '.case-12-2': {
+    backgroundColor: 'rgb(255, 0, 12)',
   },
   '.case-13': {
     color: 'rgb(255, 0, 13)',

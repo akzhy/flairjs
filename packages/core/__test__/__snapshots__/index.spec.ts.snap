@@ -16,9 +16,9 @@ export const TestCaseComponent = () => {
 	const case9_2 = "case-9 _8Z4fiW_case-9-2";
 	const case10 = "case-10";
 	const case11_1 = "case-11-1";
-	const case11 = \`case-11 \${case11_1} case-11-2\`;
+	const case11 = \`case-11 \${case11_1} _8Z4fiW_case-11-2\`;
 	const case12_1 = "case-12-1";
-	const case12 = "case-12" + case12_1 + "case-12-2";
+	const case12 = "case-12 " + case12_1 + " _8Z4fiW_case-12-2";
 	const case13 = c("_8Z4fiW_case-13 case-13-1");
 	const case14 = cn("_8Z4fiW_case-14 case-14-1");
 	const case15Handler = () => {
@@ -43,7 +43,7 @@ export const TestCaseComponent = () => {
 	], { [case6_4]: true })}>
         Case6
       </div>
-      <div className={["case-7", "case-7-1"].join("")}>Case7</div>
+      <div className={["case-7", "case-7-1"].join(" ")}>Case7</div>
       <button className={case8 ? "_8Z4fiW_case-8 _8Z4fiW_case-8-1" : "_8Z4fiW_case-8 _8Z4fiW_case-8-2"} onClick={() => {
 		setCase8((p) => !p);
 	}}>
@@ -84,9 +84,9 @@ export const TestCaseComponent = () => {
 	const case9_2 = "case-9 _8Z4fiW_case-9-2";
 	const case10 = "case-10";
 	const case11_1 = "case-11-1";
-	const case11 = \`case-11 \${case11_1} case-11-2\`;
+	const case11 = \`case-11 \${case11_1} _8Z4fiW_case-11-2\`;
 	const case12_1 = "case-12-1";
-	const case12 = "case-12" + case12_1 + "case-12-2";
+	const case12 = "case-12 " + case12_1 + " _8Z4fiW_case-12-2";
 	const case13 = c("_8Z4fiW_case-13 case-13-1");
 	const case14 = cn("_8Z4fiW_case-14 case-14-1");
 	const case15Handler = () => {
@@ -111,7 +111,7 @@ export const TestCaseComponent = () => {
 	], { [case6_4]: true })}>
         Case6
       </div>
-      <div className={["case-7", "case-7-1"].join("")}>Case7</div>
+      <div className={["case-7", "case-7-1"].join(" ")}>Case7</div>
       <button className={case8 ? "_8Z4fiW_case-8 _8Z4fiW_case-8-1" : "_8Z4fiW_case-8 _8Z4fiW_case-8-2"} onClick={() => {
 		setCase8((p) => !p);
 	}}>
@@ -152,9 +152,9 @@ export const TestCaseComponent = () => {
 	const case9_2 = "case-9 _8Z4fiW_case-9-2";
 	const case10 = "case-10";
 	const case11_1 = "case-11-1";
-	const case11 = \`case-11 \${case11_1} case-11-2\`;
+	const case11 = \`case-11 \${case11_1} _8Z4fiW_case-11-2\`;
 	const case12_1 = "case-12-1";
-	const case12 = "case-12" + case12_1 + "case-12-2";
+	const case12 = "case-12 " + case12_1 + " _8Z4fiW_case-12-2";
 	const case13 = c("_8Z4fiW_case-13 case-13-1");
 	const case14 = cn("_8Z4fiW_case-14 case-14-1");
 	const case15Handler = () => {
@@ -179,7 +179,7 @@ export const TestCaseComponent = () => {
 	], { [case6_4]: true })}>
         Case6
       </div>
-      <div className={["case-7", "case-7-1"].join("")}>Case7</div>
+      <div className={["case-7", "case-7-1"].join(" ")}>Case7</div>
       <button className={case8 ? "_8Z4fiW_case-8 _8Z4fiW_case-8-1" : "_8Z4fiW_case-8 _8Z4fiW_case-8-2"} onClick={() => {
 		setCase8((p) => !p);
 	}}>

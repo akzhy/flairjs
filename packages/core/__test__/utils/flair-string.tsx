@@ -165,8 +165,16 @@ TestCaseComponent.flair = /*css*/ `
   color: rgb(255, 0, 11);
 }
 
+.case-11-2 {
+  background-color: rgb(255, 0, 11);
+}
+
 .case-12-1 {
   color: rgb(255, 0, 12);
+}
+
+.case-12-2 {
+  background-color: rgb(255, 0, 12);
 }
 
 .case-13 {
