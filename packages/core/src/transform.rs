@@ -10,6 +10,7 @@ use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
 use lightningcss::css_modules::CssModuleExport;
+use napi::bindgen_prelude::Function as NapiFunction;
 use napi::Env;
 use napi_derive::napi;
 use oxc::ast::ast::{
@@ -28,8 +29,6 @@ use oxc::{
   parser::{Parser, ParserReturn},
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
-use napi::bindgen_prelude::Function as NapiFunction;
-
 
 #[derive(PartialEq, Debug, Clone)]
 enum Pass {
@@ -217,7 +216,7 @@ impl<'a> TransformVisitor<'a> {
           }
         };
 
-        let parsed_css = parse_css(&css_string);
+        let parsed_css = parse_css(&css_string, &format!("{}:{}", self.file_path, fn_id));
 
         if let Err(err) = parsed_css {
           eprintln!(
