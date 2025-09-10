@@ -14,7 +14,8 @@ use napi::bindgen_prelude::Function as JsFunction;
 use napi::Env;
 use napi_derive::napi;
 use oxc::ast::ast::{
-  ArrowFunctionExpression, BindingPatternKind, FunctionBody, ImportDeclaration, ImportDeclarationSpecifier, ImportOrExportKind, JSXChild, Statement, VariableDeclaration
+  ArrowFunctionExpression, BindingPatternKind, FunctionBody, ImportDeclaration,
+  ImportDeclarationSpecifier, ImportOrExportKind, JSXChild, Statement, VariableDeclaration,
 };
 use oxc::ast::ast::{Expression, Program};
 use oxc::ast::NONE;
@@ -28,6 +29,8 @@ use oxc::{
   parser::{Parser, ParserReturn},
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
+use napi::bindgen_prelude::Function as NapiFunction;
+
 
 #[derive(PartialEq, Debug, Clone)]
 enum Pass {
@@ -39,10 +42,10 @@ enum Pass {
 const IMPORT_PATH: &str = "@flairjs/react";
 
 #[napi(object)]
-pub struct TransformOptions {
-  pub code: String,
-  pub file_path: String,
+pub struct TransformOptions<'a> {
   pub css_out_dir: String,
+  pub classname_list: Option<Vec<String>>,
+  pub css_preprocessor: Option<NapiFunction<'a, String, String>>,
 }
 
 #[napi(object)]
@@ -52,21 +55,21 @@ pub struct TransformOutput {
 }
 
 pub fn transform(
+  code: String,
+  file_path: String,
   options: TransformOptions,
-  css_preprocessor: Option<JsFunction<String, String>>,
   env: Option<Env>,
 ) -> Option<TransformOutput> {
-  if !options.file_path.ends_with(".tsx") {
+  if !file_path.ends_with(".tsx") {
     return None;
   }
 
   let allocator = Allocator::default();
-  let source_type = SourceType::from_path(&options.file_path).unwrap();
+  let source_type = SourceType::from_path(&file_path).unwrap();
 
-  let sourcemap_file_path = options.file_path.clone();
+  let sourcemap_file_path = file_path.clone();
 
-  let ParserReturn { mut program, .. } =
-    Parser::new(&allocator, &options.code, source_type).parse();
+  let ParserReturn { mut program, .. } = Parser::new(&allocator, &code, source_type).parse();
 
   let semantic_builder = SemanticBuilder::new().build(&program);
 
@@ -79,11 +82,10 @@ pub fn transform(
   // Traverse the AST
   let mut visitor = TransformVisitor::new(
     &allocator,
-    &css_preprocessor,
     ast_builder,
     &scoping,
-    options.file_path.clone(),
-    options.css_out_dir.clone(),
+    file_path.clone(),
+    options,
     env,
   );
 
@@ -114,19 +116,18 @@ pub fn transform(
 
 struct TransformVisitor<'a> {
   allocator: &'a Allocator,
+  options: TransformOptions<'a>,
   // local_style_tag_name: &'a mut String,
   style_tag_import_symbols: Vec<SymbolId>,
   classname_util_symbols: Vec<SymbolId>,
   // local_class_name_util_functions: &'a mut Vec<String>,
   extracted_css: Vec<String>,
-  css_preprocessor: &'a Option<JsFunction<'a, String, String>>,
   ast_builder: AstBuilder<'a>,
   scoping: &'a Scoping,
   identifier_symbol_ids: Vec<SymbolStore>,
   pass: Pass,
   css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
   file_path: String,
-  css_out_dir: String,
   js_env: Option<Env>,
   function_id_to_raw_css_mapping: HashMap<u32, Vec<String>>,
   variable_linking: HashMap<SymbolId, SymbolId>,
@@ -137,11 +138,10 @@ struct TransformVisitor<'a> {
 impl<'a> TransformVisitor<'a> {
   fn new(
     allocator: &'a Allocator,
-    css_preprocessor: &'a Option<JsFunction<'a, String, String>>,
     ast_builder: AstBuilder<'a>,
     scoping: &'a Scoping,
     file_path: String,
-    css_out_dir: String,
+    options: TransformOptions<'a>,
     js_env: Option<Env>,
   ) -> Self {
     let extracted_css = vec![];
@@ -162,14 +162,13 @@ impl<'a> TransformVisitor<'a> {
       classname_util_symbols,
       extracted_css,
       variable_linking,
-      css_preprocessor,
       ast_builder,
       scoping,
       identifier_symbol_ids,
       pass: Pass::First,
       css_module_exports,
       file_path,
-      css_out_dir,
+      options,
       js_env,
       function_id_to_raw_css_mapping: function_id_to_style_mapping,
       flair_property_visitor,
@@ -204,7 +203,7 @@ impl<'a> TransformVisitor<'a> {
 
         let css_string = {
           if self.js_env.is_some() {
-            if let Some(preprocessor) = &self.css_preprocessor {
+            if let Some(preprocessor) = &self.options.css_preprocessor {
               let result = preprocessor.call(css).unwrap();
               result
             } else {
@@ -218,7 +217,10 @@ impl<'a> TransformVisitor<'a> {
         let parsed_css = parse_css(&css_string);
 
         if let Err(err) = parsed_css {
-          eprintln!("Failed to parse CSS in function starting at {}: {:#?}. CSS: {}", fn_id, err, css_string);
+          eprintln!(
+            "Failed to parse CSS in function starting at {}: {:#?}. CSS: {}",
+            fn_id, err, css_string
+          );
           return;
         }
         let parsed_css = parsed_css.unwrap();
@@ -260,11 +262,11 @@ impl<'a> TransformVisitor<'a> {
       ),
     );
 
-    let file = File::create(format!("{}/{}", self.css_out_dir, hash_string));
+    let file = File::create(format!("{}/{}", self.options.css_out_dir, hash_string));
     if file.is_err() {
       eprintln!(
         "Failed to create file in css_out_dir: {}, reason {:#?}",
-        self.css_out_dir,
+        self.options.css_out_dir,
         file.err()
       );
       return;
@@ -304,6 +306,11 @@ impl<'a> TransformVisitor<'a> {
           fn_id: fn_start,
           classname_util_symbols: self.classname_util_symbols.clone(),
           variable_linking: self.variable_linking.clone(),
+          classname_list: self
+            .options
+            .classname_list
+            .clone()
+            .unwrap_or(vec!["className".to_string(), "class".to_string()]),
         };
 
         classname_replacer.visit_function_body(body);
@@ -388,6 +395,11 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
                 fn_id: decl.span.start,
                 classname_util_symbols: self.classname_util_symbols.clone(),
                 variable_linking: self.variable_linking.clone(),
+                classname_list: self
+                  .options
+                  .classname_list
+                  .clone()
+                  .unwrap_or(vec!["className".to_string(), "class".to_string()]),
               };
 
               if decl.init.is_some() {
@@ -431,10 +443,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     walk_mut::walk_expression(self, it);
   }
 
-  fn visit_arrow_function_expression(
-    &mut self,
-    it: &mut ArrowFunctionExpression<'a>,
-  ) {
+  fn visit_arrow_function_expression(&mut self, it: &mut ArrowFunctionExpression<'a>) {
     let body = it.body.as_mut();
     self.process_function_body(body, it.span.start);
 

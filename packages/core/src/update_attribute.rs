@@ -41,6 +41,7 @@ pub struct ClassNameReplacer<'a> {
   pub fn_id: u32,
   pub classname_util_symbols: Vec<SymbolId>,
   pub variable_linking: HashMap<SymbolId, SymbolId>,
+  pub classname_list: Vec<String>,
 }
 
 impl<'a> ClassNameReplacer<'a> {
