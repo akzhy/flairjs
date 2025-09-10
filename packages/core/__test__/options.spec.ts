@@ -11,7 +11,7 @@ const __dirname = dirname(__filename)
 
 const classNameListContent = readFileSync(path.resolve(__dirname, './snippets/class-name-list.tsx'), 'utf-8')
 
-describe('Core tests', () => {
+describe('Options tests', () => {
   test('class name list is working', () => {
     const regex = new RegExp("^class[A-Z][A-Za-z0-9_]*");
     const result = transformCode(classNameListContent, 'index.tsx', {

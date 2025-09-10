@@ -40,11 +40,8 @@ describe('Core tests', () => {
     const cssFiles = readdirSync(path.resolve(__dirname, './.css')).filter((f) => f.endsWith('.css'))
     const cssContent = readFileSync(path.resolve(__dirname, './.css', cssFiles[0]), 'utf-8')
 
-    transformCode(flairPropertyContent, 'index.tsx', {
-      cssOutDir: path.resolve(__dirname, './.css'),
-    })
-    const styleTagCssContent = readFileSync(path.resolve(__dirname, './.css', cssFiles[0]), 'utf-8')
-    expect(cssContent).toBe(styleTagCssContent)
+
+    expect(cssContent).toMatchSnapshot()
 
     if (!result) {
       throw new Error('transformCode returned null or undefined')
