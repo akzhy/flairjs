@@ -19,6 +19,7 @@ use oxc::{
   ast_visit::{walk_mut, VisitMut},
   semantic::{Scoping, SymbolId},
 };
+use regex::Regex;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SymbolStore {
@@ -41,7 +42,7 @@ pub struct ClassNameReplacer<'a> {
   pub fn_id: u32,
   pub classname_util_symbols: Vec<SymbolId>,
   pub variable_linking: HashMap<SymbolId, SymbolId>,
-  pub classname_list: Vec<String>,
+  pub class_name_list: Vec<String>,
 }
 
 impl<'a> ClassNameReplacer<'a> {
@@ -51,6 +52,21 @@ impl<'a> ClassNameReplacer<'a> {
 
   pub fn get_identifier_symbol_ids(&self) -> &Vec<SymbolStore> {
     &self.identifier_symbol_ids
+  }
+
+  fn classname_in_list(&self, class_name: &str) -> bool {
+    let item = self.class_name_list.iter().find(|item| {
+      // Check if the item is a regex pattern
+      if item.starts_with("/") && item.ends_with("/") {
+        let pattern = &item[1..item.len() - 1];
+        if let Ok(re) = Regex::new(pattern) {
+          return re.is_match(class_name);
+        }
+      }
+      return *item == class_name;
+    });
+
+    item.is_some()
   }
 
   fn get_updated_classname(&self, class_name: &str) -> String {
@@ -98,11 +114,15 @@ impl<'a> ClassNameReplacer<'a> {
 
   fn update_call_expression(&mut self, call_expression: &mut OxcBox<'a, CallExpression<'a>>) {
     // Handling [].join(" ")
-    let CallExpression { callee, arguments, .. } = call_expression.as_mut();
+    let CallExpression {
+      callee, arguments, ..
+    } = call_expression.as_mut();
 
     if let Expression::StaticMemberExpression(static_member) = callee {
-      let StaticMemberExpression { property, object, .. } = static_member.as_mut();
-     
+      let StaticMemberExpression {
+        property, object, ..
+      } = static_member.as_mut();
+
       if let Expression::ArrayExpression(array_expression) = object {
         let is_string_join = arguments.get(0).map_or(false, |arg| {
           if let Some(expr) = arg.as_expression() {
@@ -175,7 +195,10 @@ impl<'a> ClassNameReplacer<'a> {
     }
   }
 
-  fn update_template_expression(&mut self, template_expression: &mut OxcBox<'a, TemplateLiteral<'a>>) {
+  fn update_template_expression(
+    &mut self,
+    template_expression: &mut OxcBox<'a, TemplateLiteral<'a>>,
+  ) {
     template_expression.quasis.iter_mut().for_each(|elem| {
       let updated_class_names_str = self.get_updated_classname(&elem.value.raw);
       let atom = self
@@ -250,7 +273,7 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
   }
   fn visit_jsx_attribute(&mut self, it: &mut JSXAttribute<'a>) {
     if let JSXAttributeName::Identifier(ident) = &it.name {
-      if ident.name == "className" {
+      if self.classname_in_list(&ident.name) {
         let value = it.value.as_mut().unwrap();
 
         if let JSXAttributeValue::StringLiteral(string_value) = value {

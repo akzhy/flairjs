@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use napi::bindgen_prelude::Env;
+use napi::bindgen_prelude::{Env, Function};
 
 use crate::transform::{TransformOptions, TransformOutput};
 
@@ -21,15 +21,15 @@ pub fn transform_code(
   code: String,
   file_path: String,
   options: TransformOptions,
+  css_preprocessor: Option<Function<String, String>>,
 ) -> Option<TransformOutput> {
   let time = Instant::now();
   println!("Starting transformation...");
   let options = transform::TransformOptions {
     css_out_dir: options.css_out_dir,
-    classname_list: options.classname_list,
-    css_preprocessor: options.css_preprocessor,
+    class_name_list: options.class_name_list,
   };
-  let result = transform::transform(code, file_path, options, Some(env));
+  let result = transform::transform(code, file_path, options, css_preprocessor, Some(env));
   let duration = time.elapsed();
   println!("Transformation completed in {:?}", duration);
   result

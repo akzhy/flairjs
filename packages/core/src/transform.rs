@@ -10,7 +10,6 @@ use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
 use lightningcss::css_modules::CssModuleExport;
-use napi::bindgen_prelude::Function as JsFunction;
 use napi::Env;
 use napi_derive::napi;
 use oxc::ast::ast::{
@@ -42,10 +41,9 @@ enum Pass {
 const IMPORT_PATH: &str = "@flairjs/react";
 
 #[napi(object)]
-pub struct TransformOptions<'a> {
+pub struct TransformOptions {
   pub css_out_dir: String,
-  pub classname_list: Option<Vec<String>>,
-  pub css_preprocessor: Option<NapiFunction<'a, String, String>>,
+  pub class_name_list: Option<Vec<String>>,
 }
 
 #[napi(object)]
@@ -58,6 +56,7 @@ pub fn transform(
   code: String,
   file_path: String,
   options: TransformOptions,
+  css_preprocessor: Option<NapiFunction<String, String>>,
   env: Option<Env>,
 ) -> Option<TransformOutput> {
   if !file_path.ends_with(".tsx") {
@@ -86,6 +85,7 @@ pub fn transform(
     &scoping,
     file_path.clone(),
     options,
+    &css_preprocessor,
     env,
   );
 
@@ -116,7 +116,8 @@ pub fn transform(
 
 struct TransformVisitor<'a> {
   allocator: &'a Allocator,
-  options: TransformOptions<'a>,
+  options: TransformOptions,
+  css_preprocessor: &'a Option<NapiFunction<'a, String, String>>,
   // local_style_tag_name: &'a mut String,
   style_tag_import_symbols: Vec<SymbolId>,
   classname_util_symbols: Vec<SymbolId>,
@@ -141,7 +142,8 @@ impl<'a> TransformVisitor<'a> {
     ast_builder: AstBuilder<'a>,
     scoping: &'a Scoping,
     file_path: String,
-    options: TransformOptions<'a>,
+    options: TransformOptions,
+    css_preprocessor: &'a Option<NapiFunction<'a, String, String>>,
     js_env: Option<Env>,
   ) -> Self {
     let extracted_css = vec![];
@@ -157,6 +159,7 @@ impl<'a> TransformVisitor<'a> {
 
     Self {
       allocator,
+      css_preprocessor,
       style_tag_import_symbols,
       style_tag_symbols,
       classname_util_symbols,
@@ -203,7 +206,7 @@ impl<'a> TransformVisitor<'a> {
 
         let css_string = {
           if self.js_env.is_some() {
-            if let Some(preprocessor) = &self.options.css_preprocessor {
+            if let Some(preprocessor) = &self.css_preprocessor {
               let result = preprocessor.call(css).unwrap();
               result
             } else {
@@ -306,9 +309,9 @@ impl<'a> TransformVisitor<'a> {
           fn_id: fn_start,
           classname_util_symbols: self.classname_util_symbols.clone(),
           variable_linking: self.variable_linking.clone(),
-          classname_list: self
+          class_name_list: self
             .options
-            .classname_list
+            .class_name_list
             .clone()
             .unwrap_or(vec!["className".to_string(), "class".to_string()]),
         };
@@ -395,9 +398,9 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
                 fn_id: decl.span.start,
                 classname_util_symbols: self.classname_util_symbols.clone(),
                 variable_linking: self.variable_linking.clone(),
-                classname_list: self
+                class_name_list: self
                   .options
-                  .classname_list
+                  .class_name_list
                   .clone()
                   .unwrap_or(vec!["className".to_string(), "class".to_string()]),
               };
