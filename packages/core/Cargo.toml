@@ -13,6 +13,7 @@ lightningcss = { version = "1.0.0-alpha.67", features = ["browserslist"] }
 napi = "3.0.0"
 napi-derive = "3.0.0"
 oxc = {version = "0.86.0", features = ["semantic", "ast_visit", "codegen"]}
+regex = "1.11.2"
 
 [build-dependencies]
 napi-build = "2"
