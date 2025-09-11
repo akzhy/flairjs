@@ -5,12 +5,16 @@ use lightningcss::{
   targets::{Browsers, Features, Targets},
 };
 
-pub fn parse_css(css: &str, filename: &str) -> Result<ToCssResult, String> {
+pub fn parse_css(css: &str, filename: &str, module: bool) -> Result<ToCssResult, String> {
   let parser_options = ParserOptions {
     filename: filename.to_string(),
-    css_modules: Some(css_modules::Config {
-      ..Default::default()
-    }),
+    css_modules: if module {
+      Some(css_modules::Config {
+        ..Default::default()
+      })
+    } else {
+      None
+    },
     ..Default::default()
   };
 

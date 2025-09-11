@@ -1,14 +1,19 @@
+use oxc::ast::ast::{
+  JSXAttributeItem, JSXAttributeValue, JSXChild, JSXElement, JSXElementName, JSXExpression,
+};
 use oxc::{
+  ast::ast::JSXAttributeName,
   ast_visit::{walk, Visit},
   semantic::{Scoping, SymbolId},
 };
-use oxc::ast::ast::{JSXChild, JSXElement, JSXElementName, JSXExpression};
+
+use crate::transform::CSSData;
 
 pub struct StyleDetector<'a> {
   scoping: &'a Scoping,
   style_tag_import_symbols: &'a Vec<SymbolId>,
   style_tag_symbol_ids: Vec<u32>,
-  pub css: Vec<String>,
+  pub css: Vec<CSSData>,
   pub has_style: bool,
 }
 
@@ -52,6 +57,8 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
 
         let mut extracted_css: String = "".to_string();
 
+        let is_global = check_if_global(jsx);
+
         for child in children_iter {
           if let JSXChild::Text(child_text) = child {
             extracted_css.push_str(&child_text.value);
@@ -69,10 +76,35 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
             }
           }
         }
-        self.css.push(extracted_css);
+        self.css.push(CSSData {
+          raw_css: extracted_css,
+          is_global,
+        });
       }
     }
 
     walk::walk_jsx_element(self, jsx);
   }
+}
+
+fn check_if_global(jsx: &JSXElement) -> bool {
+  jsx.opening_element.attributes.iter().any(|attr_item| {
+    match attr_item {
+      JSXAttributeItem::Attribute(attr) => {
+        match &attr.name {
+          JSXAttributeName::Identifier(ident) if ident.name == "global" => {
+            match &attr.value {
+              Some(JSXAttributeValue::ExpressionContainer(expr)) => {
+                matches!(&expr.expression, JSXExpression::BooleanLiteral(bool_lit) if bool_lit.value)
+              }
+              None => true, // If the attribute is present without a value, treat it as true
+              _ => false,
+            }
+          }
+          _ => false,
+        }
+      }
+      _ => false,
+    }
+  })
 }

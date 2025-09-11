@@ -10,6 +10,7 @@ use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
 use lightningcss::css_modules::CssModuleExport;
+use lightningcss::stylesheet::ToCssResult;
 use napi::bindgen_prelude::Function as NapiFunction;
 use napi::Env;
 use napi_derive::napi;
@@ -113,6 +114,12 @@ pub fn transform(
   })
 }
 
+#[derive(Clone, Debug)]
+pub struct CSSData {
+  pub raw_css: String,
+  pub is_global: bool,
+}
+
 struct TransformVisitor<'a> {
   allocator: &'a Allocator,
   options: TransformOptions,
@@ -129,7 +136,7 @@ struct TransformVisitor<'a> {
   css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
   file_path: String,
   js_env: Option<Env>,
-  function_id_to_raw_css_mapping: HashMap<u32, Vec<String>>,
+  function_id_to_raw_css_mapping: HashMap<u32, Vec<CSSData>>,
   variable_linking: HashMap<SymbolId, SymbolId>,
   flair_property_visitor: FlairProperty<'a>,
   style_tag_symbols: Vec<u32>,
@@ -180,61 +187,7 @@ impl<'a> TransformVisitor<'a> {
   fn begin(&mut self, program: &mut Program<'a>) {
     self.visit_program(program);
 
-    let flair_styles = self.flair_property_visitor.get_style();
-
-    flair_styles.iter().for_each(|(span_start, style)| {
-      if self.function_id_to_raw_css_mapping.contains_key(span_start) {
-        self
-          .function_id_to_raw_css_mapping
-          .get_mut(span_start)
-          .unwrap()
-          .push(style.to_string());
-        return;
-      }
-
-      self
-        .function_id_to_raw_css_mapping
-        .insert(*span_start, vec![style.to_string()]);
-    });
-
-    self
-      .function_id_to_raw_css_mapping
-      .iter()
-      .for_each(|(fn_id, styles)| {
-        let css = styles.join("\n");
-
-        let css_string = {
-          if self.js_env.is_some() {
-            if let Some(preprocessor) = &self.css_preprocessor {
-              let result = preprocessor.call(css).unwrap();
-              result
-            } else {
-              css.to_string()
-            }
-          } else {
-            css.to_string()
-          }
-        };
-
-        let parsed_css = parse_css(&css_string, &format!("{}:{}", self.file_path, fn_id));
-
-        if let Err(err) = parsed_css {
-          eprintln!(
-            "Failed to parse CSS in function starting at {}: {:#?}. CSS: {}",
-            fn_id, err, css_string
-          );
-          return;
-        }
-        let parsed_css = parsed_css.unwrap();
-        let css_exports = parsed_css.exports.as_ref().unwrap();
-
-        self.css_module_exports.insert(*fn_id, css_exports.clone());
-
-        self.extracted_css.push(parsed_css.code);
-      });
-
-    // //   let parsed_css = parse_css(&css_string).unwrap();
-    // //   let css_exports = parsed_css.exports.as_ref().unwrap();
+    self.process_css();
 
     self.pass = Pass::Second;
 
@@ -279,6 +232,129 @@ impl<'a> TransformVisitor<'a> {
       .unwrap();
 
     program.body.insert(0, import_statement);
+  }
+
+  /// Process the collected CSS data, apply preprocessing and parsing, and store the results.
+  /// Global CSS is pushed to extracted_css after lightningcss processing.
+  /// Scoped CSS is processed with lightningcss and its module exports are stored in css_module_exports.
+  fn process_css(&mut self) {
+    let flair_styles = self.flair_property_visitor.get_style();
+
+    flair_styles.iter().for_each(|(span_start, style)| {
+      if self.function_id_to_raw_css_mapping.contains_key(span_start) {
+        self
+          .function_id_to_raw_css_mapping
+          .get_mut(span_start)
+          .unwrap()
+          .push(style.to_owned());
+        return;
+      }
+
+      self
+        .function_id_to_raw_css_mapping
+        .insert(*span_start, vec![style.to_owned()]);
+    });
+
+    self
+      .function_id_to_raw_css_mapping
+      .iter()
+      .for_each(|(fn_id, styles)| {
+        let (scoped_css, global_css) = {
+          let mut scoped_css: Option<String> = None;
+          let mut global_css: Option<String> = None;
+          styles.iter().for_each(|style| {
+            if style.is_global {
+              global_css
+                .get_or_insert_with(String::new)
+                .push_str(&style.raw_css);
+            } else {
+              scoped_css
+                .get_or_insert_with(String::new)
+                .push_str(&style.raw_css);
+            }
+          });
+
+          (scoped_css, global_css)
+        };
+
+        let (preprocessed_scoped_css, preprocessed_global_css) = {
+          if self.js_env.is_some() {
+            if let Some(preprocessor) = &self.css_preprocessor {
+              let scoped_result = match scoped_css {
+                None => None,
+                Some(ref original) => Some(
+                  preprocessor
+                    .call(original.clone())
+                    .unwrap_or(original.clone()),
+                ),
+              };
+
+              let global_result = match global_css {
+                None => None,
+                Some(ref original) => Some(
+                  preprocessor
+                    .call(original.clone())
+                    .unwrap_or(original.clone()),
+                ),
+              };
+
+              (scoped_result, global_result)
+            } else {
+              (scoped_css, global_css)
+            }
+          } else {
+            (scoped_css, global_css)
+          }
+        };
+
+        let parsed_scoped_css: Option<ToCssResult> =
+          preprocessed_scoped_css.clone().and_then(|css| {
+            let res = parse_css(&css, &format!("{}:{}", self.file_path, fn_id), true);
+
+            match res {
+              Ok(val) => Some(val),
+              Err(_) => {
+                eprintln!(
+                  "Failed to parse CSS in function starting at {}: {:#?}. CSS: {:#?}",
+                  fn_id,
+                  res.err(),
+                  preprocessed_scoped_css
+                );
+                None
+              }
+            }
+          });
+
+        let parsed_global_css: Option<ToCssResult> =
+          preprocessed_global_css.clone().and_then(|css| {
+            let res = parse_css(&css, &format!("{}:{}", self.file_path, fn_id), false);
+
+            match res {
+              Ok(val) => Some(val),
+              Err(_) => {
+                eprintln!(
+                  "Failed to parse CSS in function starting at {}: {:#?}. CSS: {:#?}",
+                  fn_id,
+                  res.err(),
+                  preprocessed_global_css
+                );
+                None
+              }
+            }
+          });
+
+        if let Some(parsed_scoped_css) = parsed_scoped_css {
+          let css_exports = parsed_scoped_css.exports.as_ref().unwrap();
+
+          self.css_module_exports.insert(*fn_id, css_exports.clone());
+
+          self.extracted_css.push(parsed_scoped_css.code);
+        }
+
+        if let Some(parsed_global_css) = parsed_global_css {
+          self.extracted_css.push(parsed_global_css.code);
+        }
+      });
   }
 
   fn process_function_body(&mut self, body: &mut FunctionBody<'a>, fn_start: u32) {

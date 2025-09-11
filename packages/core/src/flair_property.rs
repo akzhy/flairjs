@@ -12,10 +12,14 @@ use oxc::semantic::Scoping;
 use oxc::semantic::SymbolId;
 use std::collections::HashMap;
 
+use crate::transform::CSSData;
+
 pub struct FlairProperty<'a> {
   scoping: &'a Scoping,
-  style: HashMap<u32, String>,
-  symbol_to_span_start: HashMap<SymbolId, u32>,
+  style: HashMap<u32, CSSData>,
+  /// Maps function symbol IDs to their starting span positions
+  /// This helps in associating flair styles with the correct function
+  fn_symbol_to_span_start: HashMap<SymbolId, u32>,
   allocator: &'a Allocator,
 }
 
@@ -24,15 +28,20 @@ impl<'a> FlairProperty<'a> {
     FlairProperty {
       scoping,
       style: HashMap::new(),
-      symbol_to_span_start: HashMap::new(),
+      fn_symbol_to_span_start: HashMap::new(),
       allocator,
     }
   }
 
-  pub fn get_style(&self) -> &HashMap<u32, String> {
+  pub fn get_style(&self) -> &HashMap<u32, CSSData> {
     &self.style
   }
 
+  /// Visit variable declarations to find functions assigned to variables
+  ///
+  /// For example: const MyComponent = () => { ... }
+  /// const MyComponent = function() { ... }
+  ///
   pub fn visit_variable_declaration(&mut self, it: &mut VariableDeclaration<'a>) {
     it.declarations.iter().for_each(|decl| {
       if let Some(init) = &decl.init {
@@ -41,7 +50,7 @@ impl<'a> FlairProperty<'a> {
 
           if let Some(span_start) = item {
             self
-              .symbol_to_span_start
+              .fn_symbol_to_span_start
               .insert(ident.symbol_id(), span_start);
           }
         }
@@ -52,7 +61,7 @@ impl<'a> FlairProperty<'a> {
   pub fn visit_function(&mut self, it: &mut Function<'a>) {
     if let Some(name) = &it.id {
       self
-        .symbol_to_span_start
+        .fn_symbol_to_span_start
         .insert(name.symbol_id(), it.span.start);
     }
   }
@@ -73,14 +82,15 @@ impl<'a> FlairProperty<'a> {
     let reference = ident.reference_id();
     let symbol_id = self.scoping.get_reference(reference).symbol_id().unwrap();
 
-    if !self.symbol_to_span_start.contains_key(&symbol_id)
-      || static_member.property.name.as_str() != "flair"
+    if !self.fn_symbol_to_span_start.contains_key(&symbol_id)
+      || (static_member.property.name.as_str() != "flair"
+        && static_member.property.name.as_str() != "globalFlair")
     {
       return;
     }
 
     let content = &assign.right;
-    let extracted_css: String = match content {
+    let css_content: String = match content {
       Expression::StringLiteral(string_value) => string_value.value.to_string(),
       Expression::TemplateLiteral(template_expression) => {
         let template_value = template_expression
@@ -113,8 +123,15 @@ impl<'a> FlairProperty<'a> {
     };
 
     self.style.insert(
-      self.symbol_to_span_start.get(&symbol_id).unwrap().clone(),
-      extracted_css,
+      self
+        .fn_symbol_to_span_start
+        .get(&symbol_id)
+        .unwrap()
+        .clone(),
+      CSSData {
+        raw_css: css_content,
+        is_global: static_member.property.name.as_str() == "globalFlair",
+      },
     );
 
     *it = Expression::BooleanLiteral(OxcBox::new_in(
@@ -154,7 +171,7 @@ fn get_item(expression: &Expression) -> Option<u32> {
 fn camel_case_to_kebab_case(input: &str) -> String {
   let mut result = String::new();
   let mut chars = input.chars().peekable();
-  
+
   while let Some(ch) = chars.next() {
     if ch.is_uppercase() {
       if !result.is_empty() {
@@ -165,7 +182,7 @@ fn camel_case_to_kebab_case(input: &str) -> String {
       result.push(ch);
     }
   }
-  
+
   result
 }
 
@@ -215,7 +232,10 @@ fn build_style_string_from_object(object_expression: &ObjectExpression) -> Strin
           }
         };
 
-        style_string.push_str(&format!("{}{separator} {}{suffix}\n", css_property_name, value));
+        style_string.push_str(&format!(
+          "{}{separator} {}{suffix}\n",
+          css_property_name, value
+        ));
       }
     }
   }
