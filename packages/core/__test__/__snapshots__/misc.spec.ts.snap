@@ -45,3 +45,21 @@ false;
 false;
 "
 `;
+
+exports[`Misc tests > global styles are working 1`] = `
+"import "@flairjs/css/cached-css/6091365a83003455.css";
+import { Style } from "@flairjs/react";
+import clsx from "clsx";
+export const Box = ({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) => {
+	return <div className={clsx("XGHD9W_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+      
+      
+    </div>;
+};
+"
+`;
