@@ -17,6 +17,7 @@ use crate::transform::CSSData;
 pub struct FlairProperty<'a> {
   scoping: &'a Scoping,
   style: HashMap<u32, CSSData>,
+  global_style: HashMap<u32, CSSData>,
   /// Maps function symbol IDs to their starting span positions
   /// This helps in associating flair styles with the correct function
   fn_symbol_to_span_start: HashMap<SymbolId, u32>,
@@ -28,13 +29,18 @@ impl<'a> FlairProperty<'a> {
     FlairProperty {
       scoping,
       style: HashMap::new(),
+      global_style: HashMap::new(),
       fn_symbol_to_span_start: HashMap::new(),
       allocator,
     }
   }
 
-  pub fn get_style(&self) -> &HashMap<u32, CSSData> {
+  pub fn get_scoped_style(&self) -> &HashMap<u32, CSSData> {
     &self.style
+  }
+
+  pub fn get_global_style(&self) -> &HashMap<u32, CSSData> {
+    &self.global_style
   }
 
   /// Visit variable declarations to find functions assigned to variables
@@ -83,8 +89,8 @@ impl<'a> FlairProperty<'a> {
     let symbol_id = self.scoping.get_reference(reference).symbol_id().unwrap();
 
     if !self.fn_symbol_to_span_start.contains_key(&symbol_id)
-      || (static_member.property.name.as_str() != "flair"
-        && static_member.property.name.as_str() != "globalFlair")
+      || !(static_member.property.name.as_str() == "flair"
+        || static_member.property.name.as_str() == "globalFlair")
     {
       return;
     }
@@ -122,17 +128,31 @@ impl<'a> FlairProperty<'a> {
       _ => String::from(""),
     };
 
-    self.style.insert(
-      self
-        .fn_symbol_to_span_start
-        .get(&symbol_id)
-        .unwrap()
-        .clone(),
-      CSSData {
-        raw_css: css_content,
-        is_global: static_member.property.name.as_str() == "globalFlair",
-      },
-    );
+    if static_member.property.name.as_str() == "globalFlair" {
+      self.global_style.insert(
+        self
+          .fn_symbol_to_span_start
+          .get(&symbol_id)
+          .unwrap()
+          .clone(),
+        CSSData {
+          raw_css: css_content,
+          is_global: true,
+        },
+      );
+    } else {
+      self.style.insert(
+        self
+          .fn_symbol_to_span_start
+          .get(&symbol_id)
+          .unwrap()
+          .clone(),
+        CSSData {
+          raw_css: css_content,
+          is_global: false,
+        },
+      );
+    }
 
     *it = Expression::BooleanLiteral(OxcBox::new_in(
       BooleanLiteral {
