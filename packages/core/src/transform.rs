@@ -238,22 +238,16 @@ impl<'a> TransformVisitor<'a> {
   /// Global CSS is pushed to extracted_css after lightningcss processing.
   /// Scoped CSS is processed with lightningcss and its module exports are stored in css_module_exports.
   fn process_css(&mut self) {
-    let flair_styles = self.flair_property_visitor.get_style();
+    let flair_scoped_styles = self.flair_property_visitor.get_scoped_style();
+    let flair_global_styles = self.flair_property_visitor.get_global_style();
 
-    flair_styles.iter().for_each(|(span_start, style)| {
-      if self.function_id_to_raw_css_mapping.contains_key(span_start) {
-        self
-          .function_id_to_raw_css_mapping
-          .get_mut(span_start)
-          .unwrap()
-          .push(style.to_owned());
-        return;
-      }
-
+    for (span_start, style) in flair_scoped_styles.iter().chain(flair_global_styles.iter()) {
       self
-        .function_id_to_raw_css_mapping
-        .insert(*span_start, vec![style.to_owned()]);
-    });
+      .function_id_to_raw_css_mapping
+      .entry(*span_start)
+      .or_insert_with(Vec::new)
+      .push(style.to_owned());
+    }
 
     self
       .function_id_to_raw_css_mapping
