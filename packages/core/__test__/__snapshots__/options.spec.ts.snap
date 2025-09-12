@@ -24,7 +24,5 @@ const RegexBox = ({ children, classList }: {
 }) => {
 	return <div className={clsx("regex-box", classList)}>{children}</div>;
 };
-false;
-false;
 "
 `;

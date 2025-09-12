@@ -20,8 +20,6 @@ const SecondBox = ({ children, classList }: {
 }) => {
 	return <div className={clsx("WF-sZW_box", classList)}>{children}</div>;
 };
-false;
-false;
 "
 `;
 
@@ -41,8 +39,6 @@ const SecondBox = ({ children, classList }: {
 }) => {
 	return <div className={clsx("GvW6HW_box", classList)}>{children}</div>;
 };
-false;
-false;
 "
 `;
 
@@ -59,8 +55,6 @@ export const Box = ({ children, containerClassName }: {
       <span className="title">Hello</span>
     </div>;
 };
-false;
-false;
 "
 `;
 
