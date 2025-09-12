@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::path::PathBuf;
 
-use crate::flair_property::FlairProperty;
+use crate::flair_property::{FlairProperty, FLAIR_REPLACEMENT};
 use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
@@ -196,6 +196,8 @@ impl<'a> TransformVisitor<'a> {
     self.pass = Pass::Third;
     self.visit_program(program);
 
+    Self::remove_flair_statements(program);
+
     let hash = {
       let mut hasher = DefaultHasher::new();
       self.file_path.hash(&mut hasher);
@@ -234,6 +236,19 @@ impl<'a> TransformVisitor<'a> {
     program.body.insert(0, import_statement);
   }
 
+  fn remove_flair_statements(program: &mut Program<'a>) {
+    program.body.retain(|stmt| {
+      if let Statement::ExpressionStatement(expr_stmt) = stmt {
+        if let Expression::StringLiteral(string_lit) = &expr_stmt.expression {
+          if string_lit.value == FLAIR_REPLACEMENT {
+            return false;
+          }
+        }
+      }
+      true
+    });
+  }
+
   /// Process the collected CSS data, apply preprocessing and parsing, and store the results.
   /// Global CSS is pushed to extracted_css after lightningcss processing.
   /// Scoped CSS is processed with lightningcss and its module exports are stored in css_module_exports.
@@ -243,10 +258,10 @@ impl<'a> TransformVisitor<'a> {
 
     for (span_start, style) in flair_scoped_styles.iter().chain(flair_global_styles.iter()) {
       self
-      .function_id_to_raw_css_mapping
-      .entry(*span_start)
-      .or_insert_with(Vec::new)
-      .push(style.to_owned());
+        .function_id_to_raw_css_mapping
+        .entry(*span_start)
+        .or_insert_with(Vec::new)
+        .push(style.to_owned());
     }
 
     self

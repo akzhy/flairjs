@@ -1,18 +1,21 @@
 use oxc::allocator::Allocator;
 use oxc::allocator::Box as OxcBox;
 use oxc::ast::ast::BindingPatternKind;
-use oxc::ast::ast::BooleanLiteral;
 use oxc::ast::ast::Function;
 use oxc::ast::ast::ObjectExpression;
 use oxc::ast::ast::ObjectPropertyKind;
 use oxc::ast::ast::PropertyKey;
+use oxc::ast::ast::StringLiteral;
 use oxc::ast::ast::VariableDeclaration;
 use oxc::ast::ast::{AssignmentTarget, Expression};
+use oxc::ast::AstBuilder;
 use oxc::semantic::Scoping;
 use oxc::semantic::SymbolId;
 use std::collections::HashMap;
 
 use crate::transform::CSSData;
+
+pub static FLAIR_REPLACEMENT: &str = "__flair_replacement__";
 
 pub struct FlairProperty<'a> {
   scoping: &'a Scoping,
@@ -22,16 +25,21 @@ pub struct FlairProperty<'a> {
   /// This helps in associating flair styles with the correct function
   fn_symbol_to_span_start: HashMap<SymbolId, u32>,
   allocator: &'a Allocator,
+  ast_builder: AstBuilder<'a>,
 }
 
 impl<'a> FlairProperty<'a> {
-  pub fn new(scoping: &'a Scoping, allocator: &'a Allocator) -> FlairProperty<'a> {
+  pub fn new(
+    scoping: &'a Scoping,
+    allocator: &'a Allocator,
+  ) -> FlairProperty<'a> {
     FlairProperty {
       scoping,
       style: HashMap::new(),
       global_style: HashMap::new(),
       fn_symbol_to_span_start: HashMap::new(),
       allocator,
+      ast_builder: AstBuilder::new(&allocator),
     }
   }
 
@@ -154,10 +162,16 @@ impl<'a> FlairProperty<'a> {
       );
     }
 
-    *it = Expression::BooleanLiteral(OxcBox::new_in(
-      BooleanLiteral {
+    let atom = self
+      .ast_builder
+      .atom(self.allocator.alloc_str(&FLAIR_REPLACEMENT));
+
+    *it = Expression::StringLiteral(OxcBox::new_in(
+      StringLiteral {
         span: assign.span,
-        value: false,
+        value: atom,
+        raw: None,
+        lone_surrogates: false,
       },
       self.allocator,
     ));
