@@ -10,4 +10,5 @@ export interface TransformOptions {
 export interface TransformOutput {
   code: string
   sourcemap?: string
+  css: string
 }

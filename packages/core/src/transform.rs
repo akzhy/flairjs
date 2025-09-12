@@ -50,6 +50,7 @@ pub struct TransformOptions {
 pub struct TransformOutput {
   pub code: String,
   pub sourcemap: Option<String>,
+  pub css: String,
 }
 
 pub fn transform(
@@ -111,6 +112,7 @@ pub fn transform(
   Some(TransformOutput {
     code: result_code,
     sourcemap: sourcemap,
+    css: visitor.extracted_css.join("\n"),
   })
 }
 
@@ -236,6 +238,7 @@ impl<'a> TransformVisitor<'a> {
     program.body.insert(0, import_statement);
   }
 
+  /// Remove __flair_replacement__ statements from the AST
   fn remove_flair_statements(program: &mut Program<'a>) {
     program.body.retain(|stmt| {
       if let Statement::ExpressionStatement(expr_stmt) = stmt {
