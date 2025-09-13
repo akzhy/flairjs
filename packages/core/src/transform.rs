@@ -32,6 +32,20 @@ use oxc::{
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
 
+/// Represents the different passes of the AST transformation.
+/// The transformation requires three passes due to dependency chains:
+/// 
+/// **Pass 1 (CSS Extraction)**: Extract all CSS from flair properties and convert to CSS Modules format.
+/// This must happen first because we need the CSS module class name mappings before we can replace anything.
+/// 
+/// **Pass 2 (Direct Replacements)**: Replace direct className references with CSS module hashed class names.
+/// Example: `<div className="button" />` → `<div className="button_abc123" />`
+/// However, this pass may encounter variable references like `<div className={myVar} />` where `myVar = "button"`.
+/// These variables cannot be replaced yet because we need to trace their definitions first.
+/// 
+/// **Pass 3 (Variable Replacements)**: Replace variables that contain class names with their CSS module equivalents.
+/// Example: `const className = "button"; <div className={className} />` → `const className = "button_abc123"; <div className={className} />`
+/// This pass handles the variable definitions that were identified during Pass 2.
 #[derive(PartialEq, Debug, Clone)]
 enum Pass {
   First,
@@ -39,6 +53,7 @@ enum Pass {
   Third,
 }
 
+/// The import path for flair-related utilities and components
 const IMPORT_PATH: &str = "@flairjs/react";
 
 #[napi(object)]
@@ -55,6 +70,12 @@ pub struct TransformOutput {
   pub css: String,
 }
 
+/// Entry point for transforming a TypeScript React file.
+/// This function performs CSS-in-JS transformation by:
+/// 1. Parsing the TypeScript/JSX code into an AST
+/// 2. Running a three-pass transformation to extract and process CSS
+/// 3. Generating the transformed code with CSS imports
+/// 4. Writing the extracted CSS to a separate file
 pub fn transform(
   code: String,
   file_path: String,
@@ -62,26 +83,29 @@ pub fn transform(
   css_preprocessor: Option<NapiFunction<String, String>>,
   env: Option<Env>,
 ) -> Option<TransformOutput> {
+  // Only process TypeScript React files
   if !file_path.ends_with(".tsx") {
     return None;
   }
 
+  // Set up the OXC parser infrastructure
   let allocator = Allocator::default();
   let source_type = SourceType::from_path(&file_path).unwrap();
 
   let sourcemap_file_path = file_path.clone();
 
+  // Parse the source code into an Abstract Syntax Tree (AST)
   let ParserReturn { mut program, .. } = Parser::new(&allocator, &code, source_type).parse();
 
+  // Build semantic information (symbol tables, scopes, references)
   let semantic_builder = SemanticBuilder::new().build(&program);
 
+  // Convert semantic info into scoping data for symbol resolution
   let scoping = semantic_builder.semantic.into_scoping();
 
-  // let mut local_style_tag_name = "style".to_string();
-  // let mut local_class_name_util_functions = vec![];
   let ast_builder = AstBuilder::new(&allocator);
 
-  // Traverse the AST
+  // Create the main visitor that will perform the three-pass transformation
   let mut visitor = TransformVisitor::new(
     &allocator,
     ast_builder,
@@ -92,8 +116,10 @@ pub fn transform(
     env,
   );
 
+  // Execute the multi-pass transformation on the AST
   visitor.begin(&mut program);
 
+  // Generate the final JavaScript/TypeScript code with source maps
   let codegen = Codegen::new();
   let codegen = codegen.with_options(CodegenOptions {
     source_map_path: Some(PathBuf::from(&sourcemap_file_path)),
@@ -103,6 +129,8 @@ pub fn transform(
 
   let result_code: String = result.code;
   // println!("Transformedd result:\n{}", result_code);
+  
+  // Convert source map to JSON string if available
   let sourcemap: Option<String> = {
     if result.map.is_some() {
       Some(result.map.unwrap().to_json_string())
@@ -118,32 +146,78 @@ pub fn transform(
   })
 }
 
+/// Represents raw CSS data along with its scoping information.
 #[derive(Clone, Debug)]
 pub struct CSSData {
   pub raw_css: String,
   pub is_global: bool,
 }
 
+/// Main visitor struct that orchestrates the multi-pass CSS-in-JS transformation.
+/// 
+/// **Why Three Passes?**
+/// The three-pass approach is necessary due to dependency chains in the transformation:
+/// 
+/// 1. **Pass 1**: Extract CSS and generate CSS module mappings (original → hashed class names)
+/// 2. **Pass 2**: Replace direct className references, but identify variables needing replacement
+/// 3. **Pass 3**: Replace variable declarations that contain class names
+/// 
+/// **Example transformation flow:**
+/// ```tsx
+/// // Original code:
+/// const myClass = "button";
+/// function Component() {
+///   return <div className={myClass} />;
+/// }
+/// 
+/// Component.flair = `.button { color: red; }`;
+/// ```
+/// 
+/// Pass 1: Extract CSS, generate mapping: "button" → "button_abc123"
+/// Pass 2: Can't replace myClass yet, but identifies it needs replacement
+/// Pass 3: Replace variable: const myClass = "button_abc123";
+///
+
 struct TransformVisitor<'a> {
   allocator: &'a Allocator,
   options: TransformOptions,
   css_preprocessor: &'a Option<NapiFunction<'a, String, String>>,
-  // local_style_tag_name: &'a mut String,
+  /// Symbols for imported "Style" components from "@flairjs/react"
   style_tag_import_symbols: Vec<SymbolId>,
+  /// Symbols for imported "c" utility functions from "@flairjs/react"  
   classname_util_symbols: Vec<SymbolId>,
-  // local_class_name_util_functions: &'a mut Vec<String>,
+  /// Accumulated CSS strings that will be written to the output CSS file
   extracted_css: Vec<String>,
+  /// Maps function/component IDs to their raw CSS content before processing
+  /// The id is actually the function's span.start position
+  function_id_to_raw_css_mapping: HashMap<u32, Vec<CSSData>>,
+  /// Maps function/component IDs to their processed CSS module exports (class name mappings)
+  css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
+
   ast_builder: AstBuilder<'a>,
   scoping: &'a Scoping,
+  
+  /// Tracks which identifiers requires CSS class name replacement
   identifier_symbol_ids: Vec<SymbolStore>,
+  /// Current transformation pass
   pass: Pass,
-  css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
+  /// Variable symbol linking for resolving assignments. E.g.,
+  /// ```
+  /// const cl = "button";
+  /// const cl2 = cl;
+  /// 
+  /// return <div className={cl2} />;
+  /// ```
+  variable_linking: HashMap<SymbolId, SymbolId>,
+  
+  /// Visitor for detecting and processing flair properties in JSX/expressions
+  flair_property_visitor: FlairProperty<'a>,
+
+  /// Span start positions of style tags that should be removed from JSX
+  style_tag_symbols: Vec<u32>,
+  
   file_path: String,
   js_env: Option<Env>,
-  function_id_to_raw_css_mapping: HashMap<u32, Vec<CSSData>>,
-  variable_linking: HashMap<SymbolId, SymbolId>,
-  flair_property_visitor: FlairProperty<'a>,
-  style_tag_symbols: Vec<u32>,
 
   /// Maps function span.start to its class span.start
   /// Used to handle method definitions inside classes
@@ -199,28 +273,46 @@ impl<'a> TransformVisitor<'a> {
     }
   }
 
+  /// Orchestrates the three-pass transformation process:
+  /// 
+  /// **Pass 1**: Extract CSS from flair properties and convert to CSS Modules format.
+  /// This creates the mapping from original class names to hashed class names.
+  /// 
+  /// **Pass 2**: Replace direct className references with CSS module hashed names.
+  /// Also removes style tags from JSX and identifies variables that need replacement.
+  /// 
+  /// **Pass 3**: Replace variable declarations that contain class names with their hashed equivalents.
+  /// This handles cases like `const myClass = "button"` where the variable is used in JSX.
   fn begin(&mut self, program: &mut Program<'a>) {
+    // Pass 1: Extract CSS and build CSS module mappings
     self.visit_program(program);
 
+    // Process all collected CSS between passes to generate the class name mappings
     self.process_css();
 
+    // Pass 2: Replace direct class name references and identify variables needing replacement
     self.pass = Pass::Second;
-
     self.visit_program(program);
 
+    // Pass 3: Replace variable declarations that were identified in Pass 2
     self.pass = Pass::Third;
     self.visit_program(program);
 
+    // Remove temporary flair statements from the AST
     Self::remove_flair_statements(program);
 
+    // Generate a unique hash for this file's CSS output
     let hash = {
       let mut hasher = DefaultHasher::new();
       self.file_path.hash(&mut hasher);
       hasher.finish()
     };
 
+    // Create the CSS file path and import statement
     let hash_string = format!("{:x}.css", hash);
     let import_path = format!("@flairjs/css/cached-css/{}", hash_string);
+
+    // Create an import statement for the generated CSS file
     let import_statement = Statement::from(
       self.ast_builder.module_declaration_import_declaration(
         SPAN,
@@ -234,6 +326,7 @@ impl<'a> TransformVisitor<'a> {
       ),
     );
 
+    // Write the extracted CSS to a file in the specified output directory
     let file = File::create(format!("{}/{}", self.options.css_out_dir, hash_string));
     if file.is_err() {
       eprintln!(
@@ -248,6 +341,7 @@ impl<'a> TransformVisitor<'a> {
       .write_all(self.extracted_css.join("\n").as_bytes())
       .unwrap();
 
+    // Insert the CSS import at the top of the transformed file
     program.body.insert(0, import_statement);
   }
 
@@ -266,12 +360,15 @@ impl<'a> TransformVisitor<'a> {
   }
 
   /// Process the collected CSS data, apply preprocessing and parsing, and store the results.
-  /// Global CSS is pushed to extracted_css after lightningcss processing.
-  /// Scoped CSS is processed with lightningcss and its module exports are stored in css_module_exports.
+  /// This method handles both scoped and global CSS:
+  /// - Scoped CSS: Processed with CSS modules to generate unique class names
+  /// - Global CSS: Processed as-is without scoping
+  /// Both types can be preprocessed using a custom CSS preprocessor function
   fn process_css(&mut self) {
     let flair_scoped_styles = self.flair_property_visitor.get_scoped_style();
     let flair_global_styles = self.flair_property_visitor.get_global_style();
 
+    // Consolidate all CSS styles by function/component ID
     for (span_start, style) in flair_scoped_styles.iter().chain(flair_global_styles.iter()) {
       self
         .function_id_to_raw_css_mapping
@@ -280,10 +377,12 @@ impl<'a> TransformVisitor<'a> {
         .push(style.to_owned());
     }
 
+    // Process each function's CSS styles
     self
       .function_id_to_raw_css_mapping
       .iter()
       .for_each(|(fn_id, styles)| {
+        // Separate scoped and global CSS for different processing
         let (scoped_css, global_css) = {
           let mut scoped_css: Option<String> = None;
           let mut global_css: Option<String> = None;
@@ -302,9 +401,11 @@ impl<'a> TransformVisitor<'a> {
           (scoped_css, global_css)
         };
 
+        // Apply CSS preprocessing if available.
         let (preprocessed_scoped_css, preprocessed_global_css) = {
           if self.js_env.is_some() {
             if let Some(preprocessor) = &self.css_preprocessor {
+              // Apply preprocessor to scoped CSS, fallback to original on error
               let scoped_result = match scoped_css {
                 None => None,
                 Some(ref original) => Some(
@@ -314,6 +415,7 @@ impl<'a> TransformVisitor<'a> {
                 ),
               };
 
+              // Apply preprocessor to global CSS, fallback to original on error
               let global_result = match global_css {
                 None => None,
                 Some(ref original) => Some(
@@ -325,21 +427,24 @@ impl<'a> TransformVisitor<'a> {
 
               (scoped_result, global_result)
             } else {
+              // No preprocessor available, use original CSS
               (scoped_css, global_css)
             }
           } else {
+            // No JavaScript environment, use original CSS
             (scoped_css, global_css)
           }
         };
 
         let use_theme = self.options.use_theme.unwrap_or(false);
 
+        // Parse scoped CSS with CSS modules enabled for class name generation
         let parsed_scoped_css: Option<ToCssResult> =
           preprocessed_scoped_css.clone().and_then(|css| {
             let res = parse_css(
               &css,
               &format!("{}:{}", self.file_path, fn_id),
-              true,
+              true,  // Enable CSS modules for scoped styles
               use_theme,
             );
 
@@ -357,12 +462,13 @@ impl<'a> TransformVisitor<'a> {
             }
           });
 
+        // Parse global CSS without CSS modules
         let parsed_global_css: Option<ToCssResult> =
           preprocessed_global_css.clone().and_then(|css| {
             let res = parse_css(
               &css,
               &format!("{}:{}", self.file_path, fn_id),
-              false,
+              false, // Disable CSS modules for global styles
               use_theme,
             );
 
@@ -380,6 +486,7 @@ impl<'a> TransformVisitor<'a> {
             }
           });
 
+        // Store CSS module exports for class name replacement in Pass 2
         if let Some(parsed_scoped_css) = parsed_scoped_css {
           let css_exports = parsed_scoped_css.exports.as_ref().unwrap();
 
@@ -388,22 +495,28 @@ impl<'a> TransformVisitor<'a> {
           self.extracted_css.push(parsed_scoped_css.code);
         }
 
+        // Add global CSS directly to the output (no class name mapping needed)
         if let Some(parsed_global_css) = parsed_global_css {
           self.extracted_css.push(parsed_global_css.code);
         }
       });
   }
 
+  /// Processes function bodies differently based on the current transformation pass.
+  /// This method coordinates the different phases of transformation for each function.
   fn process_function_body(&mut self, body: &mut FunctionBody<'a>, fn_start: u32) {
     match self.pass {
       Pass::First => {
+        // Detect and collect style tag information and CSS content
         let mut style_detector = StyleDetector::new(&self.scoping, &self.style_tag_import_symbols);
         style_detector.visit_function_body(&body);
 
+        // If this function is inside a class, map it to the parent class for CSS scope inheritance
         if let Some(class_id) = self.parent_class_id {
           self.fn_id_to_class_map.insert(fn_start, class_id);
         }
 
+        // If style tags were detected, store the CSS and symbol information
         if style_detector.has_style {
           self.style_tag_symbols = style_detector.get_style_tag_symbol_ids();
           self
@@ -412,6 +525,7 @@ impl<'a> TransformVisitor<'a> {
         }
       }
       Pass::Second => {
+        // Replace direct className references and identify variables that need replacement in Pass 3
         let mut classname_replacer = ClassNameReplacer {
           allocator: self.allocator,
           class_name_map: self.get_css_exports(&fn_start).unwrap_or_default(),
@@ -430,23 +544,35 @@ impl<'a> TransformVisitor<'a> {
 
         classname_replacer.visit_function_body(body);
 
+        // Update our tracking of which identifiers need to be processed in Pass 3
         self.identifier_symbol_ids = classname_replacer.get_identifier_symbol_ids().to_vec();
       }
-      Pass::Third => {}
+      Pass::Third => {
+        // Pass 3 is handled at the variable declaration level, not at the function body level
+        // This is because variable replacements happen globally, not per function
+      }
     }
   }
 
+  /// Retrieves CSS module exports for a given function ID.
+  /// For class methods, this looks up the parent class's CSS exports instead
+  /// of the method's own exports.
   fn get_css_exports(&self, fn_id: &u32) -> Option<HashMap<String, CssModuleExport>> {
+    // Check if this function is a method inside a class
     if self.fn_id_to_class_map.contains_key(&fn_id) {
+      // Use the parent class's CSS exports for consistency
       let class_id = self.fn_id_to_class_map.get(&fn_id).unwrap();
       self.css_module_exports.get(class_id).cloned()
     } else {
+      // Use the function's own CSS exports
       self.css_module_exports.get(&fn_id).cloned()
     }
   }
 }
 
 impl<'a> VisitMut<'a> for TransformVisitor<'a> {
+  /// Processes import declarations to identify flair-related imports.
+  /// Tracks symbols for "Style" components and "c" utility functions from "@flairjs/react".
   fn visit_import_declaration(&mut self, it: &mut ImportDeclaration<'a>) {
     if it.source.value == IMPORT_PATH {
       it.specifiers
@@ -455,11 +581,14 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
         .iter()
         .for_each(|specifier| {
           if let ImportDeclarationSpecifier::ImportSpecifier(import_specifier) = specifier {
+            // Track the "Style" component import for style tag detection
             if import_specifier.local.name == "Style" {
               self
                 .style_tag_import_symbols
                 .push(import_specifier.local.symbol_id());
-            } else if import_specifier.local.name == "c" {
+            } 
+            // Track the "c" utility function import for className processing
+            else if import_specifier.local.name == "c" {
               self
                 .classname_util_symbols
                 .push(import_specifier.local.symbol_id());
@@ -469,9 +598,16 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     }
   }
 
+  /// Handles variable declarations across different transformation passes.
+  /// Pass 1: Builds variable linking for symbol resolution
+  /// Pass 2: No processing needed
+  /// Pass 3: Processes variables that reference transformed CSS class names
   fn visit_variable_declaration(&mut self, it: &mut VariableDeclaration<'a>) {
     match self.pass {
       Pass::First => {
+        // Build variable linking to track symbol assignments for complex variable chains
+        // Example: const a = "button"; const b = a; <div className={b} />
+        // This creates the chain: b -> a -> "button" so we can trace back to the original class name
         it.declarations.iter_mut().for_each(|decl| {
           if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
             if let Some(init) = &decl.init {
@@ -480,6 +616,8 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
                 let reference = self.scoping.get_reference(identifier.reference_id());
                 let init_symbol_id = reference.symbol_id();
 
+                // Link the new variable symbol to the symbol it references
+                // This allows us to trace variable assignments: const newVar = existingVar
                 if let Some(init_symbol_id) = init_symbol_id {
                   self.variable_linking.insert(symbol_id, init_symbol_id);
                 }
@@ -488,31 +626,41 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
           }
         });
 
+        // Also process flair properties in this pass
         self.flair_property_visitor.visit_variable_declaration(it);
       }
-      Pass::Second => {}
+      Pass::Second => {
+        // No special processing needed in second pass for variable declarations
+      }
       Pass::Third => {
+        // Replace variable declarations that contain class names with their CSS module equivalents
+        // Example: const className = "button" -> const className = "button_abc123"
         it.declarations.iter_mut().for_each(|decl| {
           if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
             let symbol_id = binding_identifier.symbol_id();
+            
+            // Check if this variable was identified in Pass 2 as needing CSS class name replacement
             let symbol_store_item = self
               .identifier_symbol_ids
               .iter()
               .find(|s| s.symbol_id == symbol_id);
 
             if symbol_store_item.is_some() {
+              // Get the CSS exports for the function context where this variable was used
               let css_exports = self.get_css_exports(&symbol_store_item.unwrap().fn_id);
               if css_exports.is_none() {
                 return;
               }
-              let identifier_symbol_ids: Vec<SymbolStore> = vec![];
+              
 
+              // Apply class name replacement to the variable's initialization expression
+              // This transforms: const myClass = "button" -> const myClass = "button_abc123"
               let mut classname_replacer = ClassNameReplacer {
                 allocator: self.allocator,
                 class_name_map: css_exports.unwrap(),
                 ast_builder: self.ast_builder,
                 scoping: self.scoping,
-                identifier_symbol_ids: identifier_symbol_ids,
+                identifier_symbol_ids: vec![],
                 fn_id: decl.span.start,
                 classname_util_symbols: self.classname_util_symbols.clone(),
                 variable_linking: self.variable_linking.clone(),
@@ -535,10 +683,13 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     walk_mut::walk_variable_declaration(self, it);
   }
 
+  /// Processes expressions, handling flair properties in Pass 1 and removing style tags in Pass 2.
   fn visit_expression(&mut self, it: &mut Expression<'a>) {
     if self.pass == Pass::First {
+      // Collect flair property information during the first pass
       self.flair_property_visitor.visit_expression(it);
     } else if self.pass == Pass::Second {
+      // Remove Style components from JSX during the second pass
       if let Expression::JSXElement(jsx) = it {
         jsx.children.retain_mut(|child| {
           if let JSXChild::Element(element) = child {
@@ -552,6 +703,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
       } else if let Expression::JSXFragment(jsx) = it {
         jsx.children.retain_mut(|child| {
           if let JSXChild::Element(element) = child {
+            // Remove elements that match detected Style component symbols
             if self.style_tag_symbols.contains(&element.span.start) {
               return false;
             }
@@ -579,13 +731,22 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     walk_mut::walk_function(self, function, flags);
   }
 
+  /// Processes class declarations, setting up parent-child relationships for CSS scoping.
+  /// The generated CSS is scoped to the full class and all methods will share the same CSS scope.
   fn visit_class(&mut self, it: &mut Class<'a>) {
     if self.pass == Pass::First {
+      // Process flair properties in the class
       self.flair_property_visitor.visit_class(it);
+      
+      // Set the current class as parent context for any methods within it
+      // This allows methods to inherit CSS scope from their containing class
       self.parent_class_id = Some(it.span.start);
       walk_mut::walk_class(self, it);
+      
+      // Clear the parent context when exiting the class
       self.parent_class_id = None;
     } else {
+      // In other passes, just walk the class normally
       walk_mut::walk_class(self, it);
     }
   }
