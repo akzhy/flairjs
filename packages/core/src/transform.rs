@@ -16,8 +16,8 @@ use napi::Env;
 use napi_derive::napi;
 use oxc::ast::ast::{
   ArrowFunctionExpression, BindingPatternKind, Class, FunctionBody, ImportDeclaration,
-  ImportDeclarationSpecifier, ImportOrExportKind, JSXChild, Statement,
-  VariableDeclaration,
+  ImportDeclarationSpecifier, ImportOrExportKind, ImportSpecifier, JSXChild, ModuleExportName,
+  Statement, VariableDeclaration,
 };
 use oxc::ast::ast::{Expression, Program};
 use oxc::ast::NONE;
@@ -34,15 +34,15 @@ use oxc::{
 
 /// Represents the different passes of the AST transformation.
 /// The transformation requires three passes due to dependency chains:
-/// 
+///
 /// **Pass 1 (CSS Extraction)**: Extract all CSS from flair properties and convert to CSS Modules format.
 /// This must happen first because we need the CSS module class name mappings before we can replace anything.
-/// 
+///
 /// **Pass 2 (Direct Replacements)**: Replace direct className references with CSS module hashed class names.
 /// Example: `<div className="button" />` → `<div className="button_abc123" />`
 /// However, this pass may encounter variable references like `<div className={myVar} />` where `myVar = "button"`.
 /// These variables cannot be replaced yet because we need to trace their definitions first.
-/// 
+///
 /// **Pass 3 (Variable Replacements)**: Replace variables that contain class names with their CSS module equivalents.
 /// Example: `const className = "button"; <div className={className} />` → `const className = "button_abc123"; <div className={className} />`
 /// This pass handles the variable definitions that were identified during Pass 2.
@@ -53,8 +53,8 @@ enum Pass {
   Third,
 }
 
-/// The import path for flair-related utilities and components
-const IMPORT_PATH: &str = "@flairjs/react";
+/// The import paths for flair-related utilities and components
+const IMPORT_PATHS: &[&str] = &["@flairjs/react", "@flairjs/solidjs", "@flairjs/preact"];
 
 #[napi(object)]
 pub struct TransformOptions {
@@ -129,7 +129,7 @@ pub fn transform(
 
   let result_code: String = result.code;
   // println!("Transformedd result:\n{}", result_code);
-  
+
   // Convert source map to JSON string if available
   let sourcemap: Option<String> = {
     if result.map.is_some() {
@@ -154,14 +154,14 @@ pub struct CSSData {
 }
 
 /// Main visitor struct that orchestrates the multi-pass CSS-in-JS transformation.
-/// 
+///
 /// **Why Three Passes?**
 /// The three-pass approach is necessary due to dependency chains in the transformation:
-/// 
+///
 /// 1. **Pass 1**: Extract CSS and generate CSS module mappings (original → hashed class names)
 /// 2. **Pass 2**: Replace direct className references, but identify variables needing replacement
 /// 3. **Pass 3**: Replace variable declarations that contain class names
-/// 
+///
 /// **Example transformation flow:**
 /// ```tsx
 /// // Original code:
@@ -169,10 +169,10 @@ pub struct CSSData {
 /// function Component() {
 ///   return <div className={myClass} />;
 /// }
-/// 
+///
 /// Component.flair = `.button { color: red; }`;
 /// ```
-/// 
+///
 /// Pass 1: Extract CSS, generate mapping: "button" → "button_abc123"
 /// Pass 2: Can't replace myClass yet, but identifies it needs replacement
 /// Pass 3: Replace variable: const myClass = "button_abc123";
@@ -182,9 +182,9 @@ struct TransformVisitor<'a> {
   allocator: &'a Allocator,
   options: TransformOptions,
   css_preprocessor: &'a Option<NapiFunction<'a, String, String>>,
-  /// Symbols for imported "Style" components from "@flairjs/react"
+  /// Symbols for imported "Style" components from flair packages
   style_tag_import_symbols: Vec<SymbolId>,
-  /// Symbols for imported "c" utility functions from "@flairjs/react"  
+  /// Symbols for imported "c" / "cn" and other utility functions from flair packages  
   classname_util_symbols: Vec<SymbolId>,
   /// Accumulated CSS strings that will be written to the output CSS file
   extracted_css: Vec<String>,
@@ -196,7 +196,7 @@ struct TransformVisitor<'a> {
 
   ast_builder: AstBuilder<'a>,
   scoping: &'a Scoping,
-  
+
   /// Tracks which identifiers requires CSS class name replacement
   identifier_symbol_ids: Vec<SymbolStore>,
   /// Current transformation pass
@@ -205,17 +205,17 @@ struct TransformVisitor<'a> {
   /// ```
   /// const cl = "button";
   /// const cl2 = cl;
-  /// 
+  ///
   /// return <div className={cl2} />;
   /// ```
   variable_linking: HashMap<SymbolId, SymbolId>,
-  
+
   /// Visitor for detecting and processing flair properties in JSX/expressions
   flair_property_visitor: FlairProperty<'a>,
 
   /// Span start positions of style tags that should be removed from JSX
   style_tag_symbols: Vec<u32>,
-  
+
   file_path: String,
   js_env: Option<Env>,
 
@@ -274,13 +274,13 @@ impl<'a> TransformVisitor<'a> {
   }
 
   /// Orchestrates the three-pass transformation process:
-  /// 
+  ///
   /// **Pass 1**: Extract CSS from flair properties and convert to CSS Modules format.
   /// This creates the mapping from original class names to hashed class names.
-  /// 
+  ///
   /// **Pass 2**: Replace direct className references with CSS module hashed names.
   /// Also removes style tags from JSX and identifies variables that need replacement.
-  /// 
+  ///
   /// **Pass 3**: Replace variable declarations that contain class names with their hashed equivalents.
   /// This handles cases like `const myClass = "button"` where the variable is used in JSX.
   fn begin(&mut self, program: &mut Program<'a>) {
@@ -444,7 +444,7 @@ impl<'a> TransformVisitor<'a> {
             let res = parse_css(
               &css,
               &format!("{}:{}", self.file_path, fn_id),
-              true,  // Enable CSS modules for scoped styles
+              true, // Enable CSS modules for scoped styles
               use_theme,
             );
 
@@ -568,13 +568,27 @@ impl<'a> TransformVisitor<'a> {
       self.css_module_exports.get(&fn_id).cloned()
     }
   }
+
+  fn get_import_symbol(&self, import_specifier: &ImportSpecifier, name: &str) -> Option<SymbolId> {
+    if let ModuleExportName::IdentifierName(identifier) = &import_specifier.imported {
+      if identifier.name == name {
+        return Some(import_specifier.local.symbol_id());
+      }
+    }
+
+    if import_specifier.local.name == name {
+      return Some(import_specifier.local.symbol_id());
+    }
+
+    None
+  }
 }
 
 impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   /// Processes import declarations to identify flair-related imports.
-  /// Tracks symbols for "Style" components and "c" utility functions from "@flairjs/react".
+  /// Tracks symbols for "Style" components and "c" utility functions from flair packages.
   fn visit_import_declaration(&mut self, it: &mut ImportDeclaration<'a>) {
-    if it.source.value == IMPORT_PATH {
+    if IMPORT_PATHS.contains(&it.source.value.as_str()) && self.pass == Pass::First {
       it.specifiers
         .as_ref()
         .unwrap()
@@ -582,16 +596,18 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
         .for_each(|specifier| {
           if let ImportDeclarationSpecifier::ImportSpecifier(import_specifier) = specifier {
             // Track the "Style" component import for style tag detection
-            if import_specifier.local.name == "Style" {
-              self
-                .style_tag_import_symbols
-                .push(import_specifier.local.symbol_id());
-            } 
+            let style_import_symbol = self.get_import_symbol(import_specifier, "Style");
+            if let Some(symbol_id) = style_import_symbol {
+              self.style_tag_import_symbols.push(symbol_id);
+            }
             // Track the "c" utility function import for className processing
-            else if import_specifier.local.name == "c" {
-              self
-                .classname_util_symbols
-                .push(import_specifier.local.symbol_id());
+            let c_import_symbol = self.get_import_symbol(import_specifier, "c");
+            let cn_import_symbol = self.get_import_symbol(import_specifier, "cn");
+            if let Some(symbol_id) = c_import_symbol {
+              self.classname_util_symbols.push(symbol_id);
+            }
+            if let Some(symbol_id) = cn_import_symbol {
+              self.classname_util_symbols.push(symbol_id);
             }
           }
         });
@@ -638,7 +654,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
         it.declarations.iter_mut().for_each(|decl| {
           if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
             let symbol_id = binding_identifier.symbol_id();
-            
+
             // Check if this variable was identified in Pass 2 as needing CSS class name replacement
             let symbol_store_item = self
               .identifier_symbol_ids
@@ -651,7 +667,6 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
               if css_exports.is_none() {
                 return;
               }
-              
 
               // Apply class name replacement to the variable's initialization expression
               // This transforms: const myClass = "button" -> const myClass = "button_abc123"
@@ -737,12 +752,12 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     if self.pass == Pass::First {
       // Process flair properties in the class
       self.flair_property_visitor.visit_class(it);
-      
+
       // Set the current class as parent context for any methods within it
       // This allows methods to inherit CSS scope from their containing class
       self.parent_class_id = Some(it.span.start);
       walk_mut::walk_class(self, it);
-      
+
       // Clear the parent context when exiting the class
       self.parent_class_id = None;
     } else {
