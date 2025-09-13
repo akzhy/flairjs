@@ -1,7 +1,7 @@
 import { test, expect, describe } from 'vitest'
 
 import { transformCode } from '../index'
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 import path from 'node:path'
