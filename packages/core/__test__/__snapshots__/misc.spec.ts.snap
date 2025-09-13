@@ -1,0 +1,182 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Misc tests > class component flair is working 1`] = `
+"import "@flairjs/css/cached-css/de3088a18b2aa97c.css";
+import { flair } from "@flairjs/react";
+import clsx from "clsx";
+import { Component } from "react";
+class Box extends Component<{
+	children?: React.ReactNode;
+	containerClassName?: string;
+}> {
+	render() {
+		const { containerClassName, children } = this.props;
+		return <div className={clsx("FmkIrq_box", containerClassName)}>
+        {children}
+        <span className="title">Hello</span>
+      </div>;
+	}
+}
+"
+`;
+
+exports[`Misc tests > class component style tags are working 1`] = `
+"import "@flairjs/css/cached-css/cbd93da89790ac1c.css";
+import { Style } from "@flairjs/react";
+import clsx from "clsx";
+import { Component } from "react";
+class Box extends Component<{
+	children?: React.ReactNode;
+	containerClassName?: string;
+}> {
+	render() {
+		const { children, containerClassName } = this.props;
+		return <div className={clsx("c1077a_box", containerClassName)}>
+        {children}
+        <span className="title">Hello</span>
+        
+      </div>;
+	}
+}
+export { Box };
+"
+`;
+
+exports[`Misc tests > combined styles are working 1`] = `
+"import "@flairjs/css/cached-css/1e01b777eaf6a095.css";
+import clsx from "clsx";
+import { flair, Style } from "@flairjs/react";
+const Box = ({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) => {
+	return <div className={clsx("d_hVXq_box", containerClassName)}>
+      {children}
+      <span className="d_hVXq_title">Hello</span>
+      
+    </div>;
+};
+const SecondBox = ({ children, classList }: {
+	children?: React.ReactNode;
+	classList?: string[];
+}) => {
+	return <div className={clsx("T_84uW_box", classList)}>{children}</div>;
+};
+"
+`;
+
+exports[`Misc tests > conflicting classnames in same file are working 1`] = `
+"import "@flairjs/css/cached-css/8f9c0925524c26c8.css";
+import clsx from "clsx";
+import { flair } from "@flairjs/react";
+const Box = ({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) => {
+	return <div className={clsx("uYMRGq_box", containerClassName)}>{children}</div>;
+};
+const SecondBox = ({ children, classList }: {
+	children?: React.ReactNode;
+	classList?: string[];
+}) => {
+	return <div className={clsx("qZL_dW_box", classList)}>{children}</div>;
+};
+"
+`;
+
+exports[`Misc tests > different function variants are working 1`] = `
+"import "@flairjs/css/cached-css/cc835155a66ce982.css";
+import { flair, Style } from "@flairjs/react";
+import clsx from "clsx";
+import { forwardRef } from "react";
+export const Box = ({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) => {
+	return <div className={clsx("CUn73q_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+};
+export function Box2({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) {
+	return <div className={clsx("rr34Pq_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+}
+export const Box3: React.FC<{
+	children?: React.ReactNode;
+	containerClassName?: string;
+}> = ({ children, containerClassName }) => {
+	return <div className={clsx("ozgRSG_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+};
+export const Box4 = function({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) {
+	return <div className={clsx("oO9wGW_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+};
+export const Box5 = forwardRef<HTMLDivElement, {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}>(({ children, containerClassName }, ref) => {
+	return <div className={clsx("PbvpzW_box", containerClassName)} ref={ref}>
+        {children}
+        <span className="title">Hello</span>
+      </div>;
+});
+export const Box6 = forwardRef<HTMLDivElement, {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}>(({ children, containerClassName }, ref) => {
+	return <div className={clsx("nutt3G_box", containerClassName)} ref={ref}>
+        {children}
+        <span className="title">Hello</span>
+        
+      </div>;
+});
+"
+`;
+
+exports[`Misc tests > global flair styles are working 1`] = `
+"import "@flairjs/css/cached-css/2287b1376d1a3420.css";
+import { flair } from "@flairjs/react";
+import clsx from "clsx";
+export const Box = ({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) => {
+	return <div className={clsx("-yYjIa_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+};
+"
+`;
+
+exports[`Misc tests > global styles are working 1`] = `
+"import "@flairjs/css/cached-css/7a9cb3081991286f.css";
+import { Style } from "@flairjs/react";
+import clsx from "clsx";
+export const Box = ({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) => {
+	return <div className={clsx("WBAFua_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+      
+      
+    </div>;
+};
+"
+`;

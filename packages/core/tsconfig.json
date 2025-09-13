@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "lib": ["ES2021"],
-    "module": "ESNext",
-    "noEmit": true,
+    "target": "ESNext",
     "strict": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "resolveJsonModule": true,
     "moduleResolution": "bundler",
-    "useDefineForClassFields": true,
-    "allowImportingTsExtensions": true
+    "module": "preserve",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["src"]
+  "include": ["."],
+  "exclude": ["node_modules", "bench", "__test__"]
 }

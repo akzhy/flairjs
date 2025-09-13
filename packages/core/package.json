@@ -1,40 +1,100 @@
 {
-  "name": "jsx-styled-core",
+  "name": "@flairjs/core",
   "version": "1.0.0",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
+  "description": "Template project for writing node package with napi-rs",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/napi-rs/package-template.git"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
+  "license": "MIT",
+  "browser": "browser.js",
+  "keywords": [
+    "napi-rs",
+    "NAPI",
+    "N-API",
+    "Rust",
+    "node-addon",
+    "node-addon-api"
   ],
+  "files": [
+    "index.d.ts",
+    "index.js",
+    "browser.js"
+  ],
+  "napi": {
+    "binaryName": "core",
+    "targets": [
+      "x86_64-pc-windows-msvc",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "i686-pc-windows-msvc",
+      "armv7-unknown-linux-gnueabihf",
+      "aarch64-apple-darwin",
+      "aarch64-linux-android",
+      "x86_64-unknown-freebsd",
+      "aarch64-unknown-linux-musl",
+      "aarch64-pc-windows-msvc",
+      "armv7-linux-androideabi",
+      "wasm32-wasip1-threads"
+    ]
+  },
+  "engines": {
+    "node": ">= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "scripts": {
-    "build": "rslib build",
-    "check": "biome check --write",
-    "dev": "rslib build --watch",
-    "format": "biome format --write"
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "format": "run-p format:prettier format:rs format:toml",
+    "format:prettier": "prettier . -w",
+    "format:toml": "taplo format",
+    "format:rs": "cargo fmt",
+    "lint": "oxlint .",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "version": "napi version"
   },
   "devDependencies": {
-    "@babel/generator": "^7.27.0",
-    "@babel/parser": "^7.27.0",
-    "@babel/traverse": "^7.27.0",
-    "@biomejs/biome": "^1.9.4",
-    "@rslib/core": "^0.6.1",
-    "@types/babel__traverse": "^7.20.7",
-    "@types/node": "^22.8.1",
-    "lightningcss": "^1.29.3",
-    "typescript": "^5.8.2"
+    "@emnapi/core": "^1.4.5",
+    "@emnapi/runtime": "^1.4.5",
+    "@flairjs/react": "workspace:*",
+    "@napi-rs/cli": "^3.0.3",
+    "@oxc-node/core": "^0.0.32",
+    "@taplo/cli": "^0.7.0",
+    "@tybys/wasm-util": "^0.10.0",
+    "@types/node": "^22.18.1",
+    "chalk": "^5.4.1",
+    "lint-staged": "^16.1.2",
+    "npm-run-all2": "^8.0.4",
+    "oxlint": "^1.8.0",
+    "tinybench": "^5.0.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
-  "private": true,
-  "dependencies": {
-    "@babel/generator": "^7.27.0",
-    "@types/babel__generator": "^7.27.0"
+  "lint-staged": {
+    "*.@(js|ts|tsx)": [
+      "oxlint --fix"
+    ],
+    "*.@(js|ts|tsx|yml|yaml|md|json)": [
+      "prettier --write"
+    ],
+    "*.toml": [
+      "taplo format"
+    ]
+  },
+  "prettier": {
+    "printWidth": 120,
+    "semi": false,
+    "trailingComma": "all",
+    "singleQuote": true,
+    "arrowParens": "always"
   }
 }

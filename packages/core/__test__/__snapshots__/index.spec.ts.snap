@@ -1,0 +1,313 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Core tests > flair property object is working 1`] = `
+"._60TvnG_case-1 {
+  color: #ff0001;
+}
+
+._60TvnG_case-2 {
+  color: #ff0002;
+}
+
+._60TvnG_case-2._60TvnG_case-2-1 {
+  background-color: #ff0002;
+}
+
+._60TvnG_case-3 {
+  color: #ff0003;
+}
+
+._60TvnG_case-4 {
+  color: #ff0004;
+}
+
+._60TvnG_case-5 {
+  color: #ff0005;
+}
+
+._60TvnG_case-5._60TvnG_case-5-1 {
+  background-color: #ff0005;
+}
+
+._60TvnG_case-5._60TvnG_case-5-2 {
+  background-color: #ff0006;
+}
+
+._60TvnG_case-6 {
+  color: #ff0006;
+}
+
+._60TvnG_case-6._60TvnG_case-6-1 {
+  background-color: #ff0006;
+}
+
+._60TvnG_case-6._60TvnG_case-6-3 {
+  border-color: #ff0006;
+}
+
+._60TvnG_case-6._60TvnG_case-6-4 {
+  outline-color: #ff0006;
+}
+
+._60TvnG_case-7-1 {
+  color: #ff0007;
+}
+
+._60TvnG_case-8._60TvnG_case-8-1 {
+  background-color: #ff0008;
+}
+
+._60TvnG_case-8._60TvnG_case-8-2 {
+  color: #ff0008;
+}
+
+._60TvnG_case-9-1 {
+  color: #ff0009;
+}
+
+._60TvnG_case-9-2 {
+  background-color: #ff0009;
+}
+
+._60TvnG_case-10 {
+  color: #ff000a;
+}
+
+._60TvnG_case-11-1 {
+  color: #ff000b;
+}
+
+._60TvnG_case-11-2 {
+  background-color: #ff000b;
+}
+
+._60TvnG_case-12-1 {
+  color: #ff000c;
+}
+
+._60TvnG_case-12-2 {
+  background-color: #ff000c;
+}
+
+._60TvnG_case-13 {
+  color: #ff000d;
+}
+
+._60TvnG_case-14 {
+  color: #ff000e;
+}
+
+._60TvnG_case-15 {
+  color: #ff000f;
+}
+
+._60TvnG_case-16 {
+  color: #ff0010;
+}
+"
+`;
+
+exports[`Core tests > flair property object is working 2`] = `
+"import "@flairjs/css/cached-css/1518dce36b030ff9.css";
+import clsx from "clsx";
+import { c, cn, flair } from "@flairjs/react";
+import { useState } from "react";
+export const TestCaseComponent = () => {
+	const [case5, setCase5] = useState(false);
+	const [case8, setCase8] = useState(false);
+	const [case9, setCase9] = useState(false);
+	const case3 = "_60TvnG_case-3";
+	const case6_3 = "_60TvnG_case-6-3";
+	const case6_4 = "case-6-4";
+	const case9_1 = "case-9 _60TvnG_case-9-1";
+	const case9_2 = "case-9 _60TvnG_case-9-2";
+	const case10 = "case-10";
+	const case11_1 = "case-11-1";
+	const case11 = \`case-11 \${case11_1} _60TvnG_case-11-2\`;
+	const case12_1 = "case-12-1";
+	const case12 = "case-12 " + case12_1 + " _60TvnG_case-12-2";
+	const case13 = c("_60TvnG_case-13 case-13-1");
+	const case14 = cn("_60TvnG_case-14 case-14-1");
+	const case15Handler = () => {
+		return c("_60TvnG_case-15 case-15-1");
+	};
+	return <>
+      <p className="_60TvnG_case-1">Case1</p>
+      <p className="_60TvnG_case-2 _60TvnG_case-2-1 case-2-2">Case2</p>
+      <div className={case3}>Case3</div>
+      <div className={clsx("_60TvnG_case-4")}>Case4</div>
+      <button className={clsx("_60TvnG_case-5", {
+		"_60TvnG_case-5-1": true,
+		"_60TvnG_case-5-2": case5,
+		"case-5-3": true
+	})} onClick={() => setCase5((p) => !p)}>
+        Case5
+      </button>
+      <div className={clsx("_60TvnG_case-6", [
+		"_60TvnG_case-6-1",
+		"case-6-2",
+		case6_3
+	], { [case6_4]: true })}>
+        Case6
+      </div>
+      <div className={["case-7", "_60TvnG_case-7-1"].join(" ")}>Case7</div>
+      <button className={case8 ? "_60TvnG_case-8 _60TvnG_case-8-1" : "_60TvnG_case-8 _60TvnG_case-8-2"} onClick={() => {
+		setCase8((p) => !p);
+	}}>
+        Case8
+      </button>
+      <button className={case9 ? case9_1 : case9_2} onClick={() => {
+		setCase9((p) => !p);
+	}}>
+        Case9
+      </button>
+      <div className={clsx({ [case10]: true })}>
+        Case10
+      </div>
+      <div className={case11}>Case11</div>
+      <div className={case12}>Case12</div>
+      <div className={case13}>Case13</div>
+      <div className={clsx(case14, "case-14-2")}>Case14</div>
+      <div className={case15Handler()}>Case15</div>
+      <div className={\`_60TvnG_case-16 case-16-1\`}>Case16</div>
+    </>;
+};
+"
+`;
+
+exports[`Core tests > flair property string is working 1`] = `
+"import "@flairjs/css/cached-css/2d135f6647775829.css";
+import clsx from "clsx";
+import { c, cn } from "@flairjs/react";
+import { useState } from "react";
+export const TestCaseComponent = () => {
+	const [case5, setCase5] = useState(false);
+	const [case8, setCase8] = useState(false);
+	const [case9, setCase9] = useState(false);
+	const case3 = "me2mbG_case-3";
+	const case6_3 = "me2mbG_case-6-3";
+	const case6_4 = "case-6-4";
+	const case9_1 = "case-9 me2mbG_case-9-1";
+	const case9_2 = "case-9 me2mbG_case-9-2";
+	const case10 = "case-10";
+	const case11_1 = "case-11-1";
+	const case11 = \`case-11 \${case11_1} me2mbG_case-11-2\`;
+	const case12_1 = "case-12-1";
+	const case12 = "case-12 " + case12_1 + " me2mbG_case-12-2";
+	const case13 = c("me2mbG_case-13 case-13-1");
+	const case14 = cn("me2mbG_case-14 case-14-1");
+	const case15Handler = () => {
+		return c("me2mbG_case-15 case-15-1");
+	};
+	return <>
+      <p className="me2mbG_case-1">Case1</p>
+      <p className="me2mbG_case-2 me2mbG_case-2-1 case-2-2">Case2</p>
+      <div className={case3}>Case3</div>
+      <div className={clsx("me2mbG_case-4")}>Case4</div>
+      <button className={clsx("me2mbG_case-5", {
+		"me2mbG_case-5-1": true,
+		"me2mbG_case-5-2": case5,
+		"case-5-3": true
+	})} onClick={() => setCase5((p) => !p)}>
+        Case5
+      </button>
+      <div className={clsx("me2mbG_case-6", [
+		"me2mbG_case-6-1",
+		"case-6-2",
+		case6_3
+	], { [case6_4]: true })}>
+        Case6
+      </div>
+      <div className={["case-7", "me2mbG_case-7-1"].join(" ")}>Case7</div>
+      <button className={case8 ? "me2mbG_case-8 me2mbG_case-8-1" : "me2mbG_case-8 me2mbG_case-8-2"} onClick={() => {
+		setCase8((p) => !p);
+	}}>
+        Case8
+      </button>
+      <button className={case9 ? case9_1 : case9_2} onClick={() => {
+		setCase9((p) => !p);
+	}}>
+        Case9
+      </button>
+      <div className={clsx({ [case10]: true })}>
+        Case10
+      </div>
+      <div className={case11}>Case11</div>
+      <div className={case12}>Case12</div>
+      <div className={case13}>Case13</div>
+      <div className={clsx(case14, "case-14-2")}>Case14</div>
+      <div className={case15Handler()}>Case15</div>
+      <div className={\`me2mbG_case-16 case-16-1\`}>Case16</div>
+    </>;
+};
+"
+`;
+
+exports[`Core tests > style tag is working 1`] = `
+"import "@flairjs/css/cached-css/7b55dce5a269efde.css";
+import clsx from "clsx";
+import { Style, c, cn } from "@flairjs/react";
+import { useState } from "react";
+export const TestCaseComponent = () => {
+	const [case5, setCase5] = useState(false);
+	const [case8, setCase8] = useState(false);
+	const [case9, setCase9] = useState(false);
+	const case3 = "RgXxXa_case-3";
+	const case6_3 = "RgXxXa_case-6-3";
+	const case6_4 = "case-6-4";
+	const case9_1 = "case-9 RgXxXa_case-9-1";
+	const case9_2 = "case-9 RgXxXa_case-9-2";
+	const case10 = "case-10";
+	const case11_1 = "case-11-1";
+	const case11 = \`case-11 \${case11_1} RgXxXa_case-11-2\`;
+	const case12_1 = "case-12-1";
+	const case12 = "case-12 " + case12_1 + " RgXxXa_case-12-2";
+	const case13 = c("RgXxXa_case-13 case-13-1");
+	const case14 = cn("RgXxXa_case-14 case-14-1");
+	const case15Handler = () => {
+		return c("RgXxXa_case-15 case-15-1");
+	};
+	return <>
+      <p className="RgXxXa_case-1">Case1</p>
+      <p className="RgXxXa_case-2 RgXxXa_case-2-1 case-2-2">Case2</p>
+      <div className={case3}>Case3</div>
+      <div className={clsx("RgXxXa_case-4")}>Case4</div>
+      <button className={clsx("RgXxXa_case-5", {
+		"RgXxXa_case-5-1": true,
+		"RgXxXa_case-5-2": case5,
+		"case-5-3": true
+	})} onClick={() => setCase5((p) => !p)}>
+        Case5
+      </button>
+      <div className={clsx("RgXxXa_case-6", [
+		"RgXxXa_case-6-1",
+		"case-6-2",
+		case6_3
+	], { [case6_4]: true })}>
+        Case6
+      </div>
+      <div className={["case-7", "RgXxXa_case-7-1"].join(" ")}>Case7</div>
+      <button className={case8 ? "RgXxXa_case-8 RgXxXa_case-8-1" : "RgXxXa_case-8 RgXxXa_case-8-2"} onClick={() => {
+		setCase8((p) => !p);
+	}}>
+        Case8
+      </button>
+      <button className={case9 ? case9_1 : case9_2} onClick={() => {
+		setCase9((p) => !p);
+	}}>
+        Case9
+      </button>
+      <div className={clsx({ [case10]: true })}>
+        Case10
+      </div>
+      <div className={case11}>Case11</div>
+      <div className={case12}>Case12</div>
+      <div className={case13}>Case13</div>
+      <div className={clsx(case14, "case-14-2")}>Case14</div>
+      <div className={case15Handler()}>Case15</div>
+      <div className={\`RgXxXa_case-16 case-16-1\`}>Case16</div>
+      
+    </>;
+};
+"
+`;

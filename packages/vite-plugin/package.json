@@ -1,5 +1,5 @@
 {
-  "name": "jsx-styled-vite-plugin",
+  "name": "@flairjs/vite-plugin",
   "version": "1.0.0",
   "type": "module",
   "exports": {
@@ -28,7 +28,7 @@
     "@biomejs/biome": "^1.9.4",
     "@rslib/core": "^0.6.1",
     "@types/node": "^22.8.1",
-    "jsx-styled-core": "*",
+    "@flairjs/core": "workspace:*",
     "sass": "^1.86.3",
     "typescript": "^5.8.2",
     "vite": "^6.3.3"

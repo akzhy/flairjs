@@ -1,0 +1,28 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Options tests > class name list is working 1`] = `
+"import "@flairjs/css/cached-css/9c9c5f915a4ad43f.css";
+import clsx from "clsx";
+import { flair } from "@flairjs/react";
+export const TestCaseComponent = () => {
+	return <>
+      <div>
+        <Box containerClassName="GjWpCq_item"></Box>
+        <RegexBox classList={["GjWpCq_regex-box"]} />
+      </div>
+    </>;
+};
+const Box = ({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) => {
+	return <div className={clsx("ESBuwG_box", containerClassName)}>{children}</div>;
+};
+const RegexBox = ({ children, classList }: {
+	children?: React.ReactNode;
+	classList?: string[];
+}) => {
+	return <div className={clsx("regex-box", classList)}>{children}</div>;
+};
+"
+`;
