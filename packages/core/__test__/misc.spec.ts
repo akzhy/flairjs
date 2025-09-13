@@ -16,6 +16,7 @@ const conflictingClassNamesContent = readFileSync(
 const combinedStylesContent = readFileSync(path.resolve(__dirname, './snippets/misc-combined-styles.tsx'), 'utf-8')
 const globalStyleContent = readFileSync(path.resolve(__dirname, './snippets/misc-global-style.tsx'), 'utf-8')
 const globalFlairStyleContent = readFileSync(path.resolve(__dirname, './snippets/misc-global-flair.tsx'), 'utf-8')
+const functionVariants = readFileSync(path.resolve(__dirname, './snippets/misc-function-variants.tsx'), 'utf-8')
 
 describe('Misc tests', () => {
   test('conflicting classnames in same file are working', () => {
@@ -54,6 +55,16 @@ describe('Misc tests', () => {
 
   test('global flair styles are working', () => {
     const result = transformCode(globalFlairStyleContent, 'misc-4.tsx', {
+      cssOutDir: path.resolve(__dirname, './.css'),
+    })
+    if (!result) {
+      throw new Error('transformCode returned null or undefined')
+    }
+    expect(result.code).toMatchSnapshot()
+  })
+
+  test('different function variants are working', () => {
+    const result = transformCode(functionVariants, 'misc-5.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
     })
     if (!result) {

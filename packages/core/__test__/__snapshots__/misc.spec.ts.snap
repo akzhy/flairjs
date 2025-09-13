@@ -42,6 +42,69 @@ const SecondBox = ({ children, classList }: {
 "
 `;
 
+exports[`Misc tests > different function variants are working 1`] = `
+"import "@flairjs/css/cached-css/cc835155a66ce982.css";
+import { flair, Style } from "@flairjs/react";
+import clsx from "clsx";
+import { forwardRef } from "react";
+export const Box = ({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) => {
+	return <div className={clsx("CUn73q_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+};
+export function Box2({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) {
+	return <div className={clsx("rr34Pq_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+}
+export const Box3: React.FC<{
+	children?: React.ReactNode;
+	containerClassName?: string;
+}> = ({ children, containerClassName }) => {
+	return <div className={clsx("ozgRSG_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+};
+export const Box4 = function({ children, containerClassName }: {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}) {
+	return <div className={clsx("oO9wGW_box", containerClassName)}>
+      {children}
+      <span className="title">Hello</span>
+    </div>;
+};
+export const Box5 = forwardRef<HTMLDivElement, {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}>(({ children, containerClassName }, ref) => {
+	return <div className={clsx("PbvpzW_box", containerClassName)} ref={ref}>
+        {children}
+        <span className="title">Hello</span>
+      </div>;
+});
+export const Box6 = forwardRef<HTMLDivElement, {
+	children?: React.ReactNode;
+	containerClassName?: string;
+}>(({ children, containerClassName }, ref) => {
+	return <div className={clsx("nutt3G_box", containerClassName)} ref={ref}>
+        {children}
+        <span className="title">Hello</span>
+        
+      </div>;
+});
+"
+`;
+
 exports[`Misc tests > global flair styles are working 1`] = `
 "import "@flairjs/css/cached-css/2287b1376d1a3420.css";
 import { flair } from "@flairjs/react";
