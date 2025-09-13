@@ -44,6 +44,7 @@ const IMPORT_PATH: &str = "@flairjs/react";
 pub struct TransformOptions {
   pub css_out_dir: String,
   pub class_name_list: Option<Vec<String>>,
+  pub use_theme: Option<bool>,
 }
 
 #[napi(object)]
@@ -319,9 +320,16 @@ impl<'a> TransformVisitor<'a> {
           }
         };
 
+        let use_theme = self.options.use_theme.unwrap_or(false);
+
         let parsed_scoped_css: Option<ToCssResult> =
           preprocessed_scoped_css.clone().and_then(|css| {
-            let res = parse_css(&css, &format!("{}:{}", self.file_path, fn_id), true);
+            let res = parse_css(
+              &css,
+              &format!("{}:{}", self.file_path, fn_id),
+              true,
+              use_theme,
+            );
 
             match res {
               Ok(val) => Some(val),
@@ -339,7 +347,12 @@ impl<'a> TransformVisitor<'a> {
 
         let parsed_global_css: Option<ToCssResult> =
           preprocessed_global_css.clone().and_then(|css| {
-            let res = parse_css(&css, &format!("{}:{}", self.file_path, fn_id), false);
+            let res = parse_css(
+              &css,
+              &format!("{}:{}", self.file_path, fn_id),
+              false,
+              use_theme,
+            );
 
             match res {
               Ok(val) => Some(val),

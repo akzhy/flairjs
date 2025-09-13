@@ -5,6 +5,7 @@ export declare function transformCode(code: string, filePath: string, options: T
 export interface TransformOptions {
   cssOutDir: string
   classNameList?: Array<string>
+  useTheme?: boolean
 }
 
 export interface TransformOutput {
