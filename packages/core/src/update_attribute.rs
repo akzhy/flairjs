@@ -30,8 +30,10 @@ pub struct SymbolStore {
   pub symbol_id: SymbolId,
   /// The span.start of the function containing this variable reference
   /// Used to scope class name variables to their containing function
+  /// 
   /// Currently, after lightningcss processing, the output css is mapped to its parent function.
   /// So, the hashed classnames and styles are available in the hashmap HashMap<fn_id, Data>.
+  /// 
   /// During the third pass, which updates variable references, we need to know which function
   /// the variable belongs to, so we can look up the correct hashed classnames from the hashmap.
   /// This fn_id helps us scope variable references to their containing function.

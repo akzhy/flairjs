@@ -15,8 +15,9 @@ use napi::bindgen_prelude::Function as NapiFunction;
 use napi::Env;
 use napi_derive::napi;
 use oxc::ast::ast::{
-  ArrowFunctionExpression, BindingPatternKind, FunctionBody, ImportDeclaration,
-  ImportDeclarationSpecifier, ImportOrExportKind, JSXChild, Statement, VariableDeclaration,
+  ArrowFunctionExpression, BindingPatternKind, Class, FunctionBody, ImportDeclaration,
+  ImportDeclarationSpecifier, ImportOrExportKind, JSXChild, Statement,
+  VariableDeclaration,
 };
 use oxc::ast::ast::{Expression, Program};
 use oxc::ast::NONE;
@@ -143,6 +144,15 @@ struct TransformVisitor<'a> {
   variable_linking: HashMap<SymbolId, SymbolId>,
   flair_property_visitor: FlairProperty<'a>,
   style_tag_symbols: Vec<u32>,
+
+  /// Maps function span.start to its class span.start
+  /// Used to handle method definitions inside classes
+  /// e.g. class MyComponent { render() { return <div className="test" />; } }
+  /// Here, the function_id_to_class_map will map the render() method's span.start to the MyComponent class's span.start
+  /// This allows us to link className variables used inside methods to the correct function/component
+  fn_id_to_class_map: HashMap<u32, u32>,
+
+  parent_class_id: Option<u32>,
 }
 
 impl<'a> TransformVisitor<'a> {
@@ -184,6 +194,8 @@ impl<'a> TransformVisitor<'a> {
       js_env,
       function_id_to_raw_css_mapping: function_id_to_style_mapping,
       flair_property_visitor,
+      fn_id_to_class_map: HashMap::new(),
+      parent_class_id: None,
     }
   }
 
@@ -388,6 +400,10 @@ impl<'a> TransformVisitor<'a> {
         let mut style_detector = StyleDetector::new(&self.scoping, &self.style_tag_import_symbols);
         style_detector.visit_function_body(&body);
 
+        if let Some(class_id) = self.parent_class_id {
+          self.fn_id_to_class_map.insert(fn_start, class_id);
+        }
+
         if style_detector.has_style {
           self.style_tag_symbols = style_detector.get_style_tag_symbol_ids();
           self
@@ -398,11 +414,7 @@ impl<'a> TransformVisitor<'a> {
       Pass::Second => {
         let mut classname_replacer = ClassNameReplacer {
           allocator: self.allocator,
-          class_name_map: self
-            .css_module_exports
-            .get(&fn_start)
-            .cloned()
-            .unwrap_or_default(),
+          class_name_map: self.get_css_exports(&fn_start).unwrap_or_default(),
           ast_builder: self.ast_builder,
           scoping: self.scoping,
           identifier_symbol_ids: self.identifier_symbol_ids.clone(),
@@ -421,6 +433,15 @@ impl<'a> TransformVisitor<'a> {
         self.identifier_symbol_ids = classname_replacer.get_identifier_symbol_ids().to_vec();
       }
       Pass::Third => {}
+    }
+  }
+
+  fn get_css_exports(&self, fn_id: &u32) -> Option<HashMap<String, CssModuleExport>> {
+    if self.fn_id_to_class_map.contains_key(&fn_id) {
+      let class_id = self.fn_id_to_class_map.get(&fn_id).unwrap();
+      self.css_module_exports.get(class_id).cloned()
+    } else {
+      self.css_module_exports.get(&fn_id).cloned()
     }
   }
 }
@@ -480,18 +501,15 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
               .find(|s| s.symbol_id == symbol_id);
 
             if symbol_store_item.is_some() {
-              let css_exports = self
-                .css_module_exports
-                .get(&symbol_store_item.unwrap().fn_id);
+              let css_exports = self.get_css_exports(&symbol_store_item.unwrap().fn_id);
               if css_exports.is_none() {
                 return;
               }
-              let css_exports = css_exports.unwrap();
               let identifier_symbol_ids: Vec<SymbolStore> = vec![];
 
               let mut classname_replacer = ClassNameReplacer {
                 allocator: self.allocator,
-                class_name_map: css_exports.clone(),
+                class_name_map: css_exports.unwrap(),
                 ast_builder: self.ast_builder,
                 scoping: self.scoping,
                 identifier_symbol_ids: identifier_symbol_ids,
@@ -559,5 +577,16 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
     self.flair_property_visitor.visit_function(function);
 
     walk_mut::walk_function(self, function, flags);
+  }
+
+  fn visit_class(&mut self, it: &mut Class<'a>) {
+    if self.pass == Pass::First {
+      self.flair_property_visitor.visit_class(it);
+      self.parent_class_id = Some(it.span.start);
+      walk_mut::walk_class(self, it);
+      self.parent_class_id = None;
+    } else {
+      walk_mut::walk_class(self, it);
+    }
   }
 }
