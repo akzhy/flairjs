@@ -14,7 +14,7 @@ const flairPropertyObjectContent = readFileSync(path.resolve(__dirname, './snipp
 
 describe('Core tests', () => {
   test('style tag is working', () => {
-    const result = transformCode(styleTagContent, 'index.tsx', {
+    const result = transformCode(styleTagContent, 'index-1.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
     })
     if (!result) {
@@ -24,7 +24,7 @@ describe('Core tests', () => {
   })
 
   test('flair property string is working', () => {
-    const result = transformCode(flairPropertyContent, 'index.tsx', {
+    const result = transformCode(flairPropertyContent, 'index-2.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
     })
     if (!result) {
@@ -34,7 +34,7 @@ describe('Core tests', () => {
   })
 
   test('flair property object is working', () => {
-    const result = transformCode(flairPropertyObjectContent, 'index.tsx', {
+    const result = transformCode(flairPropertyObjectContent, 'index-3.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
     })
     const cssFiles = readdirSync(path.resolve(__dirname, './.css')).filter((f) => f.endsWith('.css'))

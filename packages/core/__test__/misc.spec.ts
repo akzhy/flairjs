@@ -20,7 +20,7 @@ const globalFlairStyleContent = readFileSync(path.resolve(__dirname, './snippets
 describe('Misc tests', () => {
   test('conflicting classnames in same file are working', () => {
     const regex = new RegExp('^class[A-Z][A-Za-z0-9_]*')
-    const result = transformCode(conflictingClassNamesContent, 'index.tsx', {
+    const result = transformCode(conflictingClassNamesContent, 'misc-1.tsx', {
       classNameList: ['className', 'containerClassName', regex.toString()],
       cssOutDir: path.resolve(__dirname, './.css'),
     })
@@ -32,7 +32,7 @@ describe('Misc tests', () => {
 
   test('combined styles are working', () => {
     const regex = new RegExp('^class[A-Z][A-Za-z0-9_]*')
-    const result = transformCode(combinedStylesContent, 'index.tsx', {
+    const result = transformCode(combinedStylesContent, 'misc-2.tsx', {
       classNameList: ['className', 'containerClassName', regex.toString()],
       cssOutDir: path.resolve(__dirname, './.css'),
     })
@@ -43,7 +43,7 @@ describe('Misc tests', () => {
   })
 
   test('global styles are working', () => {
-    const result = transformCode(globalStyleContent, 'index.tsx', {
+    const result = transformCode(globalStyleContent, 'misc-3.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
     })
     if (!result) {
@@ -53,7 +53,7 @@ describe('Misc tests', () => {
   })
 
   test('global flair styles are working', () => {
-    const result = transformCode(globalFlairStyleContent, 'index.tsx', {
+    const result = transformCode(globalFlairStyleContent, 'misc-4.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
     })
     if (!result) {

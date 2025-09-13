@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Theme tests > style tag is working 1`] = `
-"import "@flairjs/css/cached-css/6091365a83003455.css";
+"import "@flairjs/css/cached-css/d0878514f4eaf101.css";
 import clsx from "clsx";
 import { Style, c, cn } from "@flairjs/react";
 import { useState } from "react";
@@ -9,42 +9,42 @@ export const TestCaseComponent = () => {
 	const [case5, setCase5] = useState(false);
 	const [case8, setCase8] = useState(false);
 	const [case9, setCase9] = useState(false);
-	const case3 = "_4GX4TW_case-3";
-	const case6_3 = "_4GX4TW_case-6-3";
+	const case3 = "ruGclG_case-3";
+	const case6_3 = "ruGclG_case-6-3";
 	const case6_4 = "case-6-4";
-	const case9_1 = "case-9 _4GX4TW_case-9-1";
-	const case9_2 = "case-9 _4GX4TW_case-9-2";
+	const case9_1 = "case-9 ruGclG_case-9-1";
+	const case9_2 = "case-9 ruGclG_case-9-2";
 	const case10 = "case-10";
 	const case11_1 = "case-11-1";
-	const case11 = \`case-11 \${case11_1} _4GX4TW_case-11-2\`;
+	const case11 = \`case-11 \${case11_1} ruGclG_case-11-2\`;
 	const case12_1 = "case-12-1";
-	const case12 = "case-12 " + case12_1 + " _4GX4TW_case-12-2";
-	const case13 = c("_4GX4TW_case-13 case-13-1");
-	const case14 = cn("_4GX4TW_case-14 case-14-1");
+	const case12 = "case-12 " + case12_1 + " ruGclG_case-12-2";
+	const case13 = c("ruGclG_case-13 case-13-1");
+	const case14 = cn("ruGclG_case-14 case-14-1");
 	const case15Handler = () => {
-		return c("_4GX4TW_case-15 case-15-1");
+		return c("ruGclG_case-15 case-15-1");
 	};
 	return <>
-      <p className="_4GX4TW_case-1">Case1</p>
-      <p className="_4GX4TW_case-2 _4GX4TW_case-2-1 case-2-2">Case2</p>
+      <p className="ruGclG_case-1">Case1</p>
+      <p className="ruGclG_case-2 ruGclG_case-2-1 case-2-2">Case2</p>
       <div className={case3}>Case3</div>
-      <div className={clsx("_4GX4TW_case-4")}>Case4</div>
-      <button className={clsx("_4GX4TW_case-5", {
-		"_4GX4TW_case-5-1": true,
-		"_4GX4TW_case-5-2": case5,
+      <div className={clsx("ruGclG_case-4")}>Case4</div>
+      <button className={clsx("ruGclG_case-5", {
+		"ruGclG_case-5-1": true,
+		"ruGclG_case-5-2": case5,
 		"case-5-3": true
 	})} onClick={() => setCase5((p) => !p)}>
         Case5
       </button>
-      <div className={clsx("_4GX4TW_case-6", [
-		"_4GX4TW_case-6-1",
+      <div className={clsx("ruGclG_case-6", [
+		"ruGclG_case-6-1",
 		"case-6-2",
 		case6_3
 	], { [case6_4]: true })}>
         Case6
       </div>
-      <div className={["case-7", "_4GX4TW_case-7-1"].join(" ")}>Case7</div>
-      <button className={case8 ? "_4GX4TW_case-8 _4GX4TW_case-8-1" : "_4GX4TW_case-8 _4GX4TW_case-8-2"} onClick={() => {
+      <div className={["case-7", "ruGclG_case-7-1"].join(" ")}>Case7</div>
+      <button className={case8 ? "ruGclG_case-8 ruGclG_case-8-1" : "ruGclG_case-8 ruGclG_case-8-2"} onClick={() => {
 		setCase8((p) => !p);
 	}}>
         Case8
@@ -62,7 +62,7 @@ export const TestCaseComponent = () => {
       <div className={case13}>Case13</div>
       <div className={clsx(case14, "case-14-2")}>Case14</div>
       <div className={case15Handler()}>Case15</div>
-      <div className={\`_4GX4TW_case-16 case-16-1\`}>Case16</div>
+      <div className={\`ruGclG_case-16 case-16-1\`}>Case16</div>
       
     </>;
 };
@@ -70,114 +70,114 @@ export const TestCaseComponent = () => {
 `;
 
 exports[`Theme tests > style tag is working 2`] = `
-"._4GX4TW_case-1 {
+".ruGclG_case-1 {
   color: var(--colors-red-100);
 }
 
-._4GX4TW_case-2 {
+.ruGclG_case-2 {
   color: var(--colors-red-200);
 }
 
-._4GX4TW_case-2._4GX4TW_case-2-1 {
+.ruGclG_case-2.ruGclG_case-2-1 {
   background-color: var(--colors-red-200);
 }
 
-._4GX4TW_case-3 {
+.ruGclG_case-3 {
   color: var(--colors-red-300);
 }
 
 @media (max-width: 600px) {
-  ._4GX4TW_case-3 {
+  .ruGclG_case-3 {
     color: var(--colors-red-400);
   }
 }
 
-._4GX4TW_case-4 {
+.ruGclG_case-4 {
   color: #ff0004;
   margin-top: var(--spacing-1);
 }
 
-._4GX4TW_case-5 {
+.ruGclG_case-5 {
   color: #ff0005;
 }
 
-._4GX4TW_case-5._4GX4TW_case-5-1 {
+.ruGclG_case-5.ruGclG_case-5-1 {
   background-color: #ff0005;
 }
 
-._4GX4TW_case-5._4GX4TW_case-5-2 {
+.ruGclG_case-5.ruGclG_case-5-2 {
   background-color: #ff0006;
 }
 
-._4GX4TW_case-6 {
+.ruGclG_case-6 {
   color: #ff0006;
 }
 
-._4GX4TW_case-6._4GX4TW_case-6-1 {
+.ruGclG_case-6.ruGclG_case-6-1 {
   background-color: #ff0006;
 }
 
-._4GX4TW_case-6._4GX4TW_case-6-3 {
+.ruGclG_case-6.ruGclG_case-6-3 {
   border-color: #ff0006;
 }
 
-._4GX4TW_case-6._4GX4TW_case-6-4 {
+.ruGclG_case-6.ruGclG_case-6-4 {
   outline-color: #ff0006;
 }
 
-._4GX4TW_case-7-1 {
+.ruGclG_case-7-1 {
   color: #ff0007;
 }
 
-._4GX4TW_case-8._4GX4TW_case-8-1 {
+.ruGclG_case-8.ruGclG_case-8-1 {
   background-color: #ff0008;
 }
 
-._4GX4TW_case-8._4GX4TW_case-8-2 {
+.ruGclG_case-8.ruGclG_case-8-2 {
   color: #ff0008;
 }
 
-._4GX4TW_case-9-1 {
+.ruGclG_case-9-1 {
   color: #ff0009;
 }
 
-._4GX4TW_case-9-2 {
+.ruGclG_case-9-2 {
   background-color: #ff0009;
 }
 
-._4GX4TW_case-10 {
+.ruGclG_case-10 {
   color: #ff000a;
 }
 
-._4GX4TW_case-11-1 {
+.ruGclG_case-11-1 {
   color: #ff000b;
 }
 
-._4GX4TW_case-11-2 {
+.ruGclG_case-11-2 {
   background-color: #ff000b;
 }
 
-._4GX4TW_case-12-1 {
+.ruGclG_case-12-1 {
   color: #ff000c;
 }
 
-._4GX4TW_case-12-2 {
+.ruGclG_case-12-2 {
   background-color: #ff000c;
 }
 
-._4GX4TW_case-13 {
+.ruGclG_case-13 {
   color: #ff000d;
 }
 
-._4GX4TW_case-14 {
+.ruGclG_case-14 {
   color: #ff000e;
 }
 
-._4GX4TW_case-15 {
+.ruGclG_case-15 {
   color: #ff000f;
 }
 
-._4GX4TW_case-16 {
+.ruGclG_case-16 {
   color: #ff0010;
 }
 "

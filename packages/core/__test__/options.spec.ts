@@ -14,7 +14,7 @@ const classNameListContent = readFileSync(path.resolve(__dirname, './snippets/cl
 describe('Options tests', () => {
   test('class name list is working', () => {
     const regex = new RegExp("^class[A-Z][A-Za-z0-9_]*");
-    const result = transformCode(classNameListContent, 'index.tsx', {
+    const result = transformCode(classNameListContent, 'options-1.tsx', {
       classNameList: ['className', 'containerClassName', regex.toString()],
       cssOutDir: path.resolve(__dirname, './.css'),
     })

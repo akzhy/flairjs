@@ -14,7 +14,7 @@ const flairPropertyObjectContent = readFileSync(path.resolve(__dirname, './snipp
 
 describe('Theme tests', () => {
   test('style tag is working', () => {
-    const result = transformCode(styleTagContent, 'index.tsx', {
+    const result = transformCode(styleTagContent, 'theme-1.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
       useTheme: true,
     })
