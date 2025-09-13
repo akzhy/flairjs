@@ -17,6 +17,8 @@ const combinedStylesContent = readFileSync(path.resolve(__dirname, './snippets/m
 const globalStyleContent = readFileSync(path.resolve(__dirname, './snippets/misc-global-style.tsx'), 'utf-8')
 const globalFlairStyleContent = readFileSync(path.resolve(__dirname, './snippets/misc-global-flair.tsx'), 'utf-8')
 const functionVariants = readFileSync(path.resolve(__dirname, './snippets/misc-function-variants.tsx'), 'utf-8')
+const classComponentStyle = readFileSync(path.resolve(__dirname, './snippets/misc-class-components.tsx'), 'utf-8')
+const classComponentFlair = readFileSync(path.resolve(__dirname, './snippets/misc-class-component-flair.tsx'), 'utf-8')
 
 describe('Misc tests', () => {
   test('conflicting classnames in same file are working', () => {
@@ -65,6 +67,26 @@ describe('Misc tests', () => {
 
   test('different function variants are working', () => {
     const result = transformCode(functionVariants, 'misc-5.tsx', {
+      cssOutDir: path.resolve(__dirname, './.css'),
+    })
+    if (!result) {
+      throw new Error('transformCode returned null or undefined')
+    }
+    expect(result.code).toMatchSnapshot()
+  })
+
+  test('class component style tags are working', () => {
+    const result = transformCode(classComponentStyle, 'misc-6.tsx', {
+      cssOutDir: path.resolve(__dirname, './.css'),
+    })
+    if (!result) {
+      throw new Error('transformCode returned null or undefined')
+    }
+    expect(result.code).toMatchSnapshot()
+  })
+
+  test('class component flair is working', () => {
+    const result = transformCode(classComponentFlair, 'misc-7.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
     })
     if (!result) {

@@ -1,5 +1,47 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Misc tests > class component flair is working 1`] = `
+"import "@flairjs/css/cached-css/de3088a18b2aa97c.css";
+import { flair } from "@flairjs/react";
+import clsx from "clsx";
+import { Component } from "react";
+class Box extends Component<{
+	children?: React.ReactNode;
+	containerClassName?: string;
+}> {
+	render() {
+		const { containerClassName, children } = this.props;
+		return <div className={clsx("FmkIrq_box", containerClassName)}>
+        {children}
+        <span className="title">Hello</span>
+      </div>;
+	}
+}
+"
+`;
+
+exports[`Misc tests > class component style tags are working 1`] = `
+"import "@flairjs/css/cached-css/cbd93da89790ac1c.css";
+import { Style } from "@flairjs/react";
+import clsx from "clsx";
+import { Component } from "react";
+class Box extends Component<{
+	children?: React.ReactNode;
+	containerClassName?: string;
+}> {
+	render() {
+		const { children, containerClassName } = this.props;
+		return <div className={clsx("c1077a_box", containerClassName)}>
+        {children}
+        <span className="title">Hello</span>
+        
+      </div>;
+	}
+}
+export { Box };
+"
+`;
+
 exports[`Misc tests > combined styles are working 1`] = `
 "import "@flairjs/css/cached-css/1e01b777eaf6a095.css";
 import clsx from "clsx";
