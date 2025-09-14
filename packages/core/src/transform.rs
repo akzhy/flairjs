@@ -54,6 +54,11 @@ enum Pass {
   Third,
 }
 
+#[napi(object)]
+pub struct Theme {
+  pub breakpoints: HashMap<String, String>,
+}
+
 /// The import paths for flair-related utilities and components
 const IMPORT_PATHS: &[&str] = &["@flairjs/react", "@flairjs/solidjs", "@flairjs/preact"];
 
@@ -62,6 +67,7 @@ pub struct TransformOptions {
   pub css_out_dir: String,
   pub class_name_list: Option<Vec<String>>,
   pub use_theme: Option<bool>,
+  pub theme: Option<Theme>,
 }
 
 #[napi(object)]
@@ -447,6 +453,7 @@ impl<'a> TransformVisitor<'a> {
               &format!("{}:{}", self.file_path, index),
               true, // Enable CSS modules for scoped styles
               use_theme,
+              &self.options.theme
             );
 
             match res {
@@ -471,6 +478,7 @@ impl<'a> TransformVisitor<'a> {
               &format!("{}:{}", self.file_path, fn_id),
               false, // Disable CSS modules for global styles
               use_theme,
+              &self.options.theme
             );
 
             match res {

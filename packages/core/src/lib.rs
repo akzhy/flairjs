@@ -29,6 +29,7 @@ pub fn transform_code(
     css_out_dir: options.css_out_dir,
     class_name_list: options.class_name_list,
     use_theme: options.use_theme,
+    theme: options.theme,
   };
   let result = transform::transform(code, file_path, options, css_preprocessor, Some(env));
   let duration = time.elapsed();
