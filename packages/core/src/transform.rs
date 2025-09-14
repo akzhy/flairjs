@@ -9,6 +9,7 @@ use crate::flair_property::{FlairProperty, FLAIR_REPLACEMENT};
 use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::{parse_css::parse_css, update_attribute::SymbolStore};
+use indexmap::IndexMap;
 use lightningcss::css_modules::CssModuleExport;
 use lightningcss::stylesheet::ToCssResult;
 use napi::bindgen_prelude::Function as NapiFunction;
@@ -190,7 +191,7 @@ struct TransformVisitor<'a> {
   extracted_css: Vec<String>,
   /// Maps function/component IDs to their raw CSS content before processing
   /// The id is actually the function's span.start position
-  function_id_to_raw_css_mapping: HashMap<u32, Vec<CSSData>>,
+  function_id_to_raw_css_mapping: IndexMap<u32, Vec<CSSData>>,
   /// Maps function/component IDs to their processed CSS module exports (class name mappings)
   css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
 
@@ -246,7 +247,6 @@ impl<'a> TransformVisitor<'a> {
     let style_tag_import_symbols: Vec<SymbolId> = vec![];
     let classname_util_symbols: Vec<SymbolId> = vec![];
 
-    let function_id_to_style_mapping = HashMap::new();
     let variable_linking = HashMap::new();
     let flair_property_visitor = FlairProperty::new(&scoping, &allocator);
 
@@ -266,7 +266,7 @@ impl<'a> TransformVisitor<'a> {
       file_path,
       options,
       js_env,
-      function_id_to_raw_css_mapping: function_id_to_style_mapping,
+      function_id_to_raw_css_mapping: IndexMap::new(),
       flair_property_visitor,
       fn_id_to_class_map: HashMap::new(),
       parent_class_id: None,
@@ -381,7 +381,8 @@ impl<'a> TransformVisitor<'a> {
     self
       .function_id_to_raw_css_mapping
       .iter()
-      .for_each(|(fn_id, styles)| {
+      .enumerate()
+      .for_each(|(index, (fn_id, styles))| {
         // Separate scoped and global CSS for different processing
         let (scoped_css, global_css) = {
           let mut scoped_css: Option<String> = None;
@@ -443,7 +444,7 @@ impl<'a> TransformVisitor<'a> {
           preprocessed_scoped_css.clone().and_then(|css| {
             let res = parse_css(
               &css,
-              &format!("{}:{}", self.file_path, fn_id),
+              &format!("{}:{}", self.file_path, index),
               true, // Enable CSS modules for scoped styles
               use_theme,
             );

@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use oxc::allocator::Allocator;
 use oxc::allocator::Box as OxcBox;
 use oxc::ast::ast::BindingPatternKind;
@@ -20,8 +21,8 @@ pub static FLAIR_REPLACEMENT: &str = "__flair_replacement__";
 
 pub struct FlairProperty<'a> {
   scoping: &'a Scoping,
-  style: HashMap<u32, CSSData>,
-  global_style: HashMap<u32, CSSData>,
+  style: IndexMap<u32, CSSData>,
+  global_style: IndexMap<u32, CSSData>,
   /// Maps function / variable declaration symbol IDs to their starting span positions.
   /// Used to associate flair styles with the correct function/component.
   /// 
@@ -44,19 +45,19 @@ impl<'a> FlairProperty<'a> {
   pub fn new(scoping: &'a Scoping, allocator: &'a Allocator) -> FlairProperty<'a> {
     FlairProperty {
       scoping,
-      style: HashMap::new(),
-      global_style: HashMap::new(),
+      style: IndexMap::new(),
+      global_style: IndexMap::new(),
       symbol_to_span_start_map: HashMap::new(),
       allocator,
       ast_builder: AstBuilder::new(&allocator),
     }
   }
 
-  pub fn get_scoped_style(&self) -> &HashMap<u32, CSSData> {
+  pub fn get_scoped_style(&self) -> &IndexMap<u32, CSSData> {
     &self.style
   }
 
-  pub fn get_global_style(&self) -> &HashMap<u32, CSSData> {
+  pub fn get_global_style(&self) -> &IndexMap<u32, CSSData> {
     &self.global_style
   }
 
