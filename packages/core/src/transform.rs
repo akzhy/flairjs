@@ -512,7 +512,6 @@ impl<'a> TransformVisitor<'a> {
         let mut style_detector = StyleDetector::new(&self.scoping, &self.style_tag_import_symbols);
         style_detector.visit_function_body(&body);
 
-        // If this function is inside a class, map it to the parent class for CSS scope inheritance
         if let Some(class_id) = self.parent_class_id {
           self.fn_id_to_class_map.insert(fn_start, class_id);
         }
@@ -520,9 +519,17 @@ impl<'a> TransformVisitor<'a> {
         // If style tags were detected, store the CSS and symbol information
         if style_detector.has_style {
           self.style_tag_symbols = style_detector.get_style_tag_symbol_ids();
-          self
-            .function_id_to_raw_css_mapping
-            .insert(fn_start, style_detector.css);
+
+          // If this function is inside a class, map it to the parent class for CSS scope inheritance
+          if let Some(class_id) = self.parent_class_id {
+            self
+              .function_id_to_raw_css_mapping
+              .insert(class_id, style_detector.css);
+          } else {
+            self
+              .function_id_to_raw_css_mapping
+              .insert(fn_start, style_detector.css);
+          }
         }
       }
       Pass::Second => {
