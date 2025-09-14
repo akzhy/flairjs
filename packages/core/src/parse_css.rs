@@ -89,13 +89,9 @@ pub fn parse_css(css: &str, filename: &str, module: bool, use_theme: bool) -> Re
 /// # Returns
 /// * `true` if the token is valid, `false` otherwise
 fn is_valid_theme_token(token: &str) -> bool {
-  // Must start with $
-  if !token.starts_with('$') {
-    return false;
-  }
   
   // Must have at least one character after $
-  if token.len() < 2 {
+  if token.len() < 1 {
     return false;
   }
   
