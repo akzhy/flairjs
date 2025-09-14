@@ -82,19 +82,19 @@ Box.flair = flair({
 })
 
 Box2.flair = flair({
-  '.box': { color: 'blue' },
+  '.box': { color: 'red' },
 })
 
 // @ts-ignore
 Box3.flair = flair({
-  '.box': { color: 'blue' },
+  '.box': { color: 'orange' },
 })
 
 Box4.flair = flair({
-  '.box': { color: 'blue' },
+  '.box': { color: 'green' },
 })
 
 // @ts-ignore
 Box5.flair = flair({
-  '.box': { color: 'blue' },
+  '.box': { color: 'black' },
 })

@@ -7,8 +7,8 @@ import { flair } from "@flairjs/react";
 export const TestCaseComponent = () => {
 	return <>
       <div>
-        <Box containerClassName="GjWpCq_item"></Box>
-        <RegexBox classList={["GjWpCq_regex-box"]} />
+        <Box containerClassName="J0JDGq_item"></Box>
+        <RegexBox classList={["J0JDGq_regex-box"]} />
       </div>
     </>;
 };
@@ -16,7 +16,7 @@ const Box = ({ children, containerClassName }: {
 	children?: React.ReactNode;
 	containerClassName?: string;
 }) => {
-	return <div className={clsx("ESBuwG_box", containerClassName)}>{children}</div>;
+	return <div className={clsx("TLhiCW_box", containerClassName)}>{children}</div>;
 };
 const RegexBox = ({ children, classList }: {
 	children?: React.ReactNode;

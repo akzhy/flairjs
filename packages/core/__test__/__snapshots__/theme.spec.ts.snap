@@ -1,70 +1,116 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Theme tests > flair object is working 1`] = `
-"import "@flairjs/css/cached-css/d3215d0813207064.css";
-import clsx from "clsx";
-import { c, cn, flair } from "@flairjs/react";
-import { useState } from "react";
-export const TestCaseComponent = () => {
-	const [case5, setCase5] = useState(false);
-	const [case8, setCase8] = useState(false);
-	const [case9, setCase9] = useState(false);
-	const case3 = "sw5AEW_case-3";
-	const case6_3 = "sw5AEW_case-6-3";
-	const case6_4 = "case-6-4";
-	const case9_1 = "case-9 sw5AEW_case-9-1";
-	const case9_2 = "case-9 sw5AEW_case-9-2";
-	const case10 = "case-10";
-	const case11_1 = "case-11-1";
-	const case11 = \`case-11 \${case11_1} sw5AEW_case-11-2\`;
-	const case12_1 = "case-12-1";
-	const case12 = "case-12 " + case12_1 + " sw5AEW_case-12-2";
-	const case13 = c("sw5AEW_case-13 case-13-1");
-	const case14 = cn("sw5AEW_case-14 case-14-1");
-	const case15Handler = () => {
-		return c("sw5AEW_case-15 case-15-1");
-	};
-	return <>
-      <p className="sw5AEW_case-1">Case1</p>
-      <p className="sw5AEW_case-2 sw5AEW_case-2-1 case-2-2">Case2</p>
-      <div className={case3}>Case3</div>
-      <div className={clsx("sw5AEW_case-4")}>Case4</div>
-      <button className={clsx("sw5AEW_case-5", {
-		"sw5AEW_case-5-1": true,
-		"sw5AEW_case-5-2": case5,
-		"case-5-3": true
-	})} onClick={() => setCase5((p) => !p)}>
-        Case5
-      </button>
-      <div className={clsx("sw5AEW_case-6", [
-		"sw5AEW_case-6-1",
-		"case-6-2",
-		case6_3
-	], { [case6_4]: true })}>
-        Case6
-      </div>
-      <div className={["case-7", "sw5AEW_case-7-1"].join(" ")}>Case7</div>
-      <button className={case8 ? "sw5AEW_case-8 sw5AEW_case-8-1" : "sw5AEW_case-8 sw5AEW_case-8-2"} onClick={() => {
-		setCase8((p) => !p);
-	}}>
-        Case8
-      </button>
-      <button className={case9 ? case9_1 : case9_2} onClick={() => {
-		setCase9((p) => !p);
-	}}>
-        Case9
-      </button>
-      <div className={clsx({ [case10]: true })}>
-        Case10
-      </div>
-      <div className={case11}>Case11</div>
-      <div className={case12}>Case12</div>
-      <div className={case13}>Case13</div>
-      <div className={clsx(case14, "case-14-2")}>Case14</div>
-      <div className={case15Handler()}>Case15</div>
-      <div className={\`sw5AEW_case-16 case-16-1\`}>Case16</div>
-    </>;
-};
+".JnFTUa_case-1 {
+  color: var(--colors-red-100);
+}
+
+.JnFTUa_case-2 {
+  color: var(--colors-red-200);
+}
+
+.JnFTUa_case-2.JnFTUa_case-2-1 {
+  background-color: var(--colors-red-200);
+}
+
+.JnFTUa_case-3 {
+  color: var(--colors-red-300);
+  padding: var(--spacing-4) var(--spacing-6);
+}
+
+@media (min-width: 640px) {
+  .JnFTUa_case-3 {
+    color: var(--colors-red-400);
+  }
+}
+
+.JnFTUa_case-4 {
+  color: #ff0004;
+}
+
+.JnFTUa_case-5 {
+  color: #ff0005;
+}
+
+.JnFTUa_case-5.JnFTUa_case-5-1 {
+  background-color: #ff0005;
+}
+
+.JnFTUa_case-5.JnFTUa_case-5-2 {
+  background-color: #ff0006;
+}
+
+.JnFTUa_case-6 {
+  color: #ff0006;
+}
+
+.JnFTUa_case-6.JnFTUa_case-6-1 {
+  background-color: #ff0006;
+}
+
+.JnFTUa_case-6.JnFTUa_case-6-3 {
+  border-color: #ff0006;
+}
+
+.JnFTUa_case-6.JnFTUa_case-6-4 {
+  outline-color: #ff0006;
+}
+
+.JnFTUa_case-7-1 {
+  color: #ff0007;
+}
+
+.JnFTUa_case-8.JnFTUa_case-8-1 {
+  background-color: #ff0008;
+}
+
+.JnFTUa_case-8.JnFTUa_case-8-2 {
+  color: #ff0008;
+}
+
+.JnFTUa_case-9-1 {
+  color: #ff0009;
+}
+
+.JnFTUa_case-9-2 {
+  background-color: #ff0009;
+}
+
+.JnFTUa_case-10 {
+  color: #ff000a;
+}
+
+.JnFTUa_case-11-1 {
+  color: #ff000b;
+}
+
+.JnFTUa_case-11-2 {
+  background-color: #ff000b;
+}
+
+.JnFTUa_case-12-1 {
+  color: #ff000c;
+}
+
+.JnFTUa_case-12-2 {
+  background-color: #ff000c;
+}
+
+.JnFTUa_case-13 {
+  color: #ff000d;
+}
+
+.JnFTUa_case-14 {
+  color: #ff000e;
+}
+
+.JnFTUa_case-15 {
+  color: #ff000f;
+}
+
+.JnFTUa_case-16 {
+  color: #ff0010;
+}
 "
 `;
 
@@ -183,70 +229,116 @@ exports[`Theme tests > flair object is working 2`] = `
 `;
 
 exports[`Theme tests > flair string is working 1`] = `
-"import "@flairjs/css/cached-css/631d19d4f8ec46d.css";
-import clsx from "clsx";
-import { c, cn } from "@flairjs/react";
-import { useState } from "react";
-export const TestCaseComponent = () => {
-	const [case5, setCase5] = useState(false);
-	const [case8, setCase8] = useState(false);
-	const [case9, setCase9] = useState(false);
-	const case3 = "B3XaXW_case-3";
-	const case6_3 = "B3XaXW_case-6-3";
-	const case6_4 = "case-6-4";
-	const case9_1 = "case-9 B3XaXW_case-9-1";
-	const case9_2 = "case-9 B3XaXW_case-9-2";
-	const case10 = "case-10";
-	const case11_1 = "case-11-1";
-	const case11 = \`case-11 \${case11_1} B3XaXW_case-11-2\`;
-	const case12_1 = "case-12-1";
-	const case12 = "case-12 " + case12_1 + " B3XaXW_case-12-2";
-	const case13 = c("B3XaXW_case-13 case-13-1");
-	const case14 = cn("B3XaXW_case-14 case-14-1");
-	const case15Handler = () => {
-		return c("B3XaXW_case-15 case-15-1");
-	};
-	return <>
-      <p className="B3XaXW_case-1">Case1</p>
-      <p className="B3XaXW_case-2 B3XaXW_case-2-1 case-2-2">Case2</p>
-      <div className={case3}>Case3</div>
-      <div className={clsx("B3XaXW_case-4")}>Case4</div>
-      <button className={clsx("B3XaXW_case-5", {
-		"B3XaXW_case-5-1": true,
-		"B3XaXW_case-5-2": case5,
-		"case-5-3": true
-	})} onClick={() => setCase5((p) => !p)}>
-        Case5
-      </button>
-      <div className={clsx("B3XaXW_case-6", [
-		"B3XaXW_case-6-1",
-		"case-6-2",
-		case6_3
-	], { [case6_4]: true })}>
-        Case6
-      </div>
-      <div className={["case-7", "B3XaXW_case-7-1"].join(" ")}>Case7</div>
-      <button className={case8 ? "B3XaXW_case-8 B3XaXW_case-8-1" : "B3XaXW_case-8 B3XaXW_case-8-2"} onClick={() => {
-		setCase8((p) => !p);
-	}}>
-        Case8
-      </button>
-      <button className={case9 ? case9_1 : case9_2} onClick={() => {
-		setCase9((p) => !p);
-	}}>
-        Case9
-      </button>
-      <div className={clsx({ [case10]: true })}>
-        Case10
-      </div>
-      <div className={case11}>Case11</div>
-      <div className={case12}>Case12</div>
-      <div className={case13}>Case13</div>
-      <div className={clsx(case14, "case-14-2")}>Case14</div>
-      <div className={case15Handler()}>Case15</div>
-      <div className={\`B3XaXW_case-16 case-16-1\`}>Case16</div>
-    </>;
-};
+".GJBWWW_case-1 {
+  color: var(--colors-red-100);
+}
+
+.GJBWWW_case-2 {
+  color: var(--colors-red-200);
+}
+
+.GJBWWW_case-2.GJBWWW_case-2-1 {
+  background-color: var(--colors-red-200);
+}
+
+.GJBWWW_case-3 {
+  color: var(--colors-red-300);
+  padding: var(--spacing-4) var(--spacing-6);
+}
+
+@media (min-width: 640px) {
+  .GJBWWW_case-3 {
+    color: var(--colors-red-400);
+  }
+}
+
+.GJBWWW_case-4 {
+  color: #ff0004;
+}
+
+.GJBWWW_case-5 {
+  color: #ff0005;
+}
+
+.GJBWWW_case-5.GJBWWW_case-5-1 {
+  background-color: #ff0005;
+}
+
+.GJBWWW_case-5.GJBWWW_case-5-2 {
+  background-color: #ff0006;
+}
+
+.GJBWWW_case-6 {
+  color: #ff0006;
+}
+
+.GJBWWW_case-6.GJBWWW_case-6-1 {
+  background-color: #ff0006;
+}
+
+.GJBWWW_case-6.GJBWWW_case-6-3 {
+  border-color: #ff0006;
+}
+
+.GJBWWW_case-6.GJBWWW_case-6-4 {
+  outline-color: #ff0006;
+}
+
+.GJBWWW_case-7-1 {
+  color: #ff0007;
+}
+
+.GJBWWW_case-8.GJBWWW_case-8-1 {
+  background-color: #ff0008;
+}
+
+.GJBWWW_case-8.GJBWWW_case-8-2 {
+  color: #ff0008;
+}
+
+.GJBWWW_case-9-1 {
+  color: #ff0009;
+}
+
+.GJBWWW_case-9-2 {
+  background-color: #ff0009;
+}
+
+.GJBWWW_case-10 {
+  color: #ff000a;
+}
+
+.GJBWWW_case-11-1 {
+  color: #ff000b;
+}
+
+.GJBWWW_case-11-2 {
+  background-color: #ff000b;
+}
+
+.GJBWWW_case-12-1 {
+  color: #ff000c;
+}
+
+.GJBWWW_case-12-2 {
+  background-color: #ff000c;
+}
+
+.GJBWWW_case-13 {
+  color: #ff000d;
+}
+
+.GJBWWW_case-14 {
+  color: #ff000e;
+}
+
+.GJBWWW_case-15 {
+  color: #ff000f;
+}
+
+.GJBWWW_case-16 {
+  color: #ff0010;
+}
 "
 `;
 
@@ -365,183 +457,114 @@ exports[`Theme tests > flair string is working 2`] = `
 `;
 
 exports[`Theme tests > style tag is working 1`] = `
-"import "@flairjs/css/cached-css/d0878514f4eaf101.css";
-import clsx from "clsx";
-import { Style, c, cn } from "@flairjs/react";
-import { useState } from "react";
-export const TestCaseComponent = () => {
-	const [case5, setCase5] = useState(false);
-	const [case8, setCase8] = useState(false);
-	const [case9, setCase9] = useState(false);
-	const case3 = "ruGclG_case-3";
-	const case6_3 = "ruGclG_case-6-3";
-	const case6_4 = "case-6-4";
-	const case9_1 = "case-9 ruGclG_case-9-1";
-	const case9_2 = "case-9 ruGclG_case-9-2";
-	const case10 = "case-10";
-	const case11_1 = "case-11-1";
-	const case11 = \`case-11 \${case11_1} ruGclG_case-11-2\`;
-	const case12_1 = "case-12-1";
-	const case12 = "case-12 " + case12_1 + " ruGclG_case-12-2";
-	const case13 = c("ruGclG_case-13 case-13-1");
-	const case14 = cn("ruGclG_case-14 case-14-1");
-	const case15Handler = () => {
-		return c("ruGclG_case-15 case-15-1");
-	};
-	return <>
-      <p className="ruGclG_case-1">Case1</p>
-      <p className="ruGclG_case-2 ruGclG_case-2-1 case-2-2">Case2</p>
-      <div className={case3}>Case3</div>
-      <div className={clsx("ruGclG_case-4")}>Case4</div>
-      <button className={clsx("ruGclG_case-5", {
-		"ruGclG_case-5-1": true,
-		"ruGclG_case-5-2": case5,
-		"case-5-3": true
-	})} onClick={() => setCase5((p) => !p)}>
-        Case5
-      </button>
-      <div className={clsx("ruGclG_case-6", [
-		"ruGclG_case-6-1",
-		"case-6-2",
-		case6_3
-	], { [case6_4]: true })}>
-        Case6
-      </div>
-      <div className={["case-7", "ruGclG_case-7-1"].join(" ")}>Case7</div>
-      <button className={case8 ? "ruGclG_case-8 ruGclG_case-8-1" : "ruGclG_case-8 ruGclG_case-8-2"} onClick={() => {
-		setCase8((p) => !p);
-	}}>
-        Case8
-      </button>
-      <button className={case9 ? case9_1 : case9_2} onClick={() => {
-		setCase9((p) => !p);
-	}}>
-        Case9
-      </button>
-      <div className={clsx({ [case10]: true })}>
-        Case10
-      </div>
-      <div className={case11}>Case11</div>
-      <div className={case12}>Case12</div>
-      <div className={case13}>Case13</div>
-      <div className={clsx(case14, "case-14-2")}>Case14</div>
-      <div className={case15Handler()}>Case15</div>
-      <div className={\`ruGclG_case-16 case-16-1\`}>Case16</div>
-      
-    </>;
-};
-"
-`;
-
-exports[`Theme tests > style tag is working 2`] = `
-".ruGclG_case-1 {
+".uLUfvG_case-1 {
   color: var(--colors-red-100);
 }
 
-.ruGclG_case-2 {
+.uLUfvG_case-2 {
   color: var(--colors-red-200);
 }
 
-.ruGclG_case-2.ruGclG_case-2-1 {
+.uLUfvG_case-2.uLUfvG_case-2-1 {
   background-color: var(--colors-red-200);
 }
 
-.ruGclG_case-3 {
+.uLUfvG_case-3 {
   color: var(--colors-red-300);
 }
 
 @media (max-width: 600px) {
-  .ruGclG_case-3 {
+  .uLUfvG_case-3 {
     color: var(--colors-red-400);
   }
 }
 
-.ruGclG_case-4 {
+.uLUfvG_case-4 {
   color: #ff0004;
   margin-top: var(--spacing-1);
 }
 
-.ruGclG_case-5 {
+.uLUfvG_case-5 {
   color: #ff0005;
 }
 
-.ruGclG_case-5.ruGclG_case-5-1 {
+.uLUfvG_case-5.uLUfvG_case-5-1 {
   background-color: #ff0005;
 }
 
-.ruGclG_case-5.ruGclG_case-5-2 {
+.uLUfvG_case-5.uLUfvG_case-5-2 {
   background-color: #ff0006;
 }
 
-.ruGclG_case-6 {
+.uLUfvG_case-6 {
   color: #ff0006;
 }
 
-.ruGclG_case-6.ruGclG_case-6-1 {
+.uLUfvG_case-6.uLUfvG_case-6-1 {
   background-color: #ff0006;
 }
 
-.ruGclG_case-6.ruGclG_case-6-3 {
+.uLUfvG_case-6.uLUfvG_case-6-3 {
   border-color: #ff0006;
 }
 
-.ruGclG_case-6.ruGclG_case-6-4 {
+.uLUfvG_case-6.uLUfvG_case-6-4 {
   outline-color: #ff0006;
 }
 
-.ruGclG_case-7-1 {
+.uLUfvG_case-7-1 {
   color: #ff0007;
 }
 
-.ruGclG_case-8.ruGclG_case-8-1 {
+.uLUfvG_case-8.uLUfvG_case-8-1 {
   background-color: #ff0008;
 }
 
-.ruGclG_case-8.ruGclG_case-8-2 {
+.uLUfvG_case-8.uLUfvG_case-8-2 {
   color: #ff0008;
 }
 
-.ruGclG_case-9-1 {
+.uLUfvG_case-9-1 {
   color: #ff0009;
 }
 
-.ruGclG_case-9-2 {
+.uLUfvG_case-9-2 {
   background-color: #ff0009;
 }
 
-.ruGclG_case-10 {
+.uLUfvG_case-10 {
   color: #ff000a;
 }
 
-.ruGclG_case-11-1 {
+.uLUfvG_case-11-1 {
   color: #ff000b;
 }
 
-.ruGclG_case-11-2 {
+.uLUfvG_case-11-2 {
   background-color: #ff000b;
 }
 
-.ruGclG_case-12-1 {
+.uLUfvG_case-12-1 {
   color: #ff000c;
 }
 
-.ruGclG_case-12-2 {
+.uLUfvG_case-12-2 {
   background-color: #ff000c;
 }
 
-.ruGclG_case-13 {
+.uLUfvG_case-13 {
   color: #ff000d;
 }
 
-.ruGclG_case-14 {
+.uLUfvG_case-14 {
   color: #ff000e;
 }
 
-.ruGclG_case-15 {
+.uLUfvG_case-15 {
   color: #ff000f;
 }
 
-.ruGclG_case-16 {
+.uLUfvG_case-16 {
   color: #ff0010;
 }
 "

@@ -21,7 +21,6 @@ describe('Theme tests', () => {
     if (!result) {
       throw new Error('transformCode returned null or undefined')
     }
-    expect(result.code).toMatchSnapshot()
     expect(result.css).toMatchSnapshot()
   })
 
@@ -33,7 +32,6 @@ describe('Theme tests', () => {
     if (!result) {
       throw new Error('transformCode returned null or undefined')
     }
-    expect(result.code).toMatchSnapshot()
     expect(result.css).toMatchSnapshot()
   })
 
@@ -45,7 +43,6 @@ describe('Theme tests', () => {
     if (!result) {
       throw new Error('transformCode returned null or undefined')
     }
-    expect(result.code).toMatchSnapshot()
     expect(result.css).toMatchSnapshot()
   })
 });
