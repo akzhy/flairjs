@@ -11,6 +11,7 @@ const __dirname = dirname(__filename)
 const styleTagContent = readFileSync(path.resolve(__dirname, './snippets/style-tag-theme.tsx'), 'utf-8')
 const flairPropertyContent = readFileSync(path.resolve(__dirname, './snippets/flair-string-theme.tsx'), 'utf-8')
 const flairPropertyObjectContent = readFileSync(path.resolve(__dirname, './snippets/flair-obj-theme.tsx'), 'utf-8')
+const flairPropertyObjectMediaContent = readFileSync(path.resolve(__dirname, './snippets/flair-obj-theme-media.tsx'), 'utf-8')
 
 describe('Theme tests', () => {
   test('style tag is working', () => {
@@ -39,6 +40,24 @@ describe('Theme tests', () => {
     const result = transformCode(flairPropertyObjectContent, 'theme-3.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
       useTheme: true,
+    })
+    if (!result) {
+      throw new Error('transformCode returned null or undefined')
+    }
+    expect(result.css).toMatchSnapshot()
+  })
+
+  test('flair object media is working', () => {
+    const result = transformCode(flairPropertyObjectMediaContent, 'theme-4.tsx', {
+      cssOutDir: path.resolve(__dirname, './.css'),
+      useTheme: true,
+      theme: {
+        breakpoints: {
+          sm: '600px',
+          xl: '1200px',
+          '2xl': '1536px',
+        }
+      }
     })
     if (!result) {
       throw new Error('transformCode returned null or undefined')

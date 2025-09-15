@@ -228,6 +228,29 @@ exports[`Theme tests > flair object is working 2`] = `
 "
 `;
 
+exports[`Theme tests > flair object media is working 1`] = `
+".Sram4W_case-1 {
+  color: var(--colors-red-100);
+}
+
+@media (min-width: 600px) {
+  .Sram4W_case-1 {
+    background-color: var(--colors-red-200);
+  }
+}
+
+@media (min-width: 1536px) {
+  .Sram4W_case-1 {
+    background-color: var(--colors-red-200);
+  }
+
+  .Sram4W_case-1 .Sram4W_case-2 {
+    background-color: var(--colors-red-300);
+  }
+}
+"
+`;
+
 exports[`Theme tests > flair string is working 1`] = `
 ".GJBWWW_case-1 {
   color: var(--colors-red-100);
