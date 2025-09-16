@@ -8,7 +8,10 @@
     "isolatedModules": true,
     "resolveJsonModule": true,
     "moduleResolution": "bundler",
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationDir": "dist/types",
   },
   "include": ["src"]
 }
