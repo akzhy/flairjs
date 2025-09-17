@@ -1,17 +1,31 @@
 import { transformCode } from "@flairjs/core";
 import type { Plugin } from "vite";
+import module from "node:module";
+import path from "node:path";
+import { existsSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 
-export default function jsxStyledVitePlugin({
+const require = module.createRequire(import.meta.url);
+
+export default async function flairJsVitePlugin({
   cssPreprocessor,
 }: {
   cssPreprocessor?: (css: string, id: string) => string;
-}): Plugin {
+}): Promise<Plugin> {
+  const flairThemeFile = require.resolve("@flairjs/client/theme");
+
+  const flairGeneratedCssPath = path.resolve(flairThemeFile, "../generated-css");
+
+  if (!existsSync(flairGeneratedCssPath)) {
+    await mkdir(flairGeneratedCssPath);
+  }
+  
   return {
-    name: "vite-plugin-jsx-styled",
+    name: "@flairjs/vite-plugin",
     enforce: "pre",
     transform(code, id) {
       const result = transformCode(code, id, {
-        cssOutDir: ''
+        cssOutDir: flairGeneratedCssPath
       });
 
       
