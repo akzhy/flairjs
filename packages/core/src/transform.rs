@@ -316,7 +316,7 @@ impl<'a> TransformVisitor<'a> {
 
     // Create the CSS file path and import statement
     let hash_string = format!("{:x}.css", hash);
-    let import_path = format!("@flairjs/css/cached-css/{}", hash_string);
+    let import_path = format!("@flairjs/client/generated-css/{}", hash_string);
 
     // Create an import statement for the generated CSS file
     let import_statement = Statement::from(
