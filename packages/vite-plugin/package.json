@@ -4,31 +4,32 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     },
     "./cached-css/*": {
       "import": "./dist/.cache/*"
     }
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "rslib build",
+    "build": "rolldown -c",
     "check": "biome check --write",
-    "dev": "rslib build --watch",
+    "dev": "rolldown -w -c",
     "format": "biome format --write"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@rslib/core": "^0.6.1",
-    "@types/node": "^22.8.1",
     "@flairjs/core": "workspace:*",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@types/node": "^22.8.1",
+    "rolldown": "1.0.0-beta.37",
     "sass": "^1.86.3",
     "typescript": "^5.8.2",
     "vite": "^6.3.3"

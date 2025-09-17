@@ -2,7 +2,9 @@
   "name": "@flairjs/core",
   "version": "1.0.0",
   "description": "Template project for writing node package with napi-rs",
-  "main": "index.js",
+  "main": "dist/cjs/api.js",
+  "module": "dist/esm/api.js",
+  "types": "dist/types/api.d.ts",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/napi-rs/package-template.git"
@@ -18,9 +20,7 @@
     "node-addon-api"
   ],
   "files": [
-    "index.d.ts",
-    "index.js",
-    "browser.js"
+    "dist"
   ],
   "napi": {
     "binaryName": "core",
