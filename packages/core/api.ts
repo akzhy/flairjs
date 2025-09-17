@@ -1,7 +1,5 @@
 import { transformCode } from '.'
 
-export { transformCode }
-
 interface ThemeObjItem {
   [key: string | number]: string | ThemeObjItem
 }
@@ -26,7 +24,14 @@ export interface FlairThemeObject {
 export type FlairThemeConfig = {
   tokens: FlairThemeObject
   breakpoints?: Record<string, string | number>
-  selector: string | ((content: string) => string)
+  selector: string | ((content: string, themeName?: string) => string)
+  themes?: Record<
+    string,
+    {
+      tokens: FlairThemeObject
+      selector: string | ((content: string, themeName?: string) => string)
+    }
+  >
 }
 
 export function defineConfig(config: FlairThemeConfig) {
@@ -48,6 +53,20 @@ export const buildThemeTokens = (theme: FlairThemeConfig) => {
   } else {
     css = selector(css)
   }
+
+  Object.entries(theme.themes ?? {}).forEach(([themeName, themeConfig]) => {
+    if (typeof themeConfig.selector === 'string') {
+      css += `${themeConfig.selector} {\n`
+    }
+
+    css += buildThemeTokens(themeConfig)
+
+    if (typeof themeConfig.selector === 'string') {
+      css += `}\n`
+    } else {
+      css = themeConfig.selector(css, themeName)
+    }
+  })
 
   return css
 }
@@ -71,3 +90,6 @@ function tokensToCSSVars(tokens: Tokens | FlairThemeObject, prefix: string[] = [
 
   return css
 }
+
+
+export { transformCode }
