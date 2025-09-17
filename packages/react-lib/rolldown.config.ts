@@ -11,7 +11,7 @@ const createOptions = (format: 'esm' | 'cjs'): RolldownOptions => {
       esModule: true,
     },
     external: (id) => {
-      return id.endsWith('.node') || id.includes('node_modules');
+      return id.endsWith('.node') || id.includes('node_modules') || id === '@flairjs/client';
     },
   };
 };
