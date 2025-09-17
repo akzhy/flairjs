@@ -6,7 +6,7 @@ let replaced = indexFileContent.replace(
   `const { createRequire } = require('node:module')
 require = createRequire(__filename)`,
   `import { createRequire } from 'module'
-const require = createRequire(__filename)`,
+const require = createRequire(import.meta.url);`,
 )
 
 replaced = replaced.replace(
