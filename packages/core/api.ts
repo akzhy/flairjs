@@ -1,4 +1,4 @@
-import { transformCode } from '.'
+import { transformCode } from './index'
 
 interface ThemeObjItem {
   [key: string | number]: string | ThemeObjItem
@@ -34,7 +34,7 @@ export type FlairThemeConfig = {
   >
 }
 
-export function defineConfig(config: FlairThemeConfig) {
+export function defineConfig<T extends FlairThemeConfig>(config: T): T {
   return config
 }
 
