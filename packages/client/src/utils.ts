@@ -40,4 +40,6 @@ const c = (className: string) => {
 
 const cn = c;
 
-export { c, cn };
+const css = String.raw;
+
+export { c, cn, css };
