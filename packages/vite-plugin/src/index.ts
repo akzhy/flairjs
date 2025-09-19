@@ -44,6 +44,7 @@ export default async function flairJsVitePlugin({
           useTheme: !!userTheme,
           theme: {
             breakpoints: userTheme?.breakpoints,
+            prefix: userTheme?.prefix,
           },
         },
         (css) => {

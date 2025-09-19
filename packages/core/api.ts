@@ -24,6 +24,7 @@ export interface FlairThemeObject {
 export type FlairThemeConfig = {
   tokens: FlairThemeObject
   breakpoints?: Record<string, string | number>
+  prefix?: string
   selector: string | ((content: string, themeName?: string) => string)
   themes?: Record<
     string,
@@ -46,7 +47,7 @@ export const buildThemeTokens = (theme: FlairThemeConfig) => {
     css += `${selector} {\n`
   }
 
-  css += tokensToCSSVars(tokens)
+  css += tokensToCSSVars(tokens, theme.prefix ? [theme.prefix] : [])
 
   if (typeof selector === 'string') {
     css += `}\n`

@@ -231,8 +231,13 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
             // We were tracking a potential theme variable, now we need to decide what to do
 
             // Build fallback string from collected tokens in case theme parsing fails
-            let theme_out =
-              handle_theme_tokens(parser, &token_clone, &mut tokens_stack, last_var_location);
+            let theme_out = handle_theme_tokens(
+              parser,
+              &token_clone,
+              &mut tokens_stack,
+              last_var_location,
+              theme,
+            );
             out.push_str(&theme_out);
             // Reset variable tracking
             last_variable_location = None;
@@ -258,8 +263,13 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
           tokens_stack.push((token_clone, parser.current_source_location()));
         } else {
           if let Some(last_var_location) = last_variable_location {
-            let theme_out =
-              handle_theme_tokens(parser, &token_clone, &mut tokens_stack, last_var_location);
+            let theme_out = handle_theme_tokens(
+              parser,
+              &token_clone,
+              &mut tokens_stack,
+              last_var_location,
+              theme,
+            );
             out.push_str(&theme_out);
             // Reset variable tracking
             last_variable_location = None;
@@ -271,8 +281,13 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
       // Handle all other token types
       _ => {
         if let Some(last_var_location) = last_variable_location {
-          let theme_out =
-            handle_theme_tokens(parser, &token_clone, &mut tokens_stack, last_var_location);
+          let theme_out = handle_theme_tokens(
+            parser,
+            &token_clone,
+            &mut tokens_stack,
+            last_var_location,
+            theme,
+          );
           out.push_str(&theme_out);
           // Reset variable tracking
           last_variable_location = None;
@@ -293,9 +308,19 @@ fn handle_theme_tokens(
   current_token: &Token,
   tokens_stack: &mut Vec<(Token, SourceLocation)>,
   var_start_location: SourceLocation,
+  theme: &Option<Theme>,
 ) -> String {
   let mut out = String::from("");
   let mut fallback_string = String::from("");
+
+  let token_prefix = if let Some(theme) = theme {
+    match &theme.prefix {
+      Some(prefix) => format!("{}-", prefix),
+      None => String::from(""),
+    }
+  } else {
+    String::from("")
+  };
 
   let last_var_location = tokens_stack.last().map(|(_, loc)| *loc);
 
@@ -331,7 +356,7 @@ fn handle_theme_tokens(
     // - "$spaces.4" -> "var(--spaces-4)"
     let parsed_token = if is_valid_theme_token(raw_theme_token) {
       let path_vec: Vec<&str> = raw_theme_token.split(".").collect();
-      format!("var(--{})", path_vec.join("-"))
+      format!("var(--{token_prefix}{})", path_vec.join("-"))
     } else {
       // Invalid theme token format - log warning and output as fallback
       eprintln!("Warning: Invalid theme token format '{}'. Expected format: $identifier or $identifier.segment.value (camelCase recommended)", raw_theme_token);

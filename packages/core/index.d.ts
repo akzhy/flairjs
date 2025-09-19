@@ -2,6 +2,7 @@
 /* eslint-disable */
 export interface Theme {
   breakpoints: Record<string, string>
+  prefix?: string
 }
 
 export declare function transformCode(code: string, filePath: string, options: TransformOptions, cssPreprocessor?: (arg: string) => string | undefined | null): TransformOutput | null

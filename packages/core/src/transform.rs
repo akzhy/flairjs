@@ -57,6 +57,7 @@ enum Pass {
 #[napi(object)]
 pub struct Theme {
   pub breakpoints: HashMap<String, String>,
+  pub prefix: Option<String>,
 }
 
 /// The import paths for flair-related utilities and components
