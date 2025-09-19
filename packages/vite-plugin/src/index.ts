@@ -44,23 +44,17 @@ export default async function flairJsVitePlugin({
     name: "@flairjs/vite-plugin",
     enforce: "pre",
     transform(code, id) {
-      const result = transformCode(
-        code,
-        id,
-        {
-          cssOutDir: flairGeneratedCssPath,
-          useTheme: !!userTheme,
-          theme: {
-            breakpoints: userTheme?.theme?.breakpoints,
-            prefix: userTheme?.theme?.prefix,
-          },
+      const result = transformCode(code, id, {
+        cssOutDir: flairGeneratedCssPath,
+        useTheme: !!userTheme,
+        theme: {
+          breakpoints: userTheme?.theme?.breakpoints,
+          prefix: userTheme?.theme?.prefix,
         },
-        (css) => {
-          if (cssPreprocessor) {
-            return cssPreprocessor(css, id);
-          }
-        }
-      );
+        cssPreprocessor: cssPreprocessor
+          ? (css) => cssPreprocessor(css, id)
+          : undefined,
+      });
 
       if (!result) {
         return code;
