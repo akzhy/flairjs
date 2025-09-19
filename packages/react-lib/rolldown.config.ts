@@ -1,10 +1,10 @@
-import { defineConfig, RolldownOptions } from 'rolldown';
-import typescript from '@rollup/plugin-typescript';
+import { defineConfig, RolldownOptions } from "rolldown";
+import typescript from "@rollup/plugin-typescript";
 
-const createOptions = (format: 'esm' | 'cjs'): RolldownOptions => {
+const createOptions = (format: "esm" | "cjs"): RolldownOptions => {
   return {
-    input: 'src/index.ts',
-    platform: 'node',
+    input: "src/index.ts",
+    platform: "node",
     output: {
       dir: `dist/${format}`,
       format: format,
@@ -17,15 +17,13 @@ const createOptions = (format: 'esm' | 'cjs'): RolldownOptions => {
 };
 
 export default defineConfig([
-  createOptions('esm'),
-  createOptions('cjs'),
+  createOptions("esm"),
+  createOptions("cjs"),
   {
-    input: 'src/index.ts',
+    input: "src/index.ts",
     output: {
-      dir: 'dist/types',
+      dir: "dist/types",
     },
-    plugins: [
-      typescript({ tsconfig: './tsconfig.json' }),
-    ],
+    plugins: [typescript({ tsconfig: "./tsconfig.json" })],
   },
 ]);
