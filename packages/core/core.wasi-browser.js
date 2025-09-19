@@ -56,4 +56,5 @@ const {
   },
 })
 export default __napiModule.exports
+export const LogLevel = __napiModule.exports.LogLevel
 export const transformCode = __napiModule.exports.transformCode

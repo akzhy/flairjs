@@ -108,4 +108,5 @@ const { instance: __napiInstance, module: __wasiModule, napiModule: __napiModule
   },
 })
 module.exports = __napiModule.exports
+module.exports.LogLevel = __napiModule.exports.LogLevel
 module.exports.transformCode = __napiModule.exports.transformCode

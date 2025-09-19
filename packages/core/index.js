@@ -507,5 +507,6 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-export default nativeBinding;
-export const transformCode = nativeBinding.transformCode;
+module.exports = nativeBinding
+module.exports.LogLevel = nativeBinding.LogLevel
+module.exports.transformCode = nativeBinding.transformCode

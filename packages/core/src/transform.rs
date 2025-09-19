@@ -6,9 +6,10 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use crate::flair_property::{FlairProperty, FLAIR_REPLACEMENT};
+use crate::logger::{get_logger, LogEntry};
 use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
-use crate::{parse_css::parse_css, update_attribute::SymbolStore};
+use crate::{log_error, parse_css::parse_css, update_attribute::SymbolStore};
 use indexmap::IndexMap;
 use lightningcss::css_modules::CssModuleExport;
 use lightningcss::stylesheet::ToCssResult;
@@ -76,6 +77,7 @@ pub struct TransformOutput {
   pub code: String,
   pub sourcemap: Option<String>,
   pub css: String,
+  pub logs: Vec<LogEntry>,
 }
 
 /// Entry point for transforming a TypeScript React file.
@@ -147,10 +149,14 @@ pub fn transform(
     }
   };
 
+  // Collect all logs that were accumulated during transformation
+  let logs = get_logger().drain_logs();
+
   Some(TransformOutput {
     code: result_code,
     sourcemap: sourcemap,
     css: visitor.extracted_css.join("\n"),
+    logs,
   })
 }
 
@@ -336,7 +342,7 @@ impl<'a> TransformVisitor<'a> {
     // Write the extracted CSS to a file in the specified output directory
     let file = File::create(format!("{}/{}", self.options.css_out_dir, hash_string));
     if file.is_err() {
-      eprintln!(
+      log_error!(
         "Failed to create file in css_out_dir: {}, reason {:#?}",
         self.options.css_out_dir,
         file.err()
@@ -460,7 +466,7 @@ impl<'a> TransformVisitor<'a> {
             match res {
               Ok(val) => Some(val),
               Err(_) => {
-                eprintln!(
+                log_error!(
                   "Failed to parse CSS in function starting at {}: {:#?}. CSS: {:#?}",
                   fn_id,
                   res.err(),
@@ -485,7 +491,7 @@ impl<'a> TransformVisitor<'a> {
             match res {
               Ok(val) => Some(val),
               Err(_) => {
-                eprintln!(
+                log_error!(
                   "Failed to parse CSS in function starting at {}: {:#?}. CSS: {:#?}",
                   fn_id,
                   res.err(),

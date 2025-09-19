@@ -10,10 +10,13 @@ use crate::transform::{TransformOptions, TransformOutput};
 extern crate napi_derive;
 
 pub mod flair_property;
+pub mod logger;
 pub mod parse_css;
 pub mod style_tag;
 pub mod transform;
 pub mod update_attribute;
+
+pub use crate::logger::{log_error, log_info, log_warn};
 
 #[napi]
 pub fn transform_code(
@@ -24,7 +27,10 @@ pub fn transform_code(
   css_preprocessor: Option<Function<String, String>>,
 ) -> Option<TransformOutput> {
   let time = Instant::now();
-  println!("Starting transformation...");
+  
+  // Example of using the logging system
+  log_info!("Starting transformation for file: {}", file_path);
+  
   let options = transform::TransformOptions {
     css_out_dir: options.css_out_dir,
     class_name_list: options.class_name_list,
@@ -33,6 +39,8 @@ pub fn transform_code(
   };
   let result = transform::transform(code, file_path, options, css_preprocessor, Some(env));
   let duration = time.elapsed();
-  println!("Transformation completed in {:?}", duration);
+  
+  log_info!("Transformation completed in {:?}", duration);
+  
   result
 }
