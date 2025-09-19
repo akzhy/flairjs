@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/core",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Template project for writing node package with napi-rs",
   "main": "dist/cjs/api.js",
   "module": "dist/esm/api.js",

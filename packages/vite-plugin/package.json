@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/vite-plugin",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": {
@@ -24,9 +24,12 @@
     "dev": "rolldown -w -c",
     "format": "biome format --write"
   },
+  "peerDependencies": {
+    "@flairjs/core": "^0.0.1"
+  },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@flairjs/core": "workspace:*",
+    "@flairjs/core": "^0.0.1",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^22.8.1",
     "rolldown": "1.0.0-beta.37",
