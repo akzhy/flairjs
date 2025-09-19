@@ -12,7 +12,11 @@ type Paths<T, P extends string = ""> =
     : P;
 
 export type TokensOf<T> = `$${Paths<T>}`;
-export type Tokens = TokensOf<FlairTheme>;
+// @ts-expect-error - FlairTheme will be augmented by the user
+export type Tokens = TokensOf<FlairTheme["tokens"]>;
+
+// @ts-expect-error - FlairTheme will be augmented by the user
+type BreakPointTokens = `@screen ${keyof FlairTheme["breakpoints"]}`;
 
 type FlairObject = {
   [K in keyof CSS.Properties]?:
@@ -23,8 +27,10 @@ type FlairObject = {
 };
 
 type FlairCSS = {
-  [key: string]: FlairObject | FlairCSS;
-} & FlairObject;
+  [K in string]?: FlairObject | FlairCSS;
+} & {
+  [K in BreakPointTokens]?: FlairObject | FlairCSS;
+};
 
 export const flair = (styles: FlairCSS) => "";
 
