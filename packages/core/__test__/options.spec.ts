@@ -9,7 +9,7 @@ import { transformCode } from '../index'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const classNameListContent = readFileSync(path.resolve(__dirname, './snippets/class-name-list.tsx'), 'utf-8')
+const classNameListContent = readFileSync(path.resolve(__dirname, './snippets/options-class-name-list.tsx'), 'utf-8')
 
 describe('Options tests', () => {
   test('class name list is working', () => {

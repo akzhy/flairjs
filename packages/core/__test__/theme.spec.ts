@@ -8,10 +8,10 @@ import path from 'node:path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const styleTagContent = readFileSync(path.resolve(__dirname, './snippets/style-tag-theme.tsx'), 'utf-8')
-const flairPropertyContent = readFileSync(path.resolve(__dirname, './snippets/flair-string-theme.tsx'), 'utf-8')
-const flairPropertyObjectContent = readFileSync(path.resolve(__dirname, './snippets/flair-obj-theme.tsx'), 'utf-8')
-const flairPropertyObjectMediaContent = readFileSync(path.resolve(__dirname, './snippets/flair-obj-theme-media.tsx'), 'utf-8')
+const styleTagContent = readFileSync(path.resolve(__dirname, './snippets/theme-style-tag.tsx'), 'utf-8')
+const flairPropertyContent = readFileSync(path.resolve(__dirname, './snippets/theme-flair-string.tsx'), 'utf-8')
+const flairPropertyObjectContent = readFileSync(path.resolve(__dirname, './snippets/theme-flair-obj.tsx'), 'utf-8')
+const flairPropertyObjectMediaContent = readFileSync(path.resolve(__dirname, './snippets/theme-flair-obj-media.tsx'), 'utf-8')
 
 describe('Theme tests', () => {
   test('style tag is working', () => {

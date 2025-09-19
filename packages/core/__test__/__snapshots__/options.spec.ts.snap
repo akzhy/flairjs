@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Options tests > class name list is working 1`] = `
-"import "@flairjs/css/cached-css/9c9c5f915a4ad43f.css";
+"import "@flairjs/client/generated-css/9c9c5f915a4ad43f.css";
 import clsx from "clsx";
 import { flair } from "@flairjs/react";
 export const TestCaseComponent = () => {

@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Style, c, cn } from "@flairjs/react";
+import { Style, c, cn, css } from "@flairjs/react";
 import { useState } from "react";
 
 export const TestCaseComponent = () => {
@@ -84,7 +84,7 @@ export const TestCaseComponent = () => {
       <div className={case15Handler()}>Case15</div>
       <div className={`case-16 case-16-1`}>Case16</div>
       <Style>{
-        /*css*/ `
+        css`
         .case-1 {
           color: $colors.red.100;
         }
