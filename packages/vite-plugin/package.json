@@ -25,11 +25,11 @@
     "format": "biome format --write"
   },
   "peerDependencies": {
-    "@flairjs/core": "^0.0.1"
+    "@flairjs/core": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@flairjs/core": "^0.0.1",
+    "@flairjs/core": "workspace:*",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^22.8.1",
     "rolldown": "1.0.0-beta.37",

@@ -25,7 +25,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@flairjs/client": "^0.0.1"
+    "@flairjs/client": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=16.9.0",
