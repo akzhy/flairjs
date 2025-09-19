@@ -76,7 +76,7 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
           // Handle direct text content (e.g., <Style>body { color: red; }</Style>)
           if let JSXChild::Text(child_text) = child {
             extracted_css.push_str(&child_text.value);
-          } 
+          }
           // Handle JavaScript expressions containing CSS (e.g., <Style>{`body { color: red; }`}</Style>)
           else if let JSXChild::ExpressionContainer(child_expression) = child {
             let expression = &child_expression.expression;
@@ -91,6 +91,17 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
                 .join("");
 
               extracted_css.push_str(&template_expression_value);
+            } else if let JSXExpression::TaggedTemplateExpression(tagged_template) = expression {
+              // Handle tagged template literals (e.g., css`body { color: red; }`)
+              let tagged_template_value = tagged_template
+                .quasi
+                .quasis
+                .iter()
+                .map(|elem| elem.value.clone().raw.into_string())
+                .collect::<Vec<String>>()
+                .join("");
+
+              extracted_css.push_str(&tagged_template_value);
             }
           }
         }
@@ -107,7 +118,7 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
 
 /// Determines if a JSX style element should be treated as global CSS
 /// by checking for the presence and value of a "global" attribute.
-/// 
+///
 /// Examples:
 /// - `<Style global>` or `<Style global={true}>` returns true
 /// - `<Style global={false}>` returns false  

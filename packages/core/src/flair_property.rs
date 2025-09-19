@@ -157,6 +157,18 @@ impl<'a> FlairProperty<'a> {
 
         template_value
       }
+      Expression::TaggedTemplateExpression(tagged_template) => {
+        // Handle tagged template literals (e.g., css`body { color: red; }`)
+        let tagged_template_value = tagged_template
+          .quasi
+          .quasis
+          .iter()
+          .map(|elem| elem.value.clone().raw.into_string())
+          .collect::<Vec<String>>()
+          .join("");
+
+        tagged_template_value
+      }
       // Assignment via flair({...}) call
       Expression::CallExpression(call_expr) => {
         match (
