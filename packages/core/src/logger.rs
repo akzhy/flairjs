@@ -1,6 +1,6 @@
-use std::sync::{Arc, Mutex};
-use once_cell::sync::Lazy;
 use napi_derive::napi;
+use once_cell::sync::Lazy;
+use std::sync::{Arc, Mutex};
 
 /// Log level enum that matches your required structure
 #[napi]
@@ -27,7 +27,7 @@ impl LogEntry {
       LogLevel::Warn => "warn".to_string(),
       LogLevel::Info => "info".to_string(),
     };
-    
+
     Self {
       message,
       level: level_str,
@@ -89,7 +89,7 @@ impl Default for Logger {
 }
 
 /// Global logger instance using once_cell for thread-safe lazy initialization
-static GLOBAL_LOGGER: Lazy<Logger> = Lazy::new(|| Logger::new());
+static GLOBAL_LOGGER: Lazy<Logger> = Lazy::new(Logger::new);
 
 /// Get a reference to the global logger
 pub fn get_logger() -> &'static Logger {

@@ -32,10 +32,10 @@ pub struct SymbolStore {
   pub symbol_id: SymbolId,
   /// The span.start of the function containing this variable reference
   /// Used to scope class name variables to their containing function
-  /// 
+  ///
   /// Currently, after lightningcss processing, the output css is mapped to its parent function.
   /// So, the hashed classnames and styles are available in the hashmap HashMap<fn_id, Data>.
-  /// 
+  ///
   /// During the third pass, which updates variable references, we need to know which function
   /// the variable belongs to, so we can look up the correct hashed classnames from the hashmap.
   /// This fn_id helps us scope variable references to their containing function.
@@ -49,7 +49,7 @@ impl SymbolStore {
 }
 
 /// Main struct responsible for transforming CSS class names in JSX/TSX files
-/// This handles CSS modules transformation by replacing original class names 
+/// This handles CSS modules transformation by replacing original class names
 /// with their hashed/scoped equivalents
 pub struct ClassNameReplacer<'a> {
   /// Maps original class names to their CSS module exports (hashed names)
@@ -98,7 +98,7 @@ impl<'a> ClassNameReplacer<'a> {
         }
       }
       // Fallback to exact string matching
-      return *item == class_name;
+      *item == class_name
     });
 
     item.is_some()
@@ -119,9 +119,7 @@ impl<'a> ClassNameReplacer<'a> {
       }
     }
 
-    let updated_class_names_str = updated_class_names.join(" ");
-
-    updated_class_names_str
+    updated_class_names.join(" ")
   }
 
   /// Updates string literals containing class names
@@ -177,11 +175,9 @@ impl<'a> ClassNameReplacer<'a> {
       // Check if we're calling join on an array
       if let Expression::ArrayExpression(array_expression) = object {
         // Verify this is specifically join(" ") - joining with a space
-        let is_string_join = arguments.get(0).map_or(false, |arg| {
-          if let Some(expr) = arg.as_expression() {
-            if let Expression::StringLiteral(string_lit) = expr {
-              return string_lit.value.as_str() == " ";
-            }
+        let is_string_join = arguments.first().is_some_and(|arg| {
+          if let Some(Expression::StringLiteral(string_lit)) = arg.as_expression() {
+            return string_lit.value.as_str() == " ";
           }
           false
         });
@@ -217,7 +213,7 @@ impl<'a> ClassNameReplacer<'a> {
   /// For OR (||) and nullish coalescing (??): both operands are processed
   /// For AND (&&): only the right operand is processed since that's the value
   /// that will be used when the condition is true
-  /// Examples: 
+  /// Examples:
   /// - `className || "default"` - both sides processed
   /// - `isActive && "active"` - only "active" processed
   fn update_logical_expression(
@@ -274,10 +270,10 @@ impl<'a> ClassNameReplacer<'a> {
       .scoping
       .get_reference(identifier_expression.reference_id());
     let symbol_id = reference.symbol_id();
-    
-    if symbol_id.is_some() {
+
+    if let Some(symbol_id) = symbol_id {
       // Resolve any variable linking to get the final symbol
-      let resolved_symbol_id = self.get_resolved_symbol_id(symbol_id.unwrap());
+      let resolved_symbol_id = self.get_resolved_symbol_id(symbol_id);
       // Store the symbol ID along with the current function ID for later processing
       self
         .identifier_symbol_ids
@@ -300,7 +296,7 @@ impl<'a> ClassNameReplacer<'a> {
         .atom(self.allocator.alloc_str(&updated_class_names_str));
       elem.value.raw = atom;
     });
-    
+
     // Update the dynamic expressions within ${...}
     template_expression.expressions.iter_mut().for_each(|expr| {
       self.update_expression(Some(expr));
@@ -353,7 +349,6 @@ impl<'a> ClassNameReplacer<'a> {
   }
 }
 
-
 impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
   /// Visits call expressions to handle class name utility functions
   /// Special handling for functions like c, cn, etc.
@@ -363,9 +358,8 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
       // Resolve the function's symbol to check if it's a class name utility
       let callee_ref = self.scoping.get_reference(identifier_calle.reference_id());
       let callee_symbol_id = callee_ref.symbol_id();
-      
-      if callee_symbol_id.is_some() {
-        let callee_symbol_id = callee_symbol_id.unwrap();
+
+      if let Some(callee_symbol_id) = callee_symbol_id {
         // If this function is registered as a class name utility (like c, cn)
         if self.classname_util_symbols.contains(&callee_symbol_id) {
           // Process all arguments to the utility function
@@ -377,7 +371,7 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
     }
     walk_mut::walk_call_expression(self, it);
   }
-  
+
   /// Visits JSX attributes to find and transform class name attributes
   /// This is the main entry point for transforming className, class, etc.
   fn visit_jsx_attribute(&mut self, it: &mut JSXAttribute<'a>) {

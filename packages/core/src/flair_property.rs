@@ -25,15 +25,15 @@ pub struct FlairProperty<'a> {
   global_style: IndexMap<u32, CSSData>,
   /// Maps function / variable declaration symbol IDs to their starting span positions.
   /// Used to associate flair styles with the correct function/component.
-  /// 
+  ///
   /// Eg: function App() { ... } -> symbol_id: Symbol id of App -> span_start: starting position of function App
   /// Eg: const App = () => { ... } -> symbol_id: Symbol id of App -> span_start: starting position of arrow function
-  /// 
+  ///
   /// This is used to identify flair properties assigned to components.
   /// For example, if we see `App.flair = ...`, we can look up the symbol ID for `App`
   /// and find the starting span position of the function/arrow assigned to `App`.
   /// This allows us to link the flair style to the correct component.
-  /// 
+  ///
   /// Since oxc directly doesn't provide an id for function/arrow expressions,
   /// we use span.start as a unique identifier for the function/arrow.
   symbol_to_span_start_map: HashMap<SymbolId, u32>,
@@ -49,7 +49,7 @@ impl<'a> FlairProperty<'a> {
       global_style: IndexMap::new(),
       symbol_to_span_start_map: HashMap::new(),
       allocator,
-      ast_builder: AstBuilder::new(&allocator),
+      ast_builder: AstBuilder::new(allocator),
     }
   }
 
@@ -63,7 +63,7 @@ impl<'a> FlairProperty<'a> {
 
   /// Visit variable declarations to find functions assigned to variables
   ///
-  /// For example: 
+  /// For example:
   /// ```
   /// const MyComponent = () => { ... }
   /// const MyComponent = function() { ... }
@@ -100,7 +100,6 @@ impl<'a> FlairProperty<'a> {
       .symbol_to_span_start_map
       .insert(class_id.symbol_id(), it.span.start);
   }
-
 
   pub fn visit_function(&mut self, it: &mut Function<'a>) {
     if let Some(name) = &it.id {
@@ -175,15 +174,14 @@ impl<'a> FlairProperty<'a> {
           &call_expr.callee,
           call_expr
             .arguments
-            .get(0)
+            .first()
             .and_then(|arg| arg.as_expression()),
         ) {
           // Only handle flair({...}) calls
           (Expression::Identifier(identifier_calle), Some(Expression::ObjectExpression(obj)))
             if identifier_calle.name == "flair" =>
           {
-            let style = build_style_string_from_object(obj);
-            style
+            build_style_string_from_object(obj)
           }
           _ => String::from(""),
         }
@@ -195,11 +193,7 @@ impl<'a> FlairProperty<'a> {
     // Store the CSS content in the appropriate style map
     if static_member.property.name.as_str() == "globalFlair" {
       self.global_style.insert(
-        self
-          .symbol_to_span_start_map
-          .get(&symbol_id)
-          .unwrap()
-          .clone(),
+        *self.symbol_to_span_start_map.get(&symbol_id).unwrap(),
         CSSData {
           raw_css: css_content,
           is_global: true,
@@ -207,11 +201,7 @@ impl<'a> FlairProperty<'a> {
       );
     } else {
       self.style.insert(
-        self
-          .symbol_to_span_start_map
-          .get(&symbol_id)
-          .unwrap()
-          .clone(),
+        *self.symbol_to_span_start_map.get(&symbol_id).unwrap(),
         CSSData {
           raw_css: css_content,
           is_global: false,
@@ -223,7 +213,7 @@ impl<'a> FlairProperty<'a> {
     // This marker will be deleted later in the transformation process
     let atom = self
       .ast_builder
-      .atom(self.allocator.alloc_str(&FLAIR_REPLACEMENT));
+      .atom(self.allocator.alloc_str(FLAIR_REPLACEMENT));
 
     *it = Expression::StringLiteral(OxcBox::new_in(
       StringLiteral {
@@ -242,11 +232,11 @@ fn get_item(expression: &Expression) -> Option<u32> {
   match expression {
     Expression::FunctionExpression(fn_expr) => {
       // Direct function expression
-      return Some(fn_expr.span.start);
+      Some(fn_expr.span.start)
     }
     Expression::ArrowFunctionExpression(arrow_expr) => {
       // Arrow function expression
-      return Some(arrow_expr.span.start);
+      Some(arrow_expr.span.start)
     }
     Expression::CallExpression(call_expr) => {
       // Recursively search arguments for a function/arrow expression
@@ -258,7 +248,7 @@ fn get_item(expression: &Expression) -> Option<u32> {
           return val;
         }
 
-        return None;
+        None
       });
       result
     }
@@ -269,9 +259,9 @@ fn get_item(expression: &Expression) -> Option<u32> {
 
 fn camel_case_to_kebab_case(input: &str) -> String {
   let mut result = String::new();
-  let mut chars = input.chars().peekable();
+  let chars = input.chars().peekable();
 
-  while let Some(ch) = chars.next() {
+  for ch in chars {
     if ch.is_uppercase() {
       if !result.is_empty() {
         result.push('-');

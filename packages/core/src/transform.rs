@@ -153,7 +153,7 @@ pub fn transform(
 
   Some(TransformOutput {
     code: result_code,
-    sourcemap: sourcemap,
+    sourcemap,
     css: visitor.extracted_css.join("\n"),
     logs,
   })
@@ -190,7 +190,6 @@ pub struct CSSData {
 /// Pass 2: Can't replace myClass yet, but identifies it needs replacement
 /// Pass 3: Replace variable: const myClass = "button_abc123";
 ///
-
 struct TransformVisitor<'a> {
   allocator: &'a Allocator,
   options: TransformOptions,
@@ -260,7 +259,7 @@ impl<'a> TransformVisitor<'a> {
     let classname_util_symbols: Vec<SymbolId> = vec![];
 
     let variable_linking = HashMap::new();
-    let flair_property_visitor = FlairProperty::new(&scoping, &allocator);
+    let flair_property_visitor = FlairProperty::new(scoping, allocator);
 
     Self {
       allocator,
@@ -375,6 +374,7 @@ impl<'a> TransformVisitor<'a> {
   /// This method handles both scoped and global CSS:
   /// - Scoped CSS: Processed with CSS modules to generate unique class names
   /// - Global CSS: Processed as-is without scoping
+  ///
   /// Both types can be preprocessed using a custom CSS preprocessor function
   fn process_css(&mut self) {
     let flair_scoped_styles = self.flair_property_visitor.get_scoped_style();
@@ -385,7 +385,7 @@ impl<'a> TransformVisitor<'a> {
       self
         .function_id_to_raw_css_mapping
         .entry(*span_start)
-        .or_insert_with(Vec::new)
+        .or_default()
         .push(style.to_owned());
     }
 
@@ -419,24 +419,18 @@ impl<'a> TransformVisitor<'a> {
           if self.js_env.is_some() {
             if let Some(preprocessor) = &self.css_preprocessor {
               // Apply preprocessor to scoped CSS, fallback to original on error
-              let scoped_result = match scoped_css {
-                None => None,
-                Some(ref original) => Some(
-                  preprocessor
-                    .call(original.clone())
-                    .unwrap_or(original.clone()),
-                ),
-              };
+              let scoped_result = scoped_css.as_ref().map(|original| {
+                preprocessor
+                  .call(original.clone())
+                  .unwrap_or(original.clone())
+              });
 
               // Apply preprocessor to global CSS, fallback to original on error
-              let global_result = match global_css {
-                None => None,
-                Some(ref original) => Some(
-                  preprocessor
-                    .call(original.clone())
-                    .unwrap_or(original.clone()),
-                ),
-              };
+              let global_result = global_css.as_ref().map(|original| {
+                preprocessor
+                  .call(original.clone())
+                  .unwrap_or(original.clone())
+              });
 
               (scoped_result, global_result)
             } else {
@@ -459,7 +453,7 @@ impl<'a> TransformVisitor<'a> {
               &format!("{}:{}", self.file_path, index),
               true, // Enable CSS modules for scoped styles
               use_theme,
-              &self.options.theme
+              &self.options.theme,
             );
 
             match res {
@@ -484,7 +478,7 @@ impl<'a> TransformVisitor<'a> {
               &format!("{}:{}", self.file_path, fn_id),
               false, // Disable CSS modules for global styles
               use_theme,
-              &self.options.theme
+              &self.options.theme,
             );
 
             match res {
@@ -523,8 +517,8 @@ impl<'a> TransformVisitor<'a> {
     match self.pass {
       Pass::First => {
         // Detect and collect style tag information and CSS content
-        let mut style_detector = StyleDetector::new(&self.scoping, &self.style_tag_import_symbols);
-        style_detector.visit_function_body(&body);
+        let mut style_detector = StyleDetector::new(self.scoping, &self.style_tag_import_symbols);
+        style_detector.visit_function_body(body);
 
         if let Some(class_id) = self.parent_class_id {
           self.fn_id_to_class_map.insert(fn_start, class_id);
@@ -581,13 +575,13 @@ impl<'a> TransformVisitor<'a> {
   /// of the method's own exports.
   fn get_css_exports(&self, fn_id: &u32) -> Option<HashMap<String, CssModuleExport>> {
     // Check if this function is a method inside a class
-    if self.fn_id_to_class_map.contains_key(&fn_id) {
+    if self.fn_id_to_class_map.contains_key(fn_id) {
       // Use the parent class's CSS exports for consistency
-      let class_id = self.fn_id_to_class_map.get(&fn_id).unwrap();
+      let class_id = self.fn_id_to_class_map.get(fn_id).unwrap();
       self.css_module_exports.get(class_id).cloned()
     } else {
       // Use the function's own CSS exports
-      self.css_module_exports.get(&fn_id).cloned()
+      self.css_module_exports.get(fn_id).cloned()
     }
   }
 
@@ -648,17 +642,15 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
         // This creates the chain: b -> a -> "button" so we can trace back to the original class name
         it.declarations.iter_mut().for_each(|decl| {
           if let BindingPatternKind::BindingIdentifier(binding_identifier) = &decl.id.kind {
-            if let Some(init) = &decl.init {
-              if let Expression::Identifier(identifier) = init {
-                let symbol_id = binding_identifier.symbol_id();
-                let reference = self.scoping.get_reference(identifier.reference_id());
-                let init_symbol_id = reference.symbol_id();
+            if let Some(Expression::Identifier(identifier)) = &decl.init {
+              let symbol_id = binding_identifier.symbol_id();
+              let reference = self.scoping.get_reference(identifier.reference_id());
+              let init_symbol_id = reference.symbol_id();
 
-                // Link the new variable symbol to the symbol it references
-                // This allows us to trace variable assignments: const newVar = existingVar
-                if let Some(init_symbol_id) = init_symbol_id {
-                  self.variable_linking.insert(symbol_id, init_symbol_id);
-                }
+              // Link the new variable symbol to the symbol it references
+              // This allows us to trace variable assignments: const newVar = existingVar
+              if let Some(init_symbol_id) = init_symbol_id {
+                self.variable_linking.insert(symbol_id, init_symbol_id);
               }
             }
           }
@@ -683,9 +675,9 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
               .iter()
               .find(|s| s.symbol_id == symbol_id);
 
-            if symbol_store_item.is_some() {
+            if let Some(symbol_store_item) = symbol_store_item {
               // Get the CSS exports for the function context where this variable was used
-              let css_exports = self.get_css_exports(&symbol_store_item.unwrap().fn_id);
+              let css_exports = self.get_css_exports(&symbol_store_item.fn_id);
               if css_exports.is_none() {
                 return;
               }

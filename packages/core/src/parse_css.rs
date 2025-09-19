@@ -56,7 +56,7 @@ pub fn parse_css(
   // "defaults" refers to browserslist's default query (last 2 versions, >0.2% usage, not dead)
   let browsers = Browsers::from_browserslist(vec!["defaults"]).unwrap();
   let targets = Targets {
-    browsers: browsers,
+    browsers,
     // Enable CSS nesting support in addition to default features
     // This allows nested selectors to be processed and flattened if needed for older browsers
     include: Features::default() | Features::Nesting,
@@ -69,7 +69,7 @@ pub fn parse_css(
   // Convert the stylesheet back to CSS string with transformations applied
   let result = stylesheet.to_css(PrinterOptions {
     minify: false, // Expect the users' bundler to handle minification
-    targets: targets,
+    targets,
     ..Default::default()
   });
 
@@ -97,7 +97,7 @@ pub fn parse_css(
 /// * `true` if the token is valid, `false` otherwise
 fn is_valid_theme_token(token: &str) -> bool {
   // Must have at least one character after $
-  if token.len() < 1 {
+  if token.is_empty() {
     return false;
   }
 
@@ -190,7 +190,7 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
         });
 
         // Output the closing bracket
-        out.push_str(&closing);
+        out.push_str(closing);
       }
       // Handle identifier tokens (variable names, property names, etc.)
       Token::Ident(_) => {
@@ -213,11 +213,11 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
           tokens_stack.push((token_clone, parser.current_source_location()));
         } else {
           // Regular delimiter, output as-is
-          out.push_str(&delim.to_string());
+          out.push(delim);
         }
       }
       Token::AtKeyword(ref at_string) => {
-        if at_string.to_string() == "screen" {
+        if *at_string == "screen" {
           last_screen_at_rule_location = Some(parser.current_source_location());
           tokens_stack.push((token_clone, parser.current_source_location()));
         } else {
@@ -261,21 +261,19 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
       Token::WhiteSpace(white_space) => {
         if last_screen_at_rule_location.is_some() {
           tokens_stack.push((token_clone, parser.current_source_location()));
+        } else if let Some(last_var_location) = last_variable_location {
+          let theme_out = handle_theme_tokens(
+            parser,
+            &token_clone,
+            &mut tokens_stack,
+            last_var_location,
+            theme,
+          );
+          out.push_str(&theme_out);
+          // Reset variable tracking
+          last_variable_location = None;
         } else {
-          if let Some(last_var_location) = last_variable_location {
-            let theme_out = handle_theme_tokens(
-              parser,
-              &token_clone,
-              &mut tokens_stack,
-              last_var_location,
-              theme,
-            );
-            out.push_str(&theme_out);
-            // Reset variable tracking
-            last_variable_location = None;
-          } else {
-            out.push_str(&white_space);
-          }
+          out.push_str(white_space);
         }
       }
       // Handle all other token types
