@@ -130,6 +130,7 @@ const transformCode = (
     {
       cssOutDir: options.cssOutDir,
       classNameList: options.classNameList,
+      useTheme: options.useTheme,
       theme: options.theme,
     },
     options.cssPreprocessor,
