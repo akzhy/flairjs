@@ -8,7 +8,7 @@ use lightningcss::{
   targets::{Browsers, Features, Targets},
 };
 
-use crate::transform::Theme;
+use crate::{log_error, transform::Theme};
 
 /// Parses CSS string and applies transformations based on configuration flags
 ///
@@ -359,7 +359,7 @@ fn handle_theme_tokens(
       format!("var(--{token_prefix}{})", path_vec.join("-"))
     } else {
       // Invalid theme token format - log warning and output as fallback
-      eprintln!("Warning: Invalid theme token format '{}'. Expected format: $identifier or $identifier.segment.value (camelCase recommended)", raw_theme_token);
+      log_error!("Warning: Invalid theme token format '{}'. Expected format: $identifier or $identifier.segment.value (camelCase recommended)", raw_theme_token);
       // This preserves the original token in case of malformed syntax
       fallback_string.clone()
     };
@@ -411,6 +411,10 @@ fn handle_at_rule_tokens(
         breakpoints.get(rule.trim()).unwrap()
       ));
     } else {
+      log_error!(
+        "Warning: No matching breakpoint found for '@screen {}'",
+        rule.trim()
+      );
       out.push_str(&fallback_string);
     }
   } else {

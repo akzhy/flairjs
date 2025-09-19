@@ -138,7 +138,6 @@ pub fn transform(
   let result = codegen.build(&program);
 
   let result_code: String = result.code;
-  // println!("Transformedd result:\n{}", result_code);
 
   // Convert source map to JSON string if available
   let sourcemap: Option<String> = {
