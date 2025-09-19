@@ -55,7 +55,7 @@
     "dev:js": "rolldown -w -c",
     "build:js": "rolldown -c",
     "postbuild": "node patch-index.js",
-    "postbuild:debug": "node patch-index.js",
+    "postbuild:debug": "node patch-index.js && pnpm build:js",
     "format": "run-p format:prettier format:rs format:toml",
     "format:prettier": "prettier . -w",
     "format:toml": "taplo format",
