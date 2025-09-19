@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/client",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "module": "./dist/esm/index.js",
   "main": "./dist/cjs/index.js",
   "types": "./dist/types/index.d.ts",
@@ -15,7 +15,7 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     },
-    "./theme": "./theme.css",
+    "./theme.css": "./theme.css",
     "./generated-css/*": {
       "import": "./generated-css/*",
       "require": "./generated-css/*",
