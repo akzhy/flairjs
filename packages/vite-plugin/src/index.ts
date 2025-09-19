@@ -2,7 +2,7 @@ import { transformCode } from "@flairjs/core";
 import type { Plugin } from "vite";
 import module from "node:module";
 import path from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, watch } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { getUserTheme } from "./user-theme";
 import { buildThemeTokens } from "@flairjs/core";
@@ -24,12 +24,20 @@ export default async function flairJsVitePlugin({
   if (!existsSync(flairGeneratedCssPath)) {
     await mkdir(flairGeneratedCssPath);
   }
-  const userTheme = getUserTheme();
+  let userTheme = await getUserTheme();
 
   if (userTheme) {
-    const themeCSS = buildThemeTokens(userTheme);
-
+    const themeCSS = buildThemeTokens(userTheme.theme);
     await writeFile(flairThemeFile, themeCSS, "utf-8");
+
+    watch(userTheme.path, async (event) => {
+      userTheme = await getUserTheme();
+      if (!userTheme) {
+        return;
+      }
+      const themeCSS = buildThemeTokens(userTheme.theme);
+      await writeFile(flairThemeFile, themeCSS, "utf-8");
+    });
   }
 
   return {
@@ -43,8 +51,8 @@ export default async function flairJsVitePlugin({
           cssOutDir: flairGeneratedCssPath,
           useTheme: !!userTheme,
           theme: {
-            breakpoints: userTheme?.breakpoints,
-            prefix: userTheme?.prefix,
+            breakpoints: userTheme?.theme?.breakpoints,
+            prefix: userTheme?.theme?.prefix,
           },
         },
         (css) => {
