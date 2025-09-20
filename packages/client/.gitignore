@@ -12,4 +12,5 @@ dist/
 !.vscode/extensions.json
 .idea
 
-generated-css/
+generated-css/*
+!generated-css/index.css
