@@ -301,6 +301,8 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
   out
 }
 
+/// Processes collected tokens that may form a theme variable and converts them to CSS custom properties
+/// If the tokens do not form a valid theme variable, outputs them as-is
 fn handle_theme_tokens(
   parser: &Parser<'_, '_>,
   current_token: &Token,
@@ -374,6 +376,10 @@ fn handle_theme_tokens(
   out
 }
 
+/// Handles @screen at-rules by converting them to @media queries based on theme breakpoints
+/// Transforms syntax like `@screen md` into `@media (min-width: 768px)`
+/// using the breakpoints defined in the theme configuration
+/// Requires the theme to be provided with breakpoints
 fn handle_at_rule_tokens(
   parser: &Parser<'_, '_>,
   tokens_stack: &mut Vec<(Token, SourceLocation)>,
