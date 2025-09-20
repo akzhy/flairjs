@@ -22,6 +22,10 @@
       "default": "./generated-css/*"
     }
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "scripts": {
     "build": "rolldown -c",
     "dev": "rolldown -w -c"
