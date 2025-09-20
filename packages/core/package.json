@@ -1,23 +1,21 @@
 {
   "name": "@flairjs/core",
   "version": "0.0.1",
-  "description": "Template project for writing node package with napi-rs",
+  "description": "Core module for flairjs",
   "main": "dist/cjs/api.js",
   "module": "dist/esm/api.js",
   "types": "dist/types/api.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/napi-rs/package-template.git"
+    "url": "https://github.com/akzhy/flairjs"
   },
   "license": "MIT",
   "browser": "browser.js",
   "keywords": [
-    "napi-rs",
-    "NAPI",
-    "N-API",
-    "Rust",
-    "node-addon",
-    "node-addon-api"
+    "@flairjs/core",
+    "CSS-in-JS",
+    "Style",
+    "flairjs"
   ],
   "files": [
     "dist"
