@@ -1,7 +1,7 @@
 name: Core CI
 env:
   DEBUG: napi:*
-  APP_NAME: nocojs_core
+  APP_NAME: core
   MACOSX_DEPLOYMENT_TARGET: "10.13"
   CARGO_INCREMENTAL: "1"
 "on":
@@ -288,7 +288,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: pnpm workspace @nocojs/core test
+        run: pnpm --filter @flairjs/core test
 
   test-linux-binding:
     defaults:
@@ -362,12 +362,7 @@ jobs:
           image: ${{ steps.docker.outputs.IMAGE }}
           options: "-v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} --platform ${{ steps.docker.outputs.PLATFORM }}"
           run: |
-            if command -v apt-get >/dev/null; then
-              apt-get update && apt-get install -y ca-certificates openssl curl && update-ca-certificates
-              update-ca-certificates --fresh
-              export NOCOJS_DANGEROUSLY_ACCEPT_INVALID_SSL_CERTS=1
-            fi
-            pnpm workspace @nocojs/core test
+            pnpm --filter @flairjs/core test
 
   # test-wasi-on-nodejs:
   #   defaults:
