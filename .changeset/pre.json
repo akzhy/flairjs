@@ -2,10 +2,12 @@
   "mode": "pre",
   "tag": "beta",
   "initialVersions": {
-    "@flairjs/client": "0.0.1",
-    "@flairjs/core": "0.0.1",
-    "@flairjs/react": "0.0.1",
-    "@flairjs/vite-plugin": "0.0.1"
+    "@flairjs/client": "0.0.0",
+    "@flairjs/core": "0.0.0",
+    "@flairjs/react": "0.0.0",
+    "@flairjs/vite-plugin": "0.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "poor-pugs-listen"
+  ]
 }
