@@ -46,7 +46,7 @@ importers:
         version: link:../react-lib
       '@napi-rs/cli':
         specifier: ^3.0.3
-        version: 3.1.5(@emnapi/runtime@1.5.0)(@types/node@22.18.1)
+        version: 3.1.5(@emnapi/runtime@1.5.0)(@types/node@22.18.1)(emnapi@1.5.0(node-addon-api@7.1.1))
       '@oxc-node/core':
         specifier: ^0.0.32
         version: 0.0.32
@@ -65,6 +65,9 @@ importers:
       chalk:
         specifier: ^5.4.1
         version: 5.6.0
+      emnapi:
+        specifier: ^1.5.0
+        version: 1.5.0(node-addon-api@7.1.1)
       lint-staged:
         specifier: ^16.1.2
         version: 16.1.6
@@ -1748,6 +1751,14 @@ packages:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
     engines: {node: '>=8'}
 
+  emnapi@1.5.0:
+    resolution: {integrity: sha512-adAaiwTxMnHbq1u2LUf+AfDR5MYrxDVBtezGspxwk5e/Zb6KHkGNdfuMU4JBIVm6ASY06K8KalhOPUht92MsnA==}
+    peerDependencies:
+      node-addon-api: '>= 6.1.0'
+    peerDependenciesMeta:
+      node-addon-api:
+        optional: true
+
   emoji-regex@10.5.0:
     resolution: {integrity: sha512-lb49vf1Xzfx080OKA0o6l8DQQpV+6Vg95zyCJX9VB/BqKYlhG7N4wgROUUHRA+ZPUefLnteQOad7z1kT2bV7bg==}
 
@@ -2997,7 +3008,7 @@ snapshots:
       '@module-federation/runtime': 0.13.1
       '@module-federation/sdk': 0.13.1
 
-  '@napi-rs/cli@3.1.5(@emnapi/runtime@1.5.0)(@types/node@22.18.1)':
+  '@napi-rs/cli@3.1.5(@emnapi/runtime@1.5.0)(@types/node@22.18.1)(emnapi@1.5.0(node-addon-api@7.1.1))':
     dependencies:
       '@inquirer/prompts': 7.8.4(@types/node@22.18.1)
       '@napi-rs/cross-toolchain': 1.0.3
@@ -3013,6 +3024,7 @@ snapshots:
       typanion: 3.14.0
     optionalDependencies:
       '@emnapi/runtime': 1.5.0
+      emnapi: 1.5.0(node-addon-api@7.1.1)
     transitivePeerDependencies:
       - '@napi-rs/cross-toolchain-arm64-target-aarch64'
       - '@napi-rs/cross-toolchain-arm64-target-armv7'
@@ -3888,6 +3900,10 @@ snapshots:
   dir-glob@3.0.1:
     dependencies:
       path-type: 4.0.0
+
+  emnapi@1.5.0(node-addon-api@7.1.1):
+    optionalDependencies:
+      node-addon-api: 7.1.1
 
   emoji-regex@10.5.0: {}
 
