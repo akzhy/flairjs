@@ -336,8 +336,8 @@ jobs:
           " >> $GITHUB_OUTPUT
       - name: Install dependencies
         run: |
-          pnpm config set supported-architectures.cpu 'current arm64 x64 arm'
-          pnpm config set supported-architectures.libc 'current musl gnu'
+          pnpm config set supportedArchitectures.cpu '["current","arm64","x64","arm"]'
+          pnpm config set supportedArchitectures.libc '["current","musl","gnu"]'
           pnpm install
       - name: Download artifacts
         uses: actions/download-artifact@v4
