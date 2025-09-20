@@ -30,7 +30,7 @@ export type FlairThemeConfig = {
     string,
     {
       tokens: FlairThemeObject
-      selector: string | ((content: string, themeName?: string) => string)
+      selector?: string | ((content: string, themeName?: string) => string)
     }
   >
 }
@@ -39,7 +39,7 @@ export function defineConfig<T extends FlairThemeConfig>(config: T): T {
   return config
 }
 
-export const buildThemeTokens = (theme: FlairThemeConfig) => {
+export const buildThemeTokens = (theme: FlairThemeConfig, themeName?: string) => {
   let css = ''
   const { tokens, selector } = theme
 
@@ -52,21 +52,15 @@ export const buildThemeTokens = (theme: FlairThemeConfig) => {
   if (typeof selector === 'string') {
     css += `}\n`
   } else {
-    css = selector(css)
+    css = selector(css, themeName)
   }
 
-  Object.entries(theme.themes ?? {}).forEach(([themeName, themeConfig]) => {
-    if (typeof themeConfig.selector === 'string') {
-      css += `${themeConfig.selector} {\n`
-    }
-
-    css += buildThemeTokens(themeConfig)
-
-    if (typeof themeConfig.selector === 'string') {
-      css += `}\n`
-    } else {
-      css = themeConfig.selector(css, themeName)
-    }
+  Object.entries(theme.themes ?? {}).forEach(([name, themeConfig]) => {
+    css += buildThemeTokens({
+      prefix: theme.prefix,
+      selector: theme.selector,
+      ...themeConfig,
+    }, name)
   })
 
   return css
