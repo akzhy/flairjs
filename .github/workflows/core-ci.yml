@@ -232,10 +232,9 @@ jobs:
             env
             freebsd-version
             pnpm install
-            pnpm build:core-rust
+            pnpm build:core
             rm -rf node_modules
             rm -rf target
-            rm -rf .yarn/cache
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
