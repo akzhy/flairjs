@@ -360,6 +360,7 @@ jobs:
           image: ${{ steps.docker.outputs.IMAGE }}
           options: "-v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} --platform ${{ steps.docker.outputs.PLATFORM }}"
           run: |
+            corepack enable
             pnpm --filter @flairjs/core test
 
   # test-wasi-on-nodejs:
