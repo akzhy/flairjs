@@ -43,7 +43,7 @@ jobs:
       - name: Setup env for clippy
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config build-essential nasm
+          sudo apt-get install -y pkg-config build-essential
       - name: Clippy
         run: cargo clippy
   build:
@@ -148,25 +148,6 @@ jobs:
         if: ${{ matrix.settings.setup }}
         shell: bash
 
-      - name: Setup macOS
-        run: |
-          brew install nasm
-        if: ${{ matrix.settings.host == 'macos-latest' }}
-
-      - name: Setup Windows
-        run: |
-          choco install yasm
-          $yasm_path = "C:\ProgramData\chocolatey\bin"
-          echo "YASM_PATH=$yasm_path" >> $env:GITHUB_ENV
-          echo "PATH=$yasm_path;$env:PATH" >> $env:GITHUB_ENV
-        if: ${{ matrix.settings.host == 'windows-latest' }}
-
-      - name: Setup linux
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y nasm
-        if: ${{ matrix.settings.host == 'ubuntu-latest' }}
-
       - name: Setup armv7-unknown-linux-gnueabihf
         run: |
           sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
@@ -234,7 +215,7 @@ jobs:
           environment_variables: DEBUG RUSTUP_IO_THREADS
           shell: bash
           run: |
-            sudo pkg install -y -f curl node libnghttp2 npm cmake yasm perl5
+            sudo pkg install -y -f curl node libnghttp2 npm cmake perl5
             corepack enable
             curl https://sh.rustup.rs -sSf --output rustup.sh
             sh rustup.sh -y --profile minimal --default-toolchain stable
