@@ -10,17 +10,32 @@ import picomatch from "picomatch";
 
 const require = module.createRequire(import.meta.url);
 
-export default async function flairJsVitePlugin({
-  cssPreprocessor,
-  include,
-  exclude = ["node_modules/**"],
-  buildThemeFile,
-}: {
+interface FlairJsVitePluginOptions  {
+  /**
+   * Preprocess the extracted CSS before it is passed to lightningcss
+   * @experimental
+   * @param css the extracted css
+   * @param id the id of the file being processed
+   * @returns the processed css
+   */
   cssPreprocessor?: (css: string, id: string) => string;
   include?: string | string[];
   exclude?: string | string[];
+  /**
+   * Override the default theme file content based on the user theme
+   * @param theme the user theme
+   * @returns the theme file content
+   */
   buildThemeFile?: (theme: FlairThemeConfig) => string;
-}): Promise<Plugin> {
+}
+
+export default async function flairJsVitePlugin(options?: FlairJsVitePluginOptions): Promise<Plugin> {
+  const {
+    cssPreprocessor,
+    include,
+    exclude = ["node_modules/**"],
+    buildThemeFile,
+  } = options || {};
   const flairThemeFile = require.resolve("@flairjs/client/theme.css");
 
   const flairGeneratedCssPath = path.resolve(
