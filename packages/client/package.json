@@ -15,6 +15,21 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     },
+    "./react": {
+      "types": "./dist/types/react/index.d.ts",
+      "import": "./dist/esm/react/index.js",
+      "require": "./dist/cjs/react/index.js"
+    },
+    "./preact": {
+      "types": "./dist/types/preact/index.d.ts",
+      "import": "./dist/esm/preact/index.js",
+      "require": "./dist/cjs/preact/index.js"
+    },
+    "./solidjs": {
+      "types": "./dist/types/solidjs/index.d.ts",
+      "import": "./dist/esm/solidjs/index.js",
+      "require": "./dist/cjs/solidjs/index.js"
+    },
     "./theme.css": "./theme.css",
     "./generated-css/*": {
       "import": "./generated-css/*",
@@ -30,10 +45,30 @@
     "build": "rolldown -c",
     "dev": "rolldown -w -c"
   },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "preact": ">=10.0.0",
+    "solid-js": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "preact": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@flairjs/core": "workspace:*",
     "@rollup/plugin-typescript": "^12.1.4",
     "@rsbuild/plugin-react": "^1.2.0",
+    "@types/react": "^19.1.0",
+    "preact": "^10.0.0",
+    "solid-js": "^1.9.9",
+    "react": "^19.1.0",
     "csstype": "^3.1.3",
     "rolldown": "1.0.0-beta.37",
     "typescript": "^5.8.3"
