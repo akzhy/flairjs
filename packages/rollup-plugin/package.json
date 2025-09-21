@@ -1,0 +1,46 @@
+{
+  "name": "@flairjs/rollup-plugin",
+  "version": "0.0.1-beta.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "rolldown -c",
+    "check": "biome check --write",
+    "dev": "rolldown -w -c",
+    "format": "biome format --write"
+  },
+  "peerDependencies": {
+    "@flairjs/core": "workspace:*",
+    "rollup": ">=3.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@flairjs/core": "workspace:*",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@types/node": "^22.8.1",
+    "@types/picomatch": "^4.0.2",
+    "rolldown": "1.0.0-beta.37",
+    "rollup": "^4.0.0",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.10",
+    "picomatch": "^4.0.3"
+  }
+}
