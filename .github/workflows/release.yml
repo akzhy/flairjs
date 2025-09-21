@@ -3,6 +3,10 @@ name: Release
 on:
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -57,6 +61,9 @@ jobs:
     needs: check
     if: needs.check.outputs.has_core == 'false'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:

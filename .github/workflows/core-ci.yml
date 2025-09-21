@@ -396,9 +396,9 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
-    # permissions:
-    #   contents: write
-    #   id-token: write
+    permissions:
+      contents: write
+      id-token: write
     needs:
       - lint
       - build
