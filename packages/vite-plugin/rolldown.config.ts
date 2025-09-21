@@ -15,7 +15,8 @@ const createOptions = (format: "esm" | "cjs"): RolldownOptions => {
         id.endsWith(".node") ||
         id.includes("node_modules") ||
         id === "@flairjs/core" ||
-        id === "picomatch"
+        id === "picomatch" ||
+        id === "esbuild"
       );
     },
   };

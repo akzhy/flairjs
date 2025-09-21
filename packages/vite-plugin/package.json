@@ -29,7 +29,8 @@
     "format": "biome format --write"
   },
   "peerDependencies": {
-    "@flairjs/core": "workspace:*"
+    "@flairjs/core": "workspace:*",
+    "vite": ">=5.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -43,6 +44,7 @@
     "vite": "^7.1.2"
   },
   "dependencies": {
+    "esbuild": "^0.25.10",
     "picomatch": "^4.0.3"
   }
 }

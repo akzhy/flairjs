@@ -1,21 +1,44 @@
+import * as esbuild from "esbuild";
+import { existsSync } from "fs";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import path from "path";
 import { pathToFileURL } from "url";
 
-export const getUserTheme = async () : Promise<{
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+export const getUserTheme = async (): Promise<{
   theme: any;
-  path: string
+  originalPath: string;
 } | null> => {
   try {
-    const userThemeFilePath = path.resolve(process.cwd(), "flair.theme.ts");
-    
+    let userThemeFilePath = path.resolve(process.cwd(), "flair.theme.ts");
+    if (!existsSync(userThemeFilePath)) {
+      userThemeFilePath = path.resolve(process.cwd(), "flair.theme.js");
+    }
+    if (!existsSync(userThemeFilePath)) {
+      return null;
+    }
+
+    const outFile = path.resolve(__dirname, `flair.theme.js`);
+
+    await esbuild.build({
+      entryPoints: [userThemeFilePath],
+      outfile: outFile,
+      platform: "node",
+      bundle: true,
+      format: "esm",
+      external: ["*"],
+    });
+
     const cacheBuster = Date.now();
-    const fileUrl = pathToFileURL(userThemeFilePath).href;
+    const fileUrl = pathToFileURL(outFile).href;
     const userTheme = await import(`${fileUrl}?update=${cacheBuster}`);
 
     if (userTheme.default) {
       return {
         theme: userTheme.default,
-        path: userThemeFilePath
+        originalPath: userThemeFilePath,
       };
     }
 
@@ -24,4 +47,4 @@ export const getUserTheme = async () : Promise<{
     console.error("Error loading user theme:", error);
     return null;
   }
-}
+};

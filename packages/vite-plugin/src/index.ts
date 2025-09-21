@@ -60,7 +60,7 @@ export default async function flairJsVitePlugin(
     const themeCSS = buildThemeCSS(userTheme.theme);
     await writeFile(flairThemeFile, themeCSS, "utf-8");
 
-    watch(userTheme.path, async (event) => {
+    watch(userTheme.originalPath, async (event) => {
       userTheme = await getUserTheme();
       if (!userTheme) {
         return;
