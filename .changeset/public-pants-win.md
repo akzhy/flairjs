@@ -4,4 +4,4 @@
 "@flairjs/vite-plugin": patch
 ---
 
-Initial beta release
+Updated import path

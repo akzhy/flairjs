@@ -4,10 +4,10 @@
   "initialVersions": {
     "@flairjs/client": "0.0.0",
     "@flairjs/core": "0.0.0",
-    "@flairjs/react": "0.0.0",
     "@flairjs/vite-plugin": "0.0.0"
   },
   "changesets": [
-    "poor-pugs-listen"
+    "poor-pugs-listen",
+    "public-pants-win"
   ]
 }
