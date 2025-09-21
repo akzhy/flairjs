@@ -62,7 +62,7 @@ pub struct Theme {
 }
 
 /// The import paths for flair-related utilities and components
-const IMPORT_PATHS: &[&str] = &["@flairjs/react", "@flairjs/solidjs", "@flairjs/preact"];
+const IMPORT_PATH: &str = &"@flairjs/client";
 
 #[napi(object)]
 pub struct TransformOptions {
@@ -604,7 +604,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   /// Processes import declarations to identify flair-related imports.
   /// Tracks symbols for "Style" components and "c" utility functions from flair packages.
   fn visit_import_declaration(&mut self, it: &mut ImportDeclaration<'a>) {
-    if IMPORT_PATHS.contains(&it.source.value.as_str()) && self.pass == Pass::First {
+    if it.source.value.as_str().starts_with(IMPORT_PATH) && self.pass == Pass::First {
       it.specifiers
         .as_ref()
         .unwrap()
