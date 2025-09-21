@@ -3,14 +3,14 @@ import type { Plugin } from "vite";
 import module from "node:module";
 import path from "node:path";
 import { existsSync, watch } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { getUserTheme } from "./user-theme";
 import { buildThemeTokens } from "@flairjs/core";
 import picomatch from "picomatch";
 
 const require = module.createRequire(import.meta.url);
 
-interface FlairJsVitePluginOptions  {
+interface FlairJsVitePluginOptions {
   /**
    * Preprocess the extracted CSS before it is passed to lightningcss
    * @experimental
@@ -29,7 +29,9 @@ interface FlairJsVitePluginOptions  {
   buildThemeFile?: (theme: FlairThemeConfig) => string;
 }
 
-export default async function flairJsVitePlugin(options?: FlairJsVitePluginOptions): Promise<Plugin> {
+export default async function flairJsVitePlugin(
+  options?: FlairJsVitePluginOptions
+): Promise<Plugin> {
   const {
     cssPreprocessor,
     include,
@@ -44,6 +46,9 @@ export default async function flairJsVitePlugin(options?: FlairJsVitePluginOptio
   );
 
   if (!existsSync(flairGeneratedCssPath)) {
+    await mkdir(flairGeneratedCssPath);
+  } else {
+    await rm(flairGeneratedCssPath, { recursive: true, force: true });
     await mkdir(flairGeneratedCssPath);
   }
 
@@ -65,6 +70,8 @@ export default async function flairJsVitePlugin(options?: FlairJsVitePluginOptio
     });
   }
 
+  const fileNameToGeneratedCssNameMap: Map<string, string> = new Map();
+
   return {
     name: "@flairjs/vite-plugin",
     enforce: "pre",
@@ -77,6 +84,10 @@ export default async function flairJsVitePlugin(options?: FlairJsVitePluginOptio
       const result = transformCode(code, id, {
         cssOutDir: flairGeneratedCssPath,
         useTheme: !!userTheme,
+        // Vite doesn't allow watching for changes on files inside node_modules
+        // so we always append a timestamp to the generated CSS file to ensure
+        // that the latest CSS is loaded
+        appendTimestampToCssFile: true,
         theme: {
           breakpoints: userTheme?.theme?.breakpoints ?? {},
           prefix: userTheme?.theme?.prefix,
@@ -88,6 +99,20 @@ export default async function flairJsVitePlugin(options?: FlairJsVitePluginOptio
 
       if (!result) {
         return code;
+      }
+
+      if (result.generatedCssName) {
+        // Kinda hacky way to delete the previously generated CSS file.
+        // This is to prevent the generated-css folder from being filled
+        // with unused CSS files during development.
+        if (fileNameToGeneratedCssNameMap.has(id)) {
+          const previousGeneratedCssName =
+            fileNameToGeneratedCssNameMap.get(id);
+          setTimeout(() => {
+            rm(path.join(flairGeneratedCssPath, previousGeneratedCssName!));
+          }, 2000);
+        }
+        fileNameToGeneratedCssNameMap.set(id, result.generatedCssName);
       }
 
       return {
