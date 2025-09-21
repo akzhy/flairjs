@@ -62,7 +62,7 @@ pub struct Theme {
 }
 
 /// The import paths for flair-related utilities and components
-const IMPORT_PATH: &str = &"@flairjs/client";
+const IMPORT_PATH: &str = "@flairjs/client";
 
 #[napi(object)]
 pub struct TransformOptions {
