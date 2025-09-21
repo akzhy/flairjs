@@ -2,7 +2,7 @@
 
 exports[`Misc tests > class component flair is working 1`] = `
 "import "@flairjs/client/generated-css/de3088a18b2aa97c.css";
-import { flair } from "@flairjs/react";
+import { flair } from "@flairjs/client";
 import clsx from "clsx";
 import { Component } from "react";
 class Box extends Component<{
@@ -22,7 +22,7 @@ class Box extends Component<{
 
 exports[`Misc tests > class component style tags are working 1`] = `
 "import "@flairjs/client/generated-css/cbd93da89790ac1c.css";
-import { Style } from "@flairjs/react";
+import { Style } from "@flairjs/client/react";
 import clsx from "clsx";
 import { Component } from "react";
 class Box extends Component<{
@@ -45,7 +45,8 @@ export { Box };
 exports[`Misc tests > combined styles are working 1`] = `
 "import "@flairjs/client/generated-css/1e01b777eaf6a095.css";
 import clsx from "clsx";
-import { flair, Style } from "@flairjs/react";
+import { flair } from "@flairjs/client";
+import { Style } from "@flairjs/client/react";
 const Box = ({ children, containerClassName }: {
 	children?: React.ReactNode;
 	containerClassName?: string;
@@ -68,7 +69,7 @@ const SecondBox = ({ children, classList }: {
 exports[`Misc tests > conflicting classnames in same file are working 1`] = `
 "import "@flairjs/client/generated-css/8f9c0925524c26c8.css";
 import clsx from "clsx";
-import { flair } from "@flairjs/react";
+import { flair } from "@flairjs/client";
 const Box = ({ children, containerClassName }: {
 	children?: React.ReactNode;
 	containerClassName?: string;
@@ -86,7 +87,8 @@ const SecondBox = ({ children, classList }: {
 
 exports[`Misc tests > different function variants are working 1`] = `
 "import "@flairjs/client/generated-css/cc835155a66ce982.css";
-import { flair, Style } from "@flairjs/react";
+import { flair } from "@flairjs/client";
+import { Style } from "@flairjs/client/react";
 import clsx from "clsx";
 import { forwardRef } from "react";
 export const Box = ({ children, containerClassName }: {
@@ -149,7 +151,7 @@ export const Box6 = forwardRef<HTMLDivElement, {
 
 exports[`Misc tests > global flair styles are working 1`] = `
 "import "@flairjs/client/generated-css/2287b1376d1a3420.css";
-import { flair } from "@flairjs/react";
+import { flair } from "@flairjs/client";
 import clsx from "clsx";
 export const Box = ({ children, containerClassName }: {
 	children?: React.ReactNode;
@@ -165,7 +167,7 @@ export const Box = ({ children, containerClassName }: {
 
 exports[`Misc tests > global styles are working 1`] = `
 "import "@flairjs/client/generated-css/7a9cb3081991286f.css";
-import { Style } from "@flairjs/react";
+import { Style } from "@flairjs/client/react";
 import clsx from "clsx";
 export const Box = ({ children, containerClassName }: {
 	children?: React.ReactNode;

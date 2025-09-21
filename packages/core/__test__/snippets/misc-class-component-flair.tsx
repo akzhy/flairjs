@@ -1,4 +1,4 @@
-import { flair } from '@flairjs/react'
+import { flair } from '@flairjs/client'
 import clsx from 'clsx'
 import { Component } from 'react'
 

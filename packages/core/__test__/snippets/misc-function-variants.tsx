@@ -1,4 +1,5 @@
-import { flair, Style } from '@flairjs/react'
+import { flair } from '@flairjs/client'
+import { Style } from '@flairjs/client/react'
 import clsx from 'clsx'
 import { forwardRef } from 'react'
 

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { c, cn, css } from '@flairjs/react'
+import { c, cn, css } from '@flairjs/client'
 import { useState } from 'react'
 
 export const TestCaseComponent = () => {

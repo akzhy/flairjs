@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { flair } from '@flairjs/react'
+import { flair } from '@flairjs/client'
 
 export const TestCaseComponent = () => {
   return (

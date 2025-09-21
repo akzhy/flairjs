@@ -110,7 +110,7 @@ exports[`Core tests > flair property object is working 1`] = `
 exports[`Core tests > flair property object is working 2`] = `
 "import "@flairjs/client/generated-css/1518dce36b030ff9.css";
 import clsx from "clsx";
-import { c, cn, flair } from "@flairjs/react";
+import { c, cn, flair } from "@flairjs/client";
 import { useState } from "react";
 export const TestCaseComponent = () => {
 	const [case5, setCase5] = useState(false);
@@ -178,7 +178,7 @@ export const TestCaseComponent = () => {
 exports[`Core tests > flair property string is working 1`] = `
 "import "@flairjs/client/generated-css/2d135f6647775829.css";
 import clsx from "clsx";
-import { c, cn } from "@flairjs/react";
+import { c, cn } from "@flairjs/client";
 import { useState } from "react";
 export const TestCaseComponent = () => {
 	const [case5, setCase5] = useState(false);
@@ -246,7 +246,8 @@ export const TestCaseComponent = () => {
 exports[`Core tests > style tag is working 1`] = `
 "import "@flairjs/client/generated-css/7b55dce5a269efde.css";
 import clsx from "clsx";
-import { Style, c, cn } from "@flairjs/react";
+import { c, cn } from "@flairjs/client";
+import { Style } from "@flairjs/client/react";
 import { useState } from "react";
 export const TestCaseComponent = () => {
 	const [case5, setCase5] = useState(false);

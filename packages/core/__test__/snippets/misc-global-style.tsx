@@ -1,4 +1,4 @@
-import { Style } from '@flairjs/react';
+import { Style } from '@flairjs/client/react';
 import clsx from 'clsx';
 
 export const Box = ({ children, containerClassName }: { children?: React.ReactNode; containerClassName?: string }) => {

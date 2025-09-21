@@ -1,4 +1,4 @@
-import { Style } from '@flairjs/react'
+import { Style } from "@flairjs/client/react";
 import clsx from 'clsx'
 import { Component } from 'react'
 
