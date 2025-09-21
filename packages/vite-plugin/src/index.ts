@@ -78,7 +78,7 @@ export default async function flairJsVitePlugin(options?: FlairJsVitePluginOptio
         cssOutDir: flairGeneratedCssPath,
         useTheme: !!userTheme,
         theme: {
-          breakpoints: userTheme?.theme?.breakpoints,
+          breakpoints: userTheme?.theme?.breakpoints ?? {},
           prefix: userTheme?.theme?.prefix,
         },
         cssPreprocessor: cssPreprocessor
