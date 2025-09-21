@@ -35,6 +35,7 @@ pub fn transform_code(
     css_out_dir: options.css_out_dir,
     class_name_list: options.class_name_list,
     use_theme: options.use_theme,
+    append_timestamp_to_css_file: options.append_timestamp_to_css_file,
     theme: options.theme,
   };
   let result = transform::transform(code, file_path, options, css_preprocessor, Some(env));

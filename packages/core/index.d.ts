@@ -25,6 +25,7 @@ export interface TransformOptions {
   classNameList?: Array<string>
   useTheme?: boolean
   theme?: Theme
+  appendTimestampToCssFile?: boolean
 }
 
 export interface TransformOutput {
@@ -32,4 +33,5 @@ export interface TransformOutput {
   sourcemap?: string
   css: string
   logs: Array<LogEntry>
+  generatedCssName?: string
 }

@@ -4,6 +4,7 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::path::PathBuf;
+use std::time::SystemTime;
 
 use crate::flair_property::{FlairProperty, FLAIR_REPLACEMENT};
 use crate::logger::{get_logger, LogEntry};
@@ -70,6 +71,7 @@ pub struct TransformOptions {
   pub class_name_list: Option<Vec<String>>,
   pub use_theme: Option<bool>,
   pub theme: Option<Theme>,
+  pub append_timestamp_to_css_file: Option<bool>,
 }
 
 #[napi(object)]
@@ -78,6 +80,7 @@ pub struct TransformOutput {
   pub sourcemap: Option<String>,
   pub css: String,
   pub logs: Vec<LogEntry>,
+  pub generated_css_name: Option<String>,
 }
 
 /// Entry point for transforming a TypeScript React file.
@@ -156,6 +159,7 @@ pub fn transform(
     sourcemap,
     css: visitor.extracted_css.join("\n"),
     logs,
+    generated_css_name: visitor.generated_css_name,
   })
 }
 
@@ -239,6 +243,8 @@ struct TransformVisitor<'a> {
   fn_id_to_class_map: HashMap<u32, u32>,
 
   parent_class_id: Option<u32>,
+
+  generated_css_name: Option<String>,
 }
 
 impl<'a> TransformVisitor<'a> {
@@ -281,6 +287,7 @@ impl<'a> TransformVisitor<'a> {
       flair_property_visitor,
       fn_id_to_class_map: HashMap::new(),
       parent_class_id: None,
+      generated_css_name: None,
     }
   }
 
@@ -320,7 +327,17 @@ impl<'a> TransformVisitor<'a> {
     };
 
     // Create the CSS file path and import statement
-    let hash_string = format!("{:x}.css", hash);
+    let current_timestamp = if self.options.append_timestamp_to_css_file.unwrap_or(false) {
+      let now = SystemTime::now();
+      let duration_since_epoch = now
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+      format!("-{}", duration_since_epoch)
+    } else {
+      "".to_string()
+    };
+    let hash_string = format!("{:x}{}.css", hash, current_timestamp);
     let import_path = format!("@flairjs/client/generated-css/{}", hash_string);
 
     // Create an import statement for the generated CSS file
@@ -347,11 +364,11 @@ impl<'a> TransformVisitor<'a> {
       );
       return;
     }
-    file
+    let _ = file
       .unwrap()
-      .write_all(self.extracted_css.join("\n").as_bytes())
-      .unwrap();
+      .write_all(self.extracted_css.join("\n").as_bytes());
 
+    self.generated_css_name = Some(hash_string);
     // Insert the CSS import at the top of the transformed file
     program.body.insert(0, import_statement);
   }
@@ -497,7 +514,8 @@ impl<'a> TransformVisitor<'a> {
 
         // Store CSS module exports for class name replacement in Pass 2
         if let Some(parsed_scoped_css) = parsed_scoped_css {
-          let css_exports = parsed_scoped_css.exports.as_ref().unwrap();
+          let empty_exports = HashMap::new();
+          let css_exports = parsed_scoped_css.exports.as_ref().unwrap_or(&empty_exports);
 
           self.css_module_exports.insert(*fn_id, css_exports.clone());
 
@@ -605,11 +623,9 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   /// Tracks symbols for "Style" components and "c" utility functions from flair packages.
   fn visit_import_declaration(&mut self, it: &mut ImportDeclaration<'a>) {
     if it.source.value.as_str().starts_with(IMPORT_PATH) && self.pass == Pass::First {
-      it.specifiers
-        .as_ref()
-        .unwrap()
-        .iter()
-        .for_each(|specifier| {
+      let specifiers = it.specifiers.as_ref();
+      if let Some(specifiers) = specifiers {
+        specifiers.iter().for_each(|specifier| {
           if let ImportDeclarationSpecifier::ImportSpecifier(import_specifier) = specifier {
             // Track the "Style" component import for style tag detection
             let style_import_symbol = self.get_import_symbol(import_specifier, "Style");
@@ -627,6 +643,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
             }
           }
         });
+      }
     }
   }
 

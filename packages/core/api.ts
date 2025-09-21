@@ -126,6 +126,7 @@ const transformCode = (
       classNameList: options.classNameList,
       useTheme: options.useTheme,
       theme: options.theme,
+      appendTimestampToCssFile: options.appendTimestampToCssFile,
     },
     options.cssPreprocessor,
   )
