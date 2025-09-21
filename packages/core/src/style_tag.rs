@@ -12,7 +12,7 @@ use crate::transform::CSSData;
 pub struct StyleDetector<'a> {
   scoping: &'a Scoping,
   /// Vector of symbol IDs that represent imported style tag components
-  /// eg import { Style } from "@flairjs/react"
+  /// eg import { Style } from "@flairjs/client/react"
   style_tag_import_symbols: &'a Vec<SymbolId>,
   /// Collection of span start positions for detected style tag elements
   /// Used to track where style elements are located in the source code
