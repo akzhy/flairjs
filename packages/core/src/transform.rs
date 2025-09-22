@@ -96,7 +96,10 @@ pub fn transform(
   css_preprocessor: Option<NapiFunction<String, String>>,
   env: Option<Env>,
 ) -> Option<TransformOutput> {
-  if !matches!(file_path.split('.').next_back(), Some("tsx" | "jsx" | "ts" | "js")) {
+  if !matches!(
+    file_path.split('.').next_back(),
+    Some("tsx" | "jsx" | "ts" | "js")
+  ) {
     return None;
   }
 
