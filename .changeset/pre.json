@@ -4,10 +4,13 @@
   "initialVersions": {
     "@flairjs/client": "0.0.0",
     "@flairjs/core": "0.0.0",
-    "@flairjs/vite-plugin": "0.0.0"
+    "@flairjs/vite-plugin": "0.0.0",
+    "@flairjs/rollup-plugin": "0.0.1-beta.1",
+    "@flairjs/bundler-shared": "0.0.1-beta.1"
   },
   "changesets": [
     "poor-pugs-listen",
-    "public-pants-win"
+    "public-pants-win",
+    "tasty-bushes-boil"
   ]
 }
