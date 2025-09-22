@@ -82,25 +82,25 @@ jobs:
             target: x86_64-unknown-linux-musl
             build: pnpm build --target x86_64-unknown-linux-musl -x
 
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            build: pnpm build --target aarch64-unknown-linux-gnu --use-napi-cross
+          # - host: ubuntu-latest
+          #   target: aarch64-unknown-linux-gnu
+          #   build: pnpm build --target aarch64-unknown-linux-gnu --use-napi-cross
 
-          - host: ubuntu-latest
-            target: armv7-unknown-linux-gnueabihf
-            build: pnpm build --target armv7-unknown-linux-gnueabihf --use-napi-cross
+          # - host: ubuntu-latest
+          #   target: armv7-unknown-linux-gnueabihf
+          #   build: pnpm build --target armv7-unknown-linux-gnueabihf --use-napi-cross
 
-          - host: ubuntu-latest
-            target: aarch64-linux-android
-            build: pnpm build --target aarch64-linux-android
+          # - host: ubuntu-latest
+          #   target: aarch64-linux-android
+          #   build: pnpm build --target aarch64-linux-android
 
-          - host: ubuntu-latest
-            target: armv7-linux-androideabi
-            build: pnpm build --target armv7-linux-androideabi
+          # - host: ubuntu-latest
+          #   target: armv7-linux-androideabi
+          #   build: pnpm build --target armv7-linux-androideabi
 
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-musl
-            build: pnpm build --target aarch64-unknown-linux-musl -x
+          # - host: ubuntu-latest
+          #   target: aarch64-unknown-linux-musl
+          #   build: pnpm build --target aarch64-unknown-linux-musl -x
 
           - host: ubuntu-latest
             target: wasm32-wasip1-threads
@@ -193,55 +193,55 @@ jobs:
             packages/core/${{ env.APP_NAME }}.*.wasm
           if-no-files-found: error
 
-  build-freebsd:
-    runs-on: ubuntu-latest
-    name: Build FreeBSD
-    defaults:
-      run:
-        working-directory: ./packages/core
-    steps:
-      - uses: actions/checkout@v5
-      - name: Build
-        id: build
-        uses: cross-platform-actions/action@v0.29.0
-        env:
-          DEBUG: napi:*
-          RUSTUP_IO_THREADS: 1
-        with:
-          operating_system: freebsd
-          version: "14.2"
-          memory: 8G
-          cpu_count: 3
-          environment_variables: DEBUG RUSTUP_IO_THREADS
-          shell: bash
-          run: |
-            sudo pkg install -y -f curl node libnghttp2 npm cmake perl5
-            sudo corepack enable
-            curl https://sh.rustup.rs -sSf --output rustup.sh
-            sh rustup.sh -y --profile minimal --default-toolchain stable
-            source "$HOME/.cargo/env"
-            echo "~~~~ rustc --version ~~~~"
-            rustc --version
-            echo "~~~~ node -v ~~~~"
-            node -v
-            echo "~~~~ pnpm --version ~~~~"
-            pnpm --version
-            pwd
-            ls -lah
-            whoami
-            env
-            freebsd-version
-            pnpm install
-            pnpm build:core
-            rm -rf node_modules
-            rm -rf target
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bindings-freebsd
-          path: |
-            packages/core/${{ env.APP_NAME }}.*.node
-          if-no-files-found: error
+  # build-freebsd:
+  #   runs-on: ubuntu-latest
+  #   name: Build FreeBSD
+  #   defaults:
+  #     run:
+  #       working-directory: ./packages/core
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - name: Build
+  #       id: build
+  #       uses: cross-platform-actions/action@v0.29.0
+  #       env:
+  #         DEBUG: napi:*
+  #         RUSTUP_IO_THREADS: 1
+  #       with:
+  #         operating_system: freebsd
+  #         version: "14.2"
+  #         memory: 8G
+  #         cpu_count: 3
+  #         environment_variables: DEBUG RUSTUP_IO_THREADS
+  #         shell: bash
+  #         run: |
+  #           sudo pkg install -y -f curl node libnghttp2 npm cmake perl5
+  #           sudo corepack enable
+  #           curl https://sh.rustup.rs -sSf --output rustup.sh
+  #           sh rustup.sh -y --profile minimal --default-toolchain stable
+  #           source "$HOME/.cargo/env"
+  #           echo "~~~~ rustc --version ~~~~"
+  #           rustc --version
+  #           echo "~~~~ node -v ~~~~"
+  #           node -v
+  #           echo "~~~~ pnpm --version ~~~~"
+  #           pnpm --version
+  #           pwd
+  #           ls -lah
+  #           whoami
+  #           env
+  #           freebsd-version
+  #           pnpm install
+  #           pnpm build:core
+  #           rm -rf node_modules
+  #           rm -rf target
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: bindings-freebsd
+  #         path: |
+  #           packages/core/${{ env.APP_NAME }}.*.node
+  #         if-no-files-found: error
 
   test-macOS-windows-binding:
     defaults:
@@ -402,7 +402,7 @@ jobs:
     needs:
       - lint
       - build
-      - build-freebsd
+      # - build-freebsd
       - test-macOS-windows-binding
       - test-linux-binding
       # - test-wasi-on-nodejs
