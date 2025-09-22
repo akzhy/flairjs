@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@flairjs/bundler-shared": "workspace:*",
     "@flairjs/core": "workspace:*",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^22.8.1",
@@ -42,9 +43,5 @@
     "sass": "^1.86.3",
     "typescript": "^5.8.2",
     "vite": "^7.1.2"
-  },
-  "dependencies": {
-    "esbuild": "^0.25.10",
-    "picomatch": "^4.0.3"
   }
 }
