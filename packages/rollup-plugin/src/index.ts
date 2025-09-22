@@ -1,28 +1,12 @@
 import {
   initializeSharedContext,
+  SharedPluginOptions,
   shouldProcessFile,
 } from "@flairjs/bundler-shared";
-import { FlairThemeConfig, transformCode } from "@flairjs/core";
+import { transformCode } from "@flairjs/core";
 import type { Plugin } from "rollup";
 
-interface FlairJsRollupPluginOptions {
-  /**
-   * Preprocess the extracted CSS before it is passed to lightningcss
-   * @experimental
-   * @param css the extracted css
-   * @param id the id of the file being processed
-   * @returns the processed css
-   */
-  cssPreprocessor?: (css: string, id: string) => string;
-  include?: string | string[];
-  exclude?: string | string[];
-  /**
-   * Override the default theme file content based on the user theme
-   * @param theme the user theme
-   * @returns the theme file content
-   */
-  buildThemeFile?: (theme: FlairThemeConfig) => string;
-}
+interface FlairJsRollupPluginOptions extends SharedPluginOptions {}
 
 export default async function flairJsRollupPlugin(
   options?: FlairJsRollupPluginOptions
@@ -44,6 +28,7 @@ export default async function flairJsRollupPlugin(
         theme: context.userTheme?.theme,
         useTheme: !!context.userTheme,
         cssOutDir: context.flairGeneratedCssDir,
+        classNameList: options?.classNameList,
       });
 
       if (!result) {

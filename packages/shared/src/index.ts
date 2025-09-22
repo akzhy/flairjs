@@ -1,7 +1,5 @@
 export {
   type SharedPluginOptions,
-  type SharedPluginContext,
-  type TransformResult,
   initializeSharedContext,
 } from "./plugin-core.js";
 

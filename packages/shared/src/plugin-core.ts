@@ -24,20 +24,19 @@ export interface SharedPluginOptions {
    * @returns the theme file content
    */
   buildThemeFile?: (theme: FlairThemeConfig) => string;
+
+  /**
+   * List of class names used in the project. Supports regex.
+   */
+  classNameList?: string[];
 }
 
-export interface SharedPluginContext {
+interface SharedPluginContext {
   flairThemeFile: string;
   flairGeneratedCssDir: string;
   userTheme: Awaited<ReturnType<typeof getUserTheme>>;
   buildThemeCSS: (theme: FlairThemeConfig) => string;
   refreshCssFile: (filePath: string) => void;
-}
-
-export interface TransformResult {
-  code: string;
-  map?: any;
-  shouldSkip: boolean;
 }
 
 /**
