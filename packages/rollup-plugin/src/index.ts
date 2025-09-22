@@ -38,7 +38,6 @@ export default async function flairJsRollupPlugin(
 
       const result = transformCode(code, id, {
         appendTimestampToCssFile: true,
-        classNameList: [],
         cssPreprocessor: options?.cssPreprocessor
           ? (css: string) => options.cssPreprocessor!(css, id)
           : undefined,
