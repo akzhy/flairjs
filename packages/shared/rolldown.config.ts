@@ -12,7 +12,11 @@ const createOptions = (format: "esm" | "cjs"): RolldownOptions => {
       esModule: true,
     },
     external: (id) => {
-      return id.includes("node_modules") || Object.keys(packageJson.dependencies).includes(id);
+      return (
+        id.includes("node_modules") ||
+        id === "@flairjs/core" ||
+        Object.keys(packageJson.dependencies).includes(id)
+      );
     },
   };
 };
