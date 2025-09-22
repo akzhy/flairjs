@@ -96,8 +96,7 @@ pub fn transform(
   css_preprocessor: Option<NapiFunction<String, String>>,
   env: Option<Env>,
 ) -> Option<TransformOutput> {
-  // Only process TypeScript React files
-  if !file_path.ends_with(".tsx") {
+  if !matches!(file_path.split('.').next_back(), Some("tsx" | "jsx" | "ts" | "js")) {
     return None;
   }
 
