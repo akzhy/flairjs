@@ -1,4 +1,4 @@
-import { FlairThemeConfig, buildThemeTokens } from "@flairjs/core";
+import { FlairThemeConfig, buildThemeTokens } from "@flairjs/client";
 import { existsSync, watch } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import module from "node:module";
