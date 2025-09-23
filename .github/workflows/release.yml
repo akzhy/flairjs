@@ -36,7 +36,7 @@ jobs:
         id: base_core_version
         run: |
           git fetch origin master
-          version=$(git show origin/master:package.json | jq -r .version)
+          version=$(npm view @flairjs/core dist-tags.latest)
           echo "base_core_version=$version" >> $GITHUB_OUTPUT
 
       - id: detect
@@ -75,9 +75,12 @@ jobs:
       - name: Enable corepack
         run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm build:non-core-packages
       - name: Publish JS packages
         uses: changesets/action@v1
         with:
           publish: pnpm changeset publish
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
