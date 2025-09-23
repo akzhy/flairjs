@@ -1,12 +1,12 @@
 import {
   initializeSharedContext,
   SharedPluginOptions,
-  shouldProcessFile
+  shouldProcessFile,
+  transformCode,
 } from "@flairjs/bundler-shared";
-import { transformCode } from "@flairjs/core";
 import type { Plugin } from "vite";
 
-interface FlairJsVitePluginOptions extends SharedPluginOptions {};
+interface FlairJsVitePluginOptions extends SharedPluginOptions {}
 
 export default async function flairJsVitePlugin(
   options?: FlairJsVitePluginOptions
@@ -17,7 +17,6 @@ export default async function flairJsVitePlugin(
     name: "@flairjs/vite-plugin",
     enforce: "pre",
     transform(code, id) {
-
       if (!shouldProcessFile(id, options?.include, options?.exclude)) {
         return null;
       }

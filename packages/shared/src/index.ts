@@ -5,3 +5,4 @@ export {
 
 export { getUserTheme } from "./user-theme.js";
 export { shouldProcessFile } from "./file-matcher.js";
+export { transformCode } from "./transform.js";

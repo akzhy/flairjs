@@ -2,8 +2,8 @@ import {
   initializeSharedContext,
   SharedPluginOptions,
   shouldProcessFile,
+  transformCode,
 } from "@flairjs/bundler-shared";
-import { transformCode } from "@flairjs/core";
 import type { Plugin } from "rollup";
 
 interface FlairJsRollupPluginOptions extends SharedPluginOptions {}
