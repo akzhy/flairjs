@@ -1,5 +1,11 @@
 # @flairjs/client
 
+## 0.0.1-beta.3
+
+### Patch Changes
+
+- Move themeing and transform logic from core to client and shared packages
+
 ## 0.0.1-beta.2
 
 ### Patch Changes
