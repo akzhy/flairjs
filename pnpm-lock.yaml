@@ -122,9 +122,6 @@ importers:
       '@types/node':
         specifier: ^22.8.1
         version: 22.18.1
-      '@types/picomatch':
-        specifier: ^4.0.2
-        version: 4.0.2
       rolldown:
         specifier: 1.0.0-beta.37
         version: 1.0.0-beta.37
