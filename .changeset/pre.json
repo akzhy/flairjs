@@ -6,12 +6,14 @@
     "@flairjs/core": "0.0.0",
     "@flairjs/vite-plugin": "0.0.0",
     "@flairjs/rollup-plugin": "0.0.1-beta.1",
-    "@flairjs/bundler-shared": "0.0.1-beta.1"
+    "@flairjs/bundler-shared": "0.0.1-beta.1",
+    "@flairjs/webpack-loader": "0.0.1-beta.4"
   },
   "changesets": [
     "cold-beds-peel",
     "poor-pugs-listen",
     "public-pants-win",
+    "rude-parrots-swim",
     "tasty-bushes-boil",
     "thin-singers-open"
   ]
