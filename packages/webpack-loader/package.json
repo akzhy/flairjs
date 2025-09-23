@@ -1,0 +1,45 @@
+{
+  "name": "@flairjs/webpack-loader",
+  "version": "0.0.1-beta.5",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./cached-css/*": {
+      "import": "./dist/.cache/*"
+    }
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "rolldown -c",
+    "check": "biome check --write",
+    "dev": "rolldown -w -c",
+    "format": "biome format --write"
+  },
+  "peerDependencies": {
+    "@flairjs/core": "workspace:*",
+    "webpack": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@flairjs/bundler-shared": "workspace:*",
+    "@flairjs/core": "workspace:*",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@types/node": "^22.8.1",
+    "rolldown": "1.0.0-beta.37",
+    "typescript": "^5.8.2",
+    "webpack": "^5.101.0"
+  }
+}
