@@ -75,7 +75,9 @@ jobs:
       - name: Enable corepack
         run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - name: Build
+      - name: Build core JS
+        run: pnpm build:core-js
+      - name: Build non-core packages
         run: pnpm build:non-core-packages
       - name: Publish JS packages
         uses: changesets/action@v1
