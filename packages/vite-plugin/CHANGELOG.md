@@ -1,5 +1,11 @@
 # @flairjs/vite-plugin
 
+## 0.0.1-beta.4
+
+### Patch Changes
+
+- Fix package name issue
+
 ## 0.0.1-beta.3
 
 ### Patch Changes

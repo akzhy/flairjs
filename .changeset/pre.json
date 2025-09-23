@@ -9,6 +9,7 @@
     "@flairjs/bundler-shared": "0.0.1-beta.1"
   },
   "changesets": [
+    "cold-beds-peel",
     "poor-pugs-listen",
     "public-pants-win",
     "tasty-bushes-boil",
