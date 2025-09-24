@@ -10,6 +10,7 @@
     "@flairjs/webpack-loader": "0.0.1-beta.4"
   },
   "changesets": [
+    "angry-taxis-smash",
     "cold-beds-peel",
     "poor-pugs-listen",
     "public-pants-win",
