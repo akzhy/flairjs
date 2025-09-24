@@ -51,7 +51,7 @@ export default async function flairJsLoader(
     callback(
       null,
       result.code,
-      result.map ? JSON.parse(result.map ?? "{}") : sourceMap
+      result.sourcemap ? JSON.parse(result.sourcemap ?? "{}") : sourceMap
     );
   } catch (error) {
     console.error("[@flairjs/webpack-loader]", error);
