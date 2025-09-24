@@ -66,15 +66,14 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
       - name: Enable corepack
         run: corepack enable
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install
       - name: Build core JS
         run: pnpm build:core-js
       - name: Build non-core packages
@@ -84,5 +83,5 @@ jobs:
         with:
           publish: pnpm changeset publish
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
