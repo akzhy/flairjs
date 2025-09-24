@@ -106,6 +106,13 @@ importers:
         version: 3.2.4(@types/node@22.18.1)(jiti@2.5.1)(sass@1.92.1)(terser@5.44.0)(yaml@2.8.1)
 
   packages/rollup-plugin:
+    dependencies:
+      esbuild:
+        specifier: ^0.25.10
+        version: 0.25.10
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -133,13 +140,6 @@ importers:
         version: 5.9.2
 
   packages/shared:
-    dependencies:
-      esbuild:
-        specifier: ^0.25.10
-        version: 0.25.10
-      picomatch:
-        specifier: ^4.0.3
-        version: 4.0.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -159,6 +159,12 @@ importers:
       '@types/picomatch':
         specifier: ^4.0.2
         version: 4.0.2
+      esbuild:
+        specifier: ^0.25.10
+        version: 0.25.10
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
       rolldown:
         specifier: 1.0.0-beta.37
         version: 1.0.0-beta.37
@@ -167,6 +173,13 @@ importers:
         version: 5.9.2
 
   packages/vite-plugin:
+    dependencies:
+      esbuild:
+        specifier: ^0.25.10
+        version: 0.25.10
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -194,6 +207,13 @@ importers:
         version: 7.1.5(@types/node@22.18.1)(jiti@2.5.1)(sass@1.92.1)(terser@5.44.0)(yaml@2.8.1)
 
   packages/webpack-loader:
+    dependencies:
+      esbuild:
+        specifier: ^0.25.10
+        version: 0.25.10
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -218,7 +238,7 @@ importers:
         version: 5.9.2
       webpack:
         specifier: ^5.101.0
-        version: 5.101.3
+        version: 5.101.3(esbuild@0.25.10)
 
 packages:
 
@@ -5091,14 +5111,16 @@ snapshots:
 
   term-size@2.2.1: {}
 
-  terser-webpack-plugin@5.3.14(webpack@5.101.3):
+  terser-webpack-plugin@5.3.14(esbuild@0.25.10)(webpack@5.101.3(esbuild@0.25.10)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.2
       serialize-javascript: 6.0.2
       terser: 5.44.0
-      webpack: 5.101.3
+      webpack: 5.101.3(esbuild@0.25.10)
+    optionalDependencies:
+      esbuild: 0.25.10
 
   terser@5.44.0:
     dependencies:
@@ -5251,7 +5273,7 @@ snapshots:
 
   webpack-sources@3.3.3: {}
 
-  webpack@5.101.3:
+  webpack@5.101.3(esbuild@0.25.10):
     dependencies:
       '@types/eslint-scope': 3.7.7
       '@types/estree': 1.0.8
@@ -5275,7 +5297,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.2
       tapable: 2.2.3
-      terser-webpack-plugin: 5.3.14(webpack@5.101.3)
+      terser-webpack-plugin: 5.3.14(esbuild@0.25.10)(webpack@5.101.3(esbuild@0.25.10))
       watchpack: 2.4.4
       webpack-sources: 3.3.3
     transitivePeerDependencies:

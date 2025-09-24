@@ -24,7 +24,9 @@
   },
   "peerDependencies": {
     "@flairjs/client": "workspace:*",
-    "@flairjs/core": "workspace:*"
+    "@flairjs/core": "workspace:*",
+    "esbuild": ">=0.25.0",
+    "picomatch": ">=4.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -33,11 +35,9 @@
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^22.8.1",
     "@types/picomatch": "^4.0.2",
+    "esbuild": "^0.25.10",
+    "picomatch": "^4.0.3",
     "rolldown": "1.0.0-beta.37",
     "typescript": "^5.8.2"
-  },
-  "dependencies": {
-    "esbuild": "^0.25.10",
-    "picomatch": "^4.0.3"
   }
 }
