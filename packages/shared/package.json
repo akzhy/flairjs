@@ -34,10 +34,12 @@
     "@flairjs/core": "workspace:*",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^22.8.1",
-    "@types/picomatch": "^4.0.2",
-    "esbuild": "^0.25.10",
-    "picomatch": "^4.0.3",
+    "@types/picomatch": "^4.0.2", 
     "rolldown": "1.0.0-beta.37",
     "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.10",
+    "picomatch": "^4.0.3"
   }
 }

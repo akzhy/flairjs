@@ -140,6 +140,13 @@ importers:
         version: 5.9.2
 
   packages/shared:
+    dependencies:
+      esbuild:
+        specifier: ^0.25.10
+        version: 0.25.10
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -159,12 +166,6 @@ importers:
       '@types/picomatch':
         specifier: ^4.0.2
         version: 4.0.2
-      esbuild:
-        specifier: ^0.25.10
-        version: 0.25.10
-      picomatch:
-        specifier: ^4.0.3
-        version: 4.0.3
       rolldown:
         specifier: 1.0.0-beta.37
         version: 1.0.0-beta.37
