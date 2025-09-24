@@ -23,11 +23,13 @@
     "format": "biome format --write"
   },
   "peerDependencies": {
-    "@flairjs/client": "workspace:*"
+    "@flairjs/client": "workspace:*",
+    "@flairjs/core": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@flairjs/client": "workspace:*",
+    "@flairjs/core": "workspace:*",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^22.8.1",
     "@types/picomatch": "^4.0.2",
