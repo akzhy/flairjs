@@ -36,7 +36,7 @@ export default async function flairJsRollupPlugin(
       }
 
       if (result.generatedCssName) {
-        context.refreshCssFile(result.generatedCssName);
+        context.refreshCssFile(id, result.generatedCssName);
       }
 
       return {

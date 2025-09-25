@@ -37,7 +37,7 @@ export default async function flairJsVitePlugin(
       }
 
       if (result.generatedCssName) {
-        context.refreshCssFile(result.generatedCssName);
+        context.refreshCssFile(id, result.generatedCssName);
       }
 
       return {
