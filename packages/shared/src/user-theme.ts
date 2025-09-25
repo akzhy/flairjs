@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import path from "path";
 import { pathToFileURL } from "url";
+import { store } from "./store";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -11,6 +12,9 @@ export const getUserTheme = async (): Promise<{
   theme: any;
   originalPath: string;
 } | null> => {
+  if (store.getUserTheme()) {
+    return store.getUserTheme();
+  }
   try {
     let userThemeFilePath = path.resolve(process.cwd(), "flair.theme.ts");
     if (!existsSync(userThemeFilePath)) {
@@ -36,12 +40,17 @@ export const getUserTheme = async (): Promise<{
     const userTheme = await import(`${fileUrl}?update=${cacheBuster}`);
 
     if (userTheme.default) {
+      store.setUserTheme({
+        theme: userTheme.default,
+        originalPath: userThemeFilePath,
+      });
       return {
         theme: userTheme.default,
         originalPath: userThemeFilePath,
       };
     }
 
+    store.setUserTheme(null);
     return null;
   } catch (error) {
     console.error("Error loading user theme:", error);

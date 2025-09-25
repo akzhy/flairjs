@@ -4,6 +4,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import module from "node:module";
 import path from "node:path";
 import { getUserTheme } from "./user-theme.js";
+import { store } from "./store.js";
 
 const require = module.createRequire(import.meta.url);
 
@@ -36,20 +37,17 @@ interface SharedPluginContext {
   flairGeneratedCssDir: string;
   userTheme: Awaited<ReturnType<typeof getUserTheme>>;
   buildThemeCSS: (theme: FlairThemeConfig) => string;
-  refreshCssFile: (filePath: string) => void;
+  refreshCssFile: (sourceFilePath: string, cssFilePath: string) => void;
 }
 
-/**
- * Initialize the shared plugin context
- */
-export async function initializeSharedContext(
-  options: SharedPluginOptions = {}
-): Promise<SharedPluginContext> {
-  const { buildThemeFile } = options;
-  const fileNameToGeneratedCssNameMap = new Map<string, string>();
-
+export const getGeneratedCssDir = (): string => {
   const flairThemeFile = require.resolve("@flairjs/client/theme.css");
   const flairGeneratedCssDir = path.resolve(flairThemeFile, "../generated-css");
+  return flairGeneratedCssDir;
+};
+
+export const setupGeneratedCssDir = async () => {
+  const flairGeneratedCssDir = getGeneratedCssDir();
 
   // Setup generated CSS directory
   if (!existsSync(flairGeneratedCssDir)) {
@@ -59,17 +57,26 @@ export async function initializeSharedContext(
     await mkdir(flairGeneratedCssDir);
   }
 
-  // Load user theme
+  return flairGeneratedCssDir;
+};
+
+export const setupUserThemeFile = async ({
+  buildThemeFile,
+}: {
+  buildThemeFile?: SharedPluginContext["buildThemeCSS"];
+}) => {
+  const flairThemeFile = require.resolve("@flairjs/client/theme.css");
   let userTheme = await getUserTheme();
   const buildThemeCSS = buildThemeFile ?? buildThemeTokens;
 
-  // Setup theme file and watcher
   if (userTheme) {
     const themeCSS = buildThemeCSS(userTheme.theme);
+    store.setLastThemeUpdate(Date.now());
     await writeFile(flairThemeFile, themeCSS, "utf-8");
 
     watch(userTheme.originalPath, async () => {
       userTheme = await getUserTheme();
+      store.setLastThemeUpdate(Date.now());
       if (!userTheme) {
         return;
       }
@@ -78,14 +85,44 @@ export async function initializeSharedContext(
     });
   }
 
-  const refreshCssFile = (filePath: string) => {
-    if (fileNameToGeneratedCssNameMap.has(filePath)) {
-      const previousGeneratedCssName =
-        fileNameToGeneratedCssNameMap.get(filePath);
-      setTimeout(() => {
-        rm(path.join(flairGeneratedCssDir, previousGeneratedCssName!));
-      }, 2000);
-    }
+  return userTheme;
+};
+
+export const removeOutdatedCssFiles = async (
+  sourceFilePath: string,
+  cssFilePath: string,
+  { flairGeneratedCssDir }: { flairGeneratedCssDir: string }
+) => {
+  const previousGeneratedCssName = store.getGeneratedCssName(sourceFilePath);
+  if (previousGeneratedCssName && previousGeneratedCssName !== cssFilePath) {
+    setTimeout(() => {
+      rm(path.join(flairGeneratedCssDir, previousGeneratedCssName), {
+        force: true,
+      });
+    }, 2000);
+  } else {
+    store.setFileNameToGeneratedCssNameMap(sourceFilePath, cssFilePath);
+  }
+};
+
+/**
+ * Initialize the shared plugin context
+ */
+export async function initializeSharedContext(
+  options: SharedPluginOptions = {}
+): Promise<SharedPluginContext> {
+  const flairThemeFile = require.resolve("@flairjs/client/theme.css");
+  const flairGeneratedCssDir = await setupGeneratedCssDir();
+  const buildThemeCSS = options.buildThemeFile ?? buildThemeTokens;
+
+  const userTheme = await setupUserThemeFile({
+    buildThemeFile: buildThemeCSS,
+  });
+
+  const refreshCssFile = (sourceFilePath: string, cssFilePath: string) => {
+    removeOutdatedCssFiles(sourceFilePath, cssFilePath, {
+      flairGeneratedCssDir,
+    });
   };
 
   return {
