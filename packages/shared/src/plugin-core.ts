@@ -46,15 +46,28 @@ export const getGeneratedCssDir = (): string => {
   return flairGeneratedCssDir;
 };
 
-export const setupGeneratedCssDir = async () => {
+export const setupGeneratedCssDir = async (): Promise<string | null> => {
   const flairGeneratedCssDir = getGeneratedCssDir();
 
   // Setup generated CSS directory
-  if (!existsSync(flairGeneratedCssDir)) {
-    await mkdir(flairGeneratedCssDir);
-  } else {
-    await rm(flairGeneratedCssDir, { recursive: true, force: true });
-    await mkdir(flairGeneratedCssDir);
+  try {
+    if (!existsSync(flairGeneratedCssDir)) {
+      await mkdir(flairGeneratedCssDir);
+    } else {
+      await rm(flairGeneratedCssDir, { recursive: true, force: true });
+      await mkdir(flairGeneratedCssDir);
+    }
+  } catch (err: any) {
+    if (err?.code === "EEXIST") {
+      return flairGeneratedCssDir;
+    }
+
+    console.error(
+      `[flairjs] Could not create generated CSS directory: ${flairGeneratedCssDir}`,
+      err
+    );
+
+    return null;
   }
 
   return flairGeneratedCssDir;
@@ -110,10 +123,15 @@ export const removeOutdatedCssFiles = async (
  */
 export async function initializeSharedContext(
   options: SharedPluginOptions = {}
-): Promise<SharedPluginContext> {
+): Promise<SharedPluginContext | null> {
   const flairThemeFile = require.resolve("@flairjs/client/theme.css");
   const flairGeneratedCssDir = await setupGeneratedCssDir();
   const buildThemeCSS = options.buildThemeFile ?? buildThemeTokens;
+
+  if (!flairGeneratedCssDir) {
+    console.error("[flairjs] Could not setup generated CSS directory.");
+    return null;
+  }
 
   const userTheme = await setupUserThemeFile({
     buildThemeFile: buildThemeCSS,
