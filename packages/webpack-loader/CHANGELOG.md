@@ -1,5 +1,12 @@
 # @flairjs/vite-plugin
 
+## 0.0.1-beta.3
+
+### Patch Changes
+
+- Fix issues with directory generation
+  - @flairjs/core@0.0.1-beta.4
+
 ## 0.0.1-beta.2
 
 ### Patch Changes

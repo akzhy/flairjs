@@ -1,5 +1,11 @@
 # @flairjs/client
 
+## 0.0.1-beta.4
+
+### Patch Changes
+
+- Fix issues with directory generation
+
 ## 0.0.1-beta.3
 
 ### Patch Changes

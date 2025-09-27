@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/webpack-loader",
-  "version": "0.0.1-beta.2",
+  "version": "0.0.1-beta.3",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",

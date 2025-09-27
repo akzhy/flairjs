@@ -1,5 +1,14 @@
 # @flairjs/bundler-shared
 
+## 0.0.1-beta.6
+
+### Patch Changes
+
+- Fix issues with directory generation
+- Updated dependencies
+  - @flairjs/client@0.0.1-beta.4
+  - @flairjs/core@0.0.1-beta.4
+
 ## 0.0.1-beta.5
 
 ### Patch Changes

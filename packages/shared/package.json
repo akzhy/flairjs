@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/bundler-shared",
-  "version": "0.0.1-beta.5",
+  "version": "0.0.1-beta.6",
   "type": "module",
   "private": "true",
   "exports": {
@@ -34,7 +34,7 @@
     "@flairjs/core": "workspace:*",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^22.8.1",
-    "@types/picomatch": "^4.0.2", 
+    "@types/picomatch": "^4.0.2",
     "rolldown": "1.0.0-beta.37",
     "typescript": "^5.8.2"
   },

@@ -1,5 +1,12 @@
 # @flairjs/rollup-plugin
 
+## 0.0.1-beta.7
+
+### Patch Changes
+
+- Fix issues with directory generation
+  - @flairjs/core@0.0.1-beta.4
+
 ## 0.0.1-beta.6
 
 ### Patch Changes
