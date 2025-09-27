@@ -1,5 +1,11 @@
 # @flairjs/bundler-shared
 
+## 0.0.1-beta.8
+
+### Patch Changes
+
+- Init parcel transformer, bug fixes
+
 ## 0.0.1-beta.7
 
 ### Patch Changes

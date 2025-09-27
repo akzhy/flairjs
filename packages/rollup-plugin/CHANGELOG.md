@@ -1,5 +1,11 @@
 # @flairjs/rollup-plugin
 
+## 0.0.1-beta.9
+
+### Patch Changes
+
+- Init parcel transformer, bug fixes
+
 ## 0.0.1-beta.8
 
 ### Patch Changes

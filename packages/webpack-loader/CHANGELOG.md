@@ -1,5 +1,11 @@
 # @flairjs/vite-plugin
 
+## 0.0.1-beta.5
+
+### Patch Changes
+
+- Init parcel transformer, bug fixes
+
 ## 0.0.1-beta.4
 
 ### Patch Changes
