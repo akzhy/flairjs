@@ -1,5 +1,13 @@
 # @flairjs/rollup-plugin
 
+## 0.0.1-beta.8
+
+### Patch Changes
+
+- Remove unwrap calls, fix issues with file matching
+- Updated dependencies
+  - @flairjs/core@0.0.1-beta.5
+
 ## 0.0.1-beta.7
 
 ### Patch Changes

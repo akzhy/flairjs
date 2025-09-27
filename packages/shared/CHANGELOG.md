@@ -1,5 +1,14 @@
 # @flairjs/bundler-shared
 
+## 0.0.1-beta.7
+
+### Patch Changes
+
+- Remove unwrap calls, fix issues with file matching
+- Updated dependencies
+  - @flairjs/core@0.0.1-beta.5
+  - @flairjs/client@0.0.1-beta.4
+
 ## 0.0.1-beta.6
 
 ### Patch Changes

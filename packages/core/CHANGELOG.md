@@ -1,5 +1,11 @@
 # @flairjs/core
 
+## 0.0.1-beta.5
+
+### Patch Changes
+
+- Remove unwrap calls, fix issues with file matching
+
 ## 0.0.1-beta.4
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/core",
-  "version": "0.0.1-beta.4",
+  "version": "0.0.1-beta.5",
   "description": "Core module for flairjs",
   "main": "dist/cjs/api.js",
   "module": "dist/esm/api.js",
