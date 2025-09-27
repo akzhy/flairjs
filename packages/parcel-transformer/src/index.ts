@@ -1,15 +1,14 @@
 import {
   getUserTheme,
-  removeOutdatedCssFiles,
   setupGeneratedCssDir,
   setupUserThemeFile,
   SharedPluginOptions,
   shouldProcessFile,
-  transformCode,
+  transformCode
 } from "@flairjs/bundler-shared";
 import { Transformer } from "@parcel/plugin";
 import SourceMapImport from "@parcel/source-map";
-import path from "path";
+import * as path from "node:path";
 
 const SourceMap = (SourceMapImport as any).default ?? SourceMapImport;
 
