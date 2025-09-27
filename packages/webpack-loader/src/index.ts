@@ -27,6 +27,12 @@ export default async function flairJsLoader(
     return;
   }
 
+  const fileName = this.resourcePath;
+
+  if (!shouldProcessFile(fileName, options?.include, options?.exclude)) {
+    return callback(null, source, sourceMap);
+  }
+
   let cssGeneratedDir: string | null = null;
   let userTheme: {
     theme: any;
@@ -42,12 +48,6 @@ export default async function flairJsLoader(
   } else {
     cssGeneratedDir = getGeneratedCssDir();
     userTheme = await getUserTheme();
-  }
-
-  const fileName = this.resourcePath;
-
-  if (!shouldProcessFile(fileName, options?.include, options?.exclude)) {
-    return callback(null, source, sourceMap);
   }
 
   if (!cssGeneratedDir) {
