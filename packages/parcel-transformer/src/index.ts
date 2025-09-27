@@ -9,6 +9,7 @@ import {
 } from "@flairjs/bundler-shared";
 import { Transformer } from "@parcel/plugin";
 import SourceMapImport from "@parcel/source-map";
+import path from "path";
 
 const SourceMap = (SourceMapImport as any).default ?? SourceMapImport;
 
@@ -78,6 +79,10 @@ export default new Transformer({
       if (!result.generatedCssName) {
         return [asset];
       }
+
+      asset.addURLDependency(path.resolve(cssOutDir, result.generatedCssName), {
+        pipeline: "css",
+      });
 
       asset.setCode(result.code);
       if (result.sourcemap) {
