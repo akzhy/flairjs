@@ -5,23 +5,22 @@ export function shouldProcessFile(
   include?: string | string[],
   exclude?: string | string[]
 ): boolean {
-  const normalizePatterns = (patterns: string | string[] | undefined, defaults: string[]) => {
-    const patternsArray = patterns ? (Array.isArray(patterns) ? patterns : [patterns]) : defaults;
-    return patternsArray.map(pattern => pattern.replace(/\\/g, '/'));
-  };
-
-  const isIncluded = picomatch(normalizePatterns(include, ["**/*.{js,ts,jsx,tsx}"]));
-  const isExcluded = picomatch(normalizePatterns(exclude, ["node_modules/**"]));
+  const isIncluded = picomatch(include ?? ["**/*.{js,ts,jsx,tsx}"]);
+  const isExcluded = picomatch(exclude ?? ["node_modules/**"]);
 
   // Check if file matches include patterns
-  if (!isIncluded(id)) {
+  if (!isIncluded(normalizeFilePath(id))) {
     return false;
   }
 
   // Check if file matches exclude patterns
-  if (isExcluded(id)) {
+  if (isExcluded(normalizeFilePath(id))) {
     return false;
   }
 
   return true;
+}
+
+function normalizeFilePath(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
 }
