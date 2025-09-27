@@ -16,7 +16,9 @@ const createOptions = (format: "esm" | "cjs"): RolldownOptions => {
         id.includes("node_modules") ||
         id === "@flairjs/core" ||
         id === "picomatch" ||
-        id === "esbuild"
+        id === "esbuild" ||
+        id === "@parcel/plugin" ||
+        id === "@parcel/source-map"
       );
     },
   };
