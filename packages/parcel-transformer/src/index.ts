@@ -1,4 +1,5 @@
 import {
+  getUserTheme,
   removeOutdatedCssFiles,
   setupGeneratedCssDir,
   setupUserThemeFile,
@@ -13,6 +14,8 @@ const SourceMap = (SourceMapImport as any).default ?? SourceMapImport;
 
 interface FlairJsParcelTransformerOptions extends SharedPluginOptions {}
 
+let initialized = false;
+
 export default new Transformer({
   async loadConfig({ config }) {
     const getConfigResult = await config.getConfig(["tool.config.js"]);
@@ -26,10 +29,19 @@ export default new Transformer({
       config.invalidateOnStartup();
     }
 
-    const cssGeneratedDir = await setupGeneratedCssDir();
-    const userTheme = await setupUserThemeFile({
-      buildThemeFile: configContents?.buildThemeFile,
+    const cssGeneratedDir = await setupGeneratedCssDir({
+      clearExisting: false,
     });
+
+    const userTheme = initialized
+      ? await getUserTheme()
+      : await setupUserThemeFile({
+          buildThemeFile: configContents?.buildThemeFile,
+        });
+
+    if (!initialized) {
+      initialized = true;
+    }
 
     return { ...configContents, cssGeneratedDir, userTheme };
   },
@@ -49,7 +61,7 @@ export default new Transformer({
       const code = await asset.getCode();
 
       const result = transformCode(code, asset.filePath, {
-        appendTimestampToCssFile: true,
+        appendTimestampToCssFile: false,
         classNameList: config?.classNameList,
         cssPreprocessor: config?.cssPreprocessor
           ? (css: string) => config.cssPreprocessor!(css, asset.filePath)
@@ -63,10 +75,8 @@ export default new Transformer({
         return [asset];
       }
 
-      if (result.generatedCssName) {
-        removeOutdatedCssFiles(asset.filePath, result.generatedCssName, {
-          flairGeneratedCssDir: cssOutDir,
-        });
+      if (!result.generatedCssName) {
+        return [asset];
       }
 
       asset.setCode(result.code);
