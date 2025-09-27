@@ -21,6 +21,10 @@ export default async function flairJsVitePlugin(
         return null;
       }
 
+      if (!context) {
+        return null;
+      }
+
       const result = transformCode(code, id, {
         appendTimestampToCssFile: true,
         classNameList: options?.classNameList,

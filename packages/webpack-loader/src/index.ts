@@ -1,13 +1,12 @@
 import {
   getGeneratedCssDir,
   getUserTheme,
-  initializeSharedContext,
   removeOutdatedCssFiles,
   setupGeneratedCssDir,
   setupUserThemeFile,
   SharedPluginOptions,
   shouldProcessFile,
-  transformCode,
+  transformCode
 } from "@flairjs/bundler-shared";
 import { LoaderContext } from "webpack";
 
@@ -48,6 +47,13 @@ export default async function flairJsLoader(
   const fileName = this.resourcePath;
 
   if (!shouldProcessFile(fileName, options?.include, options?.exclude)) {
+    return callback(null, source, sourceMap);
+  }
+
+  if (!cssGeneratedDir) {
+    console.error(
+      "[flairjs] Could not find generated CSS directory. Skipping processing."
+    );
     return callback(null, source, sourceMap);
   }
 
