@@ -46,14 +46,17 @@ export const getGeneratedCssDir = (): string => {
   return flairGeneratedCssDir;
 };
 
-export const setupGeneratedCssDir = async (): Promise<string | null> => {
+export const setupGeneratedCssDir = async (options?: {
+  clearExisting?: boolean;
+}): Promise<string | null> => {
   const flairGeneratedCssDir = getGeneratedCssDir();
+  const { clearExisting = true } = options ?? {};
 
   // Setup generated CSS directory
   try {
     if (!existsSync(flairGeneratedCssDir)) {
       await mkdir(flairGeneratedCssDir);
-    } else {
+    } else if (clearExisting) {
       await rm(flairGeneratedCssDir, { recursive: true, force: true });
       await mkdir(flairGeneratedCssDir);
     }
@@ -106,18 +109,28 @@ export const setupUserThemeFile = async ({
 export const removeOutdatedCssFiles = async (
   sourceFilePath: string,
   cssFilePath: string,
-  { flairGeneratedCssDir }: { flairGeneratedCssDir: string }
+  {
+    flairGeneratedCssDir,
+    clearInstantly = false,
+  }: { flairGeneratedCssDir: string; clearInstantly?: boolean }
 ) => {
   const previousGeneratedCssName = store.getGeneratedCssName(sourceFilePath);
   if (previousGeneratedCssName && previousGeneratedCssName !== cssFilePath) {
+    if (clearInstantly) {
+      await rm(path.join(flairGeneratedCssDir, previousGeneratedCssName), {
+        force: true,
+      });
+      store.setFileNameToGeneratedCssNameMap(sourceFilePath, cssFilePath);
+      return;
+    }
+
     setTimeout(() => {
       rm(path.join(flairGeneratedCssDir, previousGeneratedCssName), {
         force: true,
       });
     }, 2000);
-  } else {
-    store.setFileNameToGeneratedCssNameMap(sourceFilePath, cssFilePath);
   }
+  store.setFileNameToGeneratedCssNameMap(sourceFilePath, cssFilePath);
 };
 
 /**
