@@ -29,7 +29,7 @@ pub fn transform_code(
   let time = Instant::now();
 
   // Example of using the logging system
-  log_info!("Starting transformation for file: {}", file_path);
+  println!("Starting transformation for file: {}", file_path);
 
   let options = transform::TransformOptions {
     css_out_dir: options.css_out_dir,
@@ -41,7 +41,7 @@ pub fn transform_code(
   let result = transform::transform(code, file_path, options, css_preprocessor, Some(env));
   let duration = time.elapsed();
 
-  log_info!("Transformation completed in {:?}", duration);
+  println!("Transformation completed in {:?}", duration);
 
   result
 }

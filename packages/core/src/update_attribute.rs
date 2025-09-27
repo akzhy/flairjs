@@ -251,10 +251,9 @@ impl<'a> ClassNameReplacer<'a> {
     // If this symbol is linked to another symbol, recursively resolve it
     // Eg: const b = "className"; const a = b;
     // <div className={a} />
-    if self.variable_linking.contains_key(&symbol_id) {
-      let linked_symbol_id = self.variable_linking.get(&symbol_id).unwrap();
+    if let Some(&linked_symbol_id) = self.variable_linking.get(&symbol_id) {
       // Recursive call to handle chains of variable linking (a -> b -> c -> "className")
-      return self.get_resolved_symbol_id(*linked_symbol_id);
+      return self.get_resolved_symbol_id(linked_symbol_id);
     }
     // Return the original symbol ID if no linking is found
     // Eg: const a = "className"; <div className={a} />
@@ -306,10 +305,9 @@ impl<'a> ClassNameReplacer<'a> {
   /// Main entry point for updating any expression that might contain class names
   /// Dispatches to specific update methods based on the expression type
   pub fn update_expression(&mut self, expression: Option<&mut Expression<'a>>) {
-    if expression.is_none() {
+    let Some(expression) = expression else {
       return;
     };
-    let expression = expression.unwrap();
     match expression {
       Expression::StringLiteral(string_value) => {
         self.update_string_expression(string_value);
@@ -378,7 +376,10 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
     // Check if this is an attribute we care about (className, class, etc.)
     if let JSXAttributeName::Identifier(ident) = &it.name {
       if self.is_classname_in_list(&ident.name) {
-        let value = it.value.as_mut().unwrap();
+        let Some(value) = it.value.as_mut() else {
+          walk_mut::walk_jsx_attribute(self, it);
+          return;
+        };
 
         // Handle different types of attribute values
         if let JSXAttributeValue::StringLiteral(string_value) = value {

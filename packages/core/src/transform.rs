@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 use crate::flair_property::{FlairProperty, FLAIR_REPLACEMENT};
+use crate::log_warn;
 use crate::logger::{get_logger, LogEntry};
 use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
@@ -105,7 +106,16 @@ pub fn transform(
 
   // Set up the OXC parser infrastructure
   let allocator = Allocator::default();
-  let source_type = SourceType::from_path(&file_path).unwrap();
+  let source_type = match SourceType::from_path(&file_path) {
+    Ok(source_type) => source_type,
+    Err(_) => {
+      log_error!(
+        "Failed to determine source type from file path: {}",
+        file_path
+      );
+      return None;
+    }
+  };
 
   let sourcemap_file_path = file_path.clone();
 
@@ -145,13 +155,7 @@ pub fn transform(
   let result_code: String = result.code;
 
   // Convert source map to JSON string if available
-  let sourcemap: Option<String> = {
-    if result.map.is_some() {
-      Some(result.map.unwrap().to_json_string())
-    } else {
-      None
-    }
-  };
+  let sourcemap: Option<String> = result.map.map(|map| map.to_json_string());
 
   // Collect all logs that were accumulated during transformation
   let logs = get_logger().drain_logs();
@@ -331,10 +335,13 @@ impl<'a> TransformVisitor<'a> {
     // Create the CSS file path and import statement
     let current_timestamp = if self.options.append_timestamp_to_css_file.unwrap_or(false) {
       let now = SystemTime::now();
-      let duration_since_epoch = now
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
+      let duration_since_epoch = match now.duration_since(SystemTime::UNIX_EPOCH) {
+        Ok(duration) => duration.as_millis(),
+        Err(_) => {
+          log_warn!("Failed to get duration since UNIX_EPOCH, using fallback timestamp");
+          std::time::Duration::from_secs(0).as_millis()
+        }
+      };
       format!("-{}", duration_since_epoch)
     } else {
       "".to_string()
@@ -357,18 +364,25 @@ impl<'a> TransformVisitor<'a> {
     );
 
     // Write the extracted CSS to a file in the specified output directory
-    let file = File::create(format!("{}/{}", self.options.css_out_dir, hash_string));
-    if file.is_err() {
-      log_error!(
-        "Failed to create file in css_out_dir: {}, reason {:#?}",
-        self.options.css_out_dir,
-        file.err()
-      );
-      return;
+    let file_path = format!("{}/{}", self.options.css_out_dir, hash_string);
+    match File::create(&file_path) {
+      Ok(mut file) => {
+        if let Err(err) = file.write_all(self.extracted_css.join("\n").as_bytes()) {
+          log_error!(
+            "Failed to write CSS to file: {}, reason: {:#?}",
+            file_path,
+            err
+          );
+        }
+      }
+      Err(err) => {
+        log_error!(
+          "Failed to create file in css_out_dir: {}, reason: {:#?}",
+          self.options.css_out_dir,
+          err
+        );
+      }
     }
-    let _ = file
-      .unwrap()
-      .write_all(self.extracted_css.join("\n").as_bytes());
 
     self.generated_css_name = Some(hash_string);
     // Insert the CSS import at the top of the transformed file
@@ -595,9 +609,8 @@ impl<'a> TransformVisitor<'a> {
   /// of the method's own exports.
   fn get_css_exports(&self, fn_id: &u32) -> Option<HashMap<String, CssModuleExport>> {
     // Check if this function is a method inside a class
-    if self.fn_id_to_class_map.contains_key(fn_id) {
+    if let Some(class_id) = self.fn_id_to_class_map.get(fn_id) {
       // Use the parent class's CSS exports for consistency
-      let class_id = self.fn_id_to_class_map.get(fn_id).unwrap();
       self.css_module_exports.get(class_id).cloned()
     } else {
       // Use the function's own CSS exports
@@ -705,7 +718,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
               // This transforms: const myClass = "button" -> const myClass = "button_abc123"
               let mut classname_replacer = ClassNameReplacer {
                 allocator: self.allocator,
-                class_name_map: css_exports.unwrap(),
+                class_name_map: css_exports.unwrap_or_default(),
                 ast_builder: self.ast_builder,
                 scoping: self.scoping,
                 identifier_symbol_ids: vec![],
@@ -772,7 +785,13 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
   }
 
   fn visit_function(&mut self, function: &mut Function<'a>, flags: ScopeFlags) {
-    let body = function.body.as_mut().unwrap();
+    let body = match function.body.as_mut() {
+      Some(body) => body,
+      None => {
+        walk_mut::walk_function(self, function, flags);
+        return;
+      }
+    };
     self.process_function_body(body, function.span.start);
     self.flair_property_visitor.visit_function(function);
 

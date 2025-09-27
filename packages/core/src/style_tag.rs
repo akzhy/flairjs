@@ -54,7 +54,10 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
     if let JSXElementName::IdentifierReference(ident) = name {
       // Resolve the identifier to its symbol using the scoping context
       let reference = self.scoping.get_reference(ident.reference_id());
-      let symbol_id = reference.symbol_id().unwrap();
+      let Some(symbol_id) = reference.symbol_id() else {
+        walk::walk_jsx_element(self, jsx);
+        return;
+      };
 
       // Check if this symbol matches any of the imported style tag symbols
       if self.style_tag_import_symbols.contains(&symbol_id) {

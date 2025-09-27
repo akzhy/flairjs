@@ -54,7 +54,7 @@ pub fn parse_css(
 
   // Set up browser targets for CSS transformations
   // "defaults" refers to browserslist's default query (last 2 versions, >0.2% usage, not dead)
-  let browsers = Browsers::from_browserslist(vec!["defaults"]).unwrap();
+  let browsers = Browsers::from_browserslist(vec!["defaults"]).unwrap_or(None);
   let targets = Targets {
     browsers,
     // Enable CSS nesting support in addition to default features
@@ -409,14 +409,11 @@ fn handle_at_rule_tokens(
     let rule = &parser.current_line().to_string()[(screen_at_rule_start_location.column - 1)
       as usize
       ..(last_at_rule_location.column - 2) as usize];
-    if breakpoints.contains_key(rule.trim()) {
-      out.push_str(&format!(
-        "@media (min-width: {})",
-        breakpoints.get(rule.trim()).unwrap()
-      ));
+    if let Some(breakpoint_value) = breakpoints.get(rule.trim()) {
+      out.push_str(&format!("@media (min-width: {})", breakpoint_value));
     } else {
       log_error!(
-        "Warning: No matching breakpoint found for '@screen {}'",
+        "Error: No matching breakpoint found for '@screen {}'",
         rule.trim()
       );
       out.push_str(&fallback_string);

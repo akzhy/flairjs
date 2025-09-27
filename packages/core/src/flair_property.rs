@@ -130,7 +130,9 @@ impl<'a> FlairProperty<'a> {
 
     // Get the symbol ID for the identifier being assigned to
     let reference = ident.reference_id();
-    let symbol_id = self.scoping.get_reference(reference).symbol_id().unwrap();
+    let Some(symbol_id) = self.scoping.get_reference(reference).symbol_id() else {
+      return;
+    };
 
     // Only process if the symbol is tracked and the property is 'flair' or 'globalFlair'
     if !self.symbol_to_span_start_map.contains_key(&symbol_id)
@@ -266,7 +268,9 @@ fn camel_case_to_kebab_case(input: &str) -> String {
       if !result.is_empty() {
         result.push('-');
       }
-      result.push(ch.to_lowercase().next().unwrap());
+      if let Some(lowercase_ch) = ch.to_lowercase().next() {
+        result.push(lowercase_ch);
+      }
     } else {
       result.push(ch);
     }
