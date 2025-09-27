@@ -6,7 +6,7 @@ export function shouldProcessFile(
   exclude?: string | string[]
 ): boolean {
   const isIncluded = picomatch(include ?? ["**/*.{js,ts,jsx,tsx}"]);
-  const isExcluded = picomatch(exclude ?? ["node_modules/**"]);
+  const isExcluded = picomatch(exclude ?? ["**/node_modules/**"]);
 
   // Check if file matches include patterns
   if (!isIncluded(normalizeFilePath(id))) {
