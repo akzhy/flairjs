@@ -20,7 +20,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "rolldown -c",
+    "build": "tsc && rolldown -c",
     "check": "biome check --write",
     "dev": "rolldown -w -c",
     "format": "biome format --write"
