@@ -415,6 +415,9 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
             JSXExpression::TemplateLiteral(template_expression) => {
               self.update_template_expression(template_expression);
             }
+            JSXExpression::StringLiteral(string_value) => {
+              self.update_string_expression(string_value);
+            }
             _ => {
               // Log unexpected expression types for debugging
               log_warn!(
