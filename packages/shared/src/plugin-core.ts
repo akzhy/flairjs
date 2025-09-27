@@ -60,6 +60,8 @@ export const setupGeneratedCssDir = async (): Promise<string | null> => {
   } catch (err: any) {
     if (err?.code === "EEXIST") {
       return flairGeneratedCssDir;
+    } else if (existsSync(flairGeneratedCssDir)) {
+      return flairGeneratedCssDir;
     }
 
     console.error(
