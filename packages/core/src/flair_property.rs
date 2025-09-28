@@ -301,6 +301,15 @@ fn build_style_string_from_object(object_expression: &ObjectExpression) -> Strin
         let value = match &object_property.value {
           Expression::StringLiteral(string_literal) => string_literal.value.to_string(),
           Expression::NumericLiteral(numeric_literal) => numeric_literal.value.to_string(),
+          Expression::UnaryExpression(unary_expr) => {
+            // Handle unary expressions (e.g., -10)
+            match (&unary_expr.argument, unary_expr.operator.as_str()) {
+              (Expression::NumericLiteral(numeric_literal), "-" | "+") => {
+                format!("{}{}", unary_expr.operator.as_str(), numeric_literal.value)
+              }
+              _ => "".to_string(),
+            }
+          }
           Expression::BooleanLiteral(boolean_literal) => {
             if boolean_literal.value {
               "true".to_string()
