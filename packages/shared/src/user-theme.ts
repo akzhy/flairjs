@@ -8,11 +8,15 @@ import { store } from "./store";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export const getUserTheme = async (): Promise<{
+export interface GetUserThemeResult {
   theme: any;
   originalPath: string;
-} | null> => {
-  if (store.getUserTheme()) {
+}
+
+export const getUserTheme = async (options?: {
+  ignoreCache?: boolean;
+}): Promise<GetUserThemeResult | null> => {
+  if (store.getUserTheme() && !options?.ignoreCache) {
     return store.getUserTheme();
   }
   try {
