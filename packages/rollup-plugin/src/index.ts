@@ -1,4 +1,5 @@
 import {
+  getUserTheme,
   initializeSharedContext,
   SharedPluginOptions,
   shouldProcessFile,
@@ -15,6 +16,33 @@ export default async function flairJsRollupPlugin(
 
   return {
     name: "@flairjs/rollup-plugin",
+    buildStart() {
+      if (context?.userTheme) {
+        const themeFile = context.userTheme.originalPath;
+        this.addWatchFile(themeFile);
+      }
+    },
+    resolveId(source) {
+      if (source === "@flairjs/client/theme.css") {
+        return source;
+      }
+      return null;
+    },
+    async load(id) {
+      if (id !== "@flairjs/client/theme.css") {
+        return null;
+      }
+      if (context?.userTheme?.originalPath) {
+        this.addWatchFile(context.userTheme.originalPath);
+      }
+      let userTheme = await getUserTheme({ ignoreCache: true });
+      const buildThemeCSS = context?.buildThemeCSS;
+      if (userTheme && buildThemeCSS) {
+        const themeCSS = buildThemeCSS(userTheme.theme);
+        return themeCSS;
+      }
+      return "";
+    },
     transform(code, id) {
       if (!shouldProcessFile(id, options?.include, options?.exclude)) {
         return null;
