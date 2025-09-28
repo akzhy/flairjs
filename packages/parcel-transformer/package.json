@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/parcel-transformer",
-  "version": "0.0.1-beta.5",
+  "version": "0.0.1-beta.6",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
