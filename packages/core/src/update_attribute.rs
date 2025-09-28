@@ -21,8 +21,6 @@ use oxc::{
 };
 use regex::Regex;
 
-use crate::log_warn;
-
 /// Stores a symbol ID along with its associated function ID for tracking
 /// variable references that need to be processed in a later pass
 /// During the second pass of transformation, when we encounter variables that
@@ -337,11 +335,8 @@ impl<'a> ClassNameReplacer<'a> {
         self.update_template_expression(template_expression);
       }
       _ => {
-        // Log unexpected expression types for debugging
-        log_warn!(
-          "Unexpected expression type in className attribute {:?}. If you think this should be handled, please open an issue.",
-          expression
-        );
+        // Future enhancement: handle more complex expressions if needed
+        // Utility functions like c, cn, etc. can handle complex expressions
       }
     }
   }
@@ -419,11 +414,8 @@ impl<'a> VisitMut<'a> for ClassNameReplacer<'a> {
               self.update_string_expression(string_value);
             }
             _ => {
-              // Log unexpected expression types for debugging
-              log_warn!(
-                "ExpressionContainer found in className attribute: {:?}. If you think this should be handled, please open an issue.",
-                expr_container
-              );
+              // Future enhancement: handle more complex expressions if needed
+              // Utility functions like c, cn, etc. can handle complex expressions
             }
           }
         }
