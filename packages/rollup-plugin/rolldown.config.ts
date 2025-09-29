@@ -1,5 +1,4 @@
 import { defineConfig, RolldownOptions } from "rolldown";
-import typescript from "@rollup/plugin-typescript";
 
 const createOptions = (format: "esm" | "cjs"): RolldownOptions => {
   return {
@@ -23,14 +22,4 @@ const createOptions = (format: "esm" | "cjs"): RolldownOptions => {
   };
 };
 
-export default defineConfig([
-  createOptions("esm"),
-  createOptions("cjs"),
-  {
-    input: "src/index.ts",
-    output: {
-      dir: "dist/types",
-    },
-    plugins: [typescript({ tsconfig: "./tsconfig.json" })],
-  },
-]);
+export default defineConfig([createOptions("esm"), createOptions("cjs")]);

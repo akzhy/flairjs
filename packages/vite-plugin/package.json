@@ -23,7 +23,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc && rolldown -c",
+    "build": "rimraf dist && tsc && api-extractor run --local && rolldown -c && rimraf dist/types-temp",
     "check": "biome check --write",
     "dev": "rolldown -w -c",
     "format": "biome format --write"
@@ -33,17 +33,18 @@
     "vite": ">=5.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "catalog:",
     "@flairjs/bundler-shared": "workspace:*",
     "@flairjs/core": "workspace:*",
-    "@rollup/plugin-typescript": "^12.1.4",
-    "@types/node": "^22.8.1",
-    "rolldown": "1.0.0-beta.37",
-    "typescript": "^5.8.2",
+    "@microsoft/api-extractor": "catalog:",
+    "@types/node": "catalog:",
+    "rimraf": "catalog:",
+    "rolldown": "catalog:",
+    "typescript": "catalog:",
     "vite": "^7.1.2"
   },
   "dependencies": {
-    "esbuild": "^0.25.10",
-    "picomatch": "^4.0.3"
+    "esbuild": "catalog:",
+    "picomatch": "catalog:"
   }
 }

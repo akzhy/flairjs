@@ -52,7 +52,7 @@
     "build:debug": "napi build --platform",
     "dev:js": "rolldown -w -c",
     "build:js": "rolldown -c",
-    "postbuild": "node patch-index.js",
+    "postbuild": "node patch-index.js && pnpm build:js",
     "postbuild:debug": "node patch-index.js && pnpm build:js",
     "format": "run-p format:prettier format:rs format:toml",
     "format:prettier": "prettier . -w",
@@ -79,10 +79,10 @@
     "lint-staged": "^16.1.2",
     "npm-run-all2": "^8.0.4",
     "oxlint": "^1.8.0",
-    "rolldown": "1.0.0-beta.37",
+    "rolldown": "catalog:",
     "rollup-plugin-copy": "^3.5.0",
     "tinybench": "^5.0.0",
-    "typescript": "^5.8.3",
+    "typescript": "catalog:",
     "vitest": "^3.2.4"
   },
   "lint-staged": {

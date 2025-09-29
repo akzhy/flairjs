@@ -2,7 +2,7 @@
   "compilerOptions": {
     "lib": ["ES2021"],
     "module": "ESNext",
-    "noEmit": true,
+    "noEmit": false,
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": true,
@@ -11,7 +11,7 @@
     "useDefineForClassFields": true,
     "allowImportingTsExtensions": true,
     "declaration": true,
-    "declarationDir": "dist/types",
+    "declarationDir": "dist/types-temp",
     "emitDeclarationOnly": true
   },
   "include": ["src"]

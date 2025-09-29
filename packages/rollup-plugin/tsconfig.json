@@ -3,7 +3,7 @@
     "lib": ["ES2021", "DOM"],
     "module": "ESNext",
     "target": "ES2021",
-    "noEmit": true,
+    "noEmit": false,
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": true,
@@ -12,7 +12,7 @@
     "useDefineForClassFields": true,
     "allowImportingTsExtensions": true,
     "declaration": true,
-    "declarationDir": "dist/types",
+    "declarationDir": "dist/types-temp",
     "emitDeclarationOnly": true,
     "types": ["node"]
   },

@@ -7,6 +7,8 @@ import {
 } from "@flairjs/bundler-shared";
 import type { Plugin } from "rollup";
 
+export type { SharedPluginOptions };
+
 interface FlairJsRollupPluginOptions extends SharedPluginOptions {}
 
 export default async function flairJsRollupPlugin(
