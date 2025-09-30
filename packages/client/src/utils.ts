@@ -1,27 +1,30 @@
 import type * as CSS from "csstype";
-
-export interface FlairTheme {}
+export interface FlairTheme {
+  tokens: Record<string, unknown>;
+  breakpoints: Record<string, unknown>;
+}
 
 type Key = string | number;
-type Join<P extends string, K extends Key> =
-  `${P}${P extends "" ? "" : "."}${K}`;
+type Join<P extends string, K extends Key> = `${P}${P extends ""
+  ? ""
+  : "."}${K}`;
 
-type Paths<T, P extends string = ""> =
-  T extends object
-    ? { [K in keyof T & Key]: Paths<T[K], Join<P, K>> }[keyof T & Key]
-    : P;
+type Paths<T, P extends string = ""> = T extends object
+  ? { [K in keyof T & Key]: Paths<T[K], Join<P, K>> }[keyof T & Key]
+  : P;
 
 export type TokensOf<T> = `$${Paths<T>}`;
-// @ts-expect-error - FlairTheme will be augmented by the user
-export type Tokens = TokensOf<FlairTheme["tokens"]>;
+export type ThemeTokens<T extends FlairTheme = FlairTheme> = TokensOf<
+  T["tokens"]
+>;
 
-// @ts-expect-error - FlairTheme will be augmented by the user
-type BreakPointTokens = `@screen ${keyof FlairTheme["breakpoints"]}`;
+export type BreakPointTokens<T extends FlairTheme = FlairTheme> =
+  `@screen ${Extract<keyof T["breakpoints"], string>}`;
 
-type FlairObject = {
+type FlairObject<T extends FlairTheme = FlairTheme> = {
   [K in keyof CSS.Properties]?:
     | CSS.Properties[K]
-    | Tokens
+    | ThemeTokens<T>
     | (string & {})
     | number;
 };
