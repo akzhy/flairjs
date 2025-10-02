@@ -1,5 +1,11 @@
 # @flairjs/client
 
+## 0.0.1-beta.5
+
+### Patch Changes
+
+- Prevent css file generation when no css detected
+
 ## 0.0.1-beta.4
 
 ### Patch Changes

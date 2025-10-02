@@ -1,5 +1,14 @@
 # @flairjs/bundler-shared
 
+## 0.0.1-beta.11
+
+### Patch Changes
+
+- Prevent css file generation when no css detected
+- Updated dependencies
+  - @flairjs/client@0.0.1-beta.5
+  - @flairjs/core@0.0.1-beta.7
+
 ## 0.0.1-beta.10
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @flairjs/parcel-transformer
 
+## 0.0.1-beta.7
+
+### Patch Changes
+
+- Prevent css file generation when no css detected
+- Updated dependencies
+  - @flairjs/core@0.0.1-beta.7
+
 ## 0.0.1-beta.6
 
 ### Patch Changes

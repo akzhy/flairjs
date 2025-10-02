@@ -1,5 +1,13 @@
 # @flairjs/vite-plugin
 
+## 0.0.1-beta.8
+
+### Patch Changes
+
+- Prevent css file generation when no css detected
+- Updated dependencies
+  - @flairjs/core@0.0.1-beta.7
+
 ## 0.0.1-beta.7
 
 ### Patch Changes

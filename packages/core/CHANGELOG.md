@@ -1,5 +1,11 @@
 # @flairjs/core
 
+## 0.0.1-beta.7
+
+### Patch Changes
+
+- Prevent css file generation when no css detected
+
 ## 0.0.1-beta.6
 
 ### Patch Changes
