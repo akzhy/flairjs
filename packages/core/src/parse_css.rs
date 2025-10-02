@@ -227,21 +227,8 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
       }
       Token::Dimension { .. } => {
         if last_variable_location.is_some() {
-          if let Some(last_var_location) = last_variable_location {
-            // We were tracking a potential theme variable, now we need to decide what to do
-
-            // Build fallback string from collected tokens in case theme parsing fails
-            let theme_out = handle_theme_tokens(
-              parser,
-              &token_clone,
-              &mut tokens_stack,
-              last_var_location,
-              theme,
-            );
-            out.push_str(&theme_out);
-            // Reset variable tracking
-            last_variable_location = None;
-          }
+          // Handle cases like $fontSize.3xl where 3xl is a dimension
+          tokens_stack.push((token_clone, parser.current_source_location()));
         } else if last_screen_at_rule_location.is_some() {
           tokens_stack.push((token_clone, parser.current_source_location()));
         } else {
