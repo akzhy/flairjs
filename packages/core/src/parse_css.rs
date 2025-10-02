@@ -59,7 +59,7 @@ pub fn parse_css(
     browsers,
     // Enable CSS nesting support in addition to default features
     // This allows nested selectors to be processed and flattened if needed for older browsers
-    include: Features::default() | Features::Nesting,
+    include: Features::default() | Features::Nesting | Features::MediaRangeSyntax,
     ..Targets::default()
   };
 
