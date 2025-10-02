@@ -81,9 +81,11 @@ export const setupGeneratedCssDir = async (options?: {
 export const setupUserThemeFile = async ({
   buildThemeFile,
   onThemeFileChange,
+  deleteBeforeWrite = false,
 }: {
   buildThemeFile?: SharedPluginContext["buildThemeCSS"];
   onThemeFileChange?: () => void;
+  deleteBeforeWrite?: boolean;
 }) => {
   const flairThemeFile = require.resolve("@flairjs/client/theme.css");
   let userTheme = await getUserTheme();
@@ -92,6 +94,12 @@ export const setupUserThemeFile = async ({
   if (userTheme) {
     const themeCSS = buildThemeCSS(userTheme.theme);
     store.setLastThemeUpdate(Date.now());
+    
+    if (deleteBeforeWrite) {
+      // For some reason, in turbopack, overwriting the existing file throws an error.
+      // So we delete the file first before writing to it.
+      await rm(flairThemeFile, { force: true });
+    }
     await writeFile(flairThemeFile, themeCSS, "utf-8");
 
     watch(userTheme.originalPath, async () => {
