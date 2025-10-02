@@ -144,6 +144,11 @@ pub fn transform(
   // Execute the multi-pass transformation on the AST
   visitor.begin(&mut program);
 
+  if visitor.extracted_css.is_empty() {
+    // No CSS was extracted, so no further processing is needed
+    return None;
+  }
+
   // Generate the final JavaScript/TypeScript code with source maps
   let codegen = Codegen::new();
   let codegen = codegen.with_options(CodegenOptions {
@@ -313,6 +318,11 @@ impl<'a> TransformVisitor<'a> {
 
     // Process all collected CSS between passes to generate the class name mappings
     self.process_css();
+
+    if self.extracted_css.is_empty() {
+      // No CSS was extracted, so no further processing is needed
+      return;
+    }
 
     // Pass 2: Replace direct class name references and identify variables needing replacement
     self.pass = Pass::Second;
