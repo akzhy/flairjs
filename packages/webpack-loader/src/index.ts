@@ -1,13 +1,13 @@
 import {
   getGeneratedCssDir,
   getUserTheme,
-  removeOutdatedCssFiles,
   setupGeneratedCssDir,
   setupUserThemeFile,
   SharedPluginOptions,
   shouldProcessFile,
   transformCode
 } from "@flairjs/bundler-shared";
+import * as path from "path";
 import { LoaderContext } from "webpack";
 
 interface FlairJsWebpackLoaderOptions extends SharedPluginOptions {}
@@ -43,6 +43,7 @@ export default async function flairJsLoader(
     cssGeneratedDir = await setupGeneratedCssDir();
     userTheme = await setupUserThemeFile({
       buildThemeFile: options.buildThemeFile,
+      deleteBeforeWrite: true,
     });
     initialized = true;
   } else {
@@ -59,7 +60,7 @@ export default async function flairJsLoader(
 
   try {
     const result = transformCode(source, fileName, {
-      appendTimestampToCssFile: true,
+      appendTimestampToCssFile: false,
       classNameList: options?.classNameList,
       cssPreprocessor: options?.cssPreprocessor
         ? (css: string) => options.cssPreprocessor!(css, fileName)
@@ -73,11 +74,11 @@ export default async function flairJsLoader(
       return callback(null, source, sourceMap);
     }
 
-    if (result.generatedCssName) {
-      removeOutdatedCssFiles(fileName, result.generatedCssName, {
-        flairGeneratedCssDir: cssGeneratedDir,
-      });
+    if (!result.generatedCssName) {
+      return callback(null, source, sourceMap);
     }
+
+    this.addDependency(path.resolve(result.generatedCssName));
 
     callback(
       null,
