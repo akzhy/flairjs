@@ -19,7 +19,7 @@ let initialized = false;
 const transformer: TransformerType<FlairJsParcelTransformerOptions> =
   new Transformer({
     async loadConfig({ config }) {
-      const getConfigResult = await config.getConfig(["tool.config.js"]);
+      const getConfigResult = await config.getConfig(["flair.config.js"]);
 
       const filePath = getConfigResult?.filePath;
       const configContents = getConfigResult?.contents as
