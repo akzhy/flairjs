@@ -1,5 +1,11 @@
 # @flairjs/client
 
+## 0.0.1-beta.6
+
+### Patch Changes
+
+- Fix issues with type overriding
+
 ## 0.0.1-beta.5
 
 ### Patch Changes

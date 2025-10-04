@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/bundler-shared",
-  "version": "0.0.1-beta.11",
+  "version": "0.0.1-beta.12",
   "type": "module",
   "private": "true",
   "exports": {
