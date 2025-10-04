@@ -48,6 +48,16 @@ export default defineConfig([
         emitDeclarationOnly: true,
         outDir: 'dist/types',
       }),
+      {
+        name: 'remove-js-files',
+        generateBundle(options, bundle) {
+          for (const file of Object.keys(bundle)) {
+            if (file.endsWith('.js') || file.endsWith('.js.map')) {
+              delete bundle[file];
+            }
+          }
+        }
+      }
     ],
   },
 ]);
