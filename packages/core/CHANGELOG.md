@@ -1,5 +1,11 @@
 # @flairjs/core
 
+## 0.0.1-beta.8
+
+### Patch Changes
+
+- Make breakpoints in theme optional
+
 ## 0.0.1-beta.7
 
 ### Patch Changes
