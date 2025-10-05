@@ -463,7 +463,92 @@ Flair generates modern CSS that works in all evergreen browsers. Legacy browser 
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Here's how to get started:
+
+### Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/akzhy/flairjs.git
+   cd flairjs
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Build packages**
+   ```bash
+   # Build all packages
+   pnpm build
+   
+   # Or build specific packages
+   pnpm build:core              # Build core Rust package
+   pnpm build:non-core-packages # Build all other packages
+   ```
+
+### Making Changes
+
+When contributing changes, please follow these steps:
+
+1. **Create a new branch** for your feature or bugfix
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make your changes** and ensure all packages build successfully
+
+3. **Add a changeset** to document your changes
+   ```bash
+   pnpm changeset
+   ```
+   
+   This will prompt you to:
+   - Select which packages are affected by your changes
+   - Specify the type of change (major, minor, patch)
+   - Write a description of your changes
+   
+   The changeset system ensures proper versioning and generates changelogs automatically.
+
+4. **Commit your changes** including the changeset file
+   ```bash
+   git add .
+   git commit -m "a sensible commit message"
+   ```
+
+5. **Push your branch** and create a pull request
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+### Changeset Guidelines
+
+- **Patch** (0.0.x): Bug fixes, documentation updates, internal refactors
+- **Minor** (0.x.0): New features, non-breaking enhancements
+- **Major** (x.0.0): Breaking changes, API changes
+
+Example changeset workflow:
+```bash
+# After making changes to @flairjs/vite-plugin
+pnpm changeset
+
+# You'll be prompted:
+# - Select @flairjs/vite-plugin
+# - Choose "patch" for a bugfix
+# - Describe: "Fixed issue with theme token resolution"
+```
+
+### Testing
+
+Before submitting a PR:
+- Ensure all packages build without errors: `pnpm build`
+- Test your changes in the example project: `examples/vite-react-ts`
+- Run any available tests in the affected packages
+
+### Questions?
+
+Feel free to open an issue for any questions or discussions about contributing!
 
 ## License
 
