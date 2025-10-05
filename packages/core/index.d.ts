@@ -14,7 +14,7 @@ export declare const enum LogLevel {
 }
 
 export interface Theme {
-  breakpoints: Record<string, string>
+  breakpoints?: Record<string, string>
   prefix?: string
 }
 

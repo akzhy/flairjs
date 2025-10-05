@@ -59,7 +59,7 @@ enum Pass {
 
 #[napi(object)]
 pub struct Theme {
-  pub breakpoints: HashMap<String, String>,
+  pub breakpoints: Option<HashMap<String, String>>,
   pub prefix: Option<String>,
 }
 

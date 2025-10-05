@@ -144,11 +144,11 @@ fn replace_theme_tokens(parser: &mut Parser<'_, '_>, theme: &Option<Theme>) -> S
   // Stack to accumulate tokens that might be part of a theme variable
   let mut tokens_stack: Vec<(Token, SourceLocation)> = vec![];
 
-  let breakpoints = if let Some(theme) = theme {
-    &theme.breakpoints
-  } else {
-    &HashMap::new()
-  };
+  let default_breakpoints = HashMap::new();
+  let breakpoints = theme
+    .as_ref()
+    .and_then(|t| t.breakpoints.as_ref())
+    .unwrap_or(&default_breakpoints);
 
   while let Ok(token) = parser.next_including_whitespace() {
     let token_clone = token.clone();
