@@ -18,13 +18,11 @@
     "format": "biome format --write"
   },
   "peerDependencies": {
-    "@flairjs/core": "workspace:*",
     "parcel": ">=2.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@flairjs/bundler-shared": "workspace:*",
-    "@flairjs/core": "workspace:*",
     "@microsoft/api-extractor": "catalog:",
     "@types/node": "catalog:",
     "parcel": "^2.16.0",
@@ -36,6 +34,7 @@
     "parcel": ">=2.0.0"
   },
   "dependencies": {
+    "@flairjs/core": "workspace:*",
     "@parcel/plugin": "^2.16.0",
     "@parcel/source-map": "^2.1.1",
     "esbuild": "catalog:",

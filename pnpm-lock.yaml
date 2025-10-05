@@ -137,6 +137,9 @@ importers:
 
   packages/parcel-transformer:
     dependencies:
+      '@flairjs/core':
+        specifier: workspace:*
+        version: link:../core
       '@parcel/plugin':
         specifier: ^2.16.0
         version: 2.16.0(@parcel/core@2.16.0(@swc/helpers@0.5.17))
@@ -156,9 +159,6 @@ importers:
       '@flairjs/bundler-shared':
         specifier: workspace:*
         version: link:../shared
-      '@flairjs/core':
-        specifier: workspace:*
-        version: link:../core
       '@microsoft/api-extractor':
         specifier: 'catalog:'
         version: 7.52.13(@types/node@22.18.1)
@@ -180,6 +180,9 @@ importers:
 
   packages/rollup-plugin:
     dependencies:
+      '@flairjs/core':
+        specifier: workspace:*
+        version: link:../core
       esbuild:
         specifier: 'catalog:'
         version: 0.25.10
@@ -193,9 +196,6 @@ importers:
       '@flairjs/bundler-shared':
         specifier: workspace:*
         version: link:../shared
-      '@flairjs/core':
-        specifier: workspace:*
-        version: link:../core
       '@microsoft/api-extractor':
         specifier: 'catalog:'
         version: 7.52.13(@types/node@22.18.1)
@@ -251,6 +251,9 @@ importers:
 
   packages/vite-plugin:
     dependencies:
+      '@flairjs/core':
+        specifier: workspace:*
+        version: link:../core
       esbuild:
         specifier: 'catalog:'
         version: 0.25.10
@@ -264,9 +267,6 @@ importers:
       '@flairjs/bundler-shared':
         specifier: workspace:*
         version: link:../shared
-      '@flairjs/core':
-        specifier: workspace:*
-        version: link:../core
       '@microsoft/api-extractor':
         specifier: 'catalog:'
         version: 7.52.13(@types/node@22.18.1)
@@ -288,6 +288,9 @@ importers:
 
   packages/webpack-loader:
     dependencies:
+      '@flairjs/core':
+        specifier: workspace:*
+        version: link:../core
       esbuild:
         specifier: 'catalog:'
         version: 0.25.10
@@ -301,9 +304,6 @@ importers:
       '@flairjs/bundler-shared':
         specifier: workspace:*
         version: link:../shared
-      '@flairjs/core':
-        specifier: workspace:*
-        version: link:../core
       '@microsoft/api-extractor':
         specifier: 'catalog:'
         version: 7.52.13(@types/node@22.18.1)

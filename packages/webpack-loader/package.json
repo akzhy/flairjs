@@ -18,13 +18,11 @@
     "format": "biome format --write"
   },
   "peerDependencies": {
-    "@flairjs/core": "workspace:*",
     "webpack": ">=5.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@flairjs/bundler-shared": "workspace:*",
-    "@flairjs/core": "workspace:*",
     "@microsoft/api-extractor": "catalog:",
     "@types/node": "catalog:",
     "rimraf": "catalog:",
@@ -33,6 +31,7 @@
     "webpack": "^5.101.0"
   },
   "dependencies": {
+    "@flairjs/core": "workspace:*",
     "esbuild": "catalog:",
     "picomatch": "catalog:"
   }
