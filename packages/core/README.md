@@ -1,87 +1,108 @@
-# `@napi-rs/package-template`
+# @flairjs/core
 
-![https://github.com/napi-rs/package-template/actions](https://github.com/napi-rs/package-template/workflows/CI/badge.svg)
+The core transformation engine for Flair, built with Rust for maximum performance.
 
-> Template project for writing node packages with napi-rs.
+## Overview
 
-# Usage
+This package contains the core logic for transforming JSX files with Flair styles. It uses:
 
-1. Click **Use this template**.
-2. **Clone** your project.
-3. Run `yarn install` to install dependencies.
-4. Run `yarn napi rename -n [@your-scope/package-name] -b [binary-name]` command under the project folder to rename your package.
+- **OXC** for fast AST parsing and manipulation
+- **Lightning CSS** for CSS parsing, transformation, and optimization
+- **NAPI-RS** for Node.js bindings
 
-## Install this test package
-
-```bash
-yarn add @napi-rs/package-template
-```
-
-## Ability
-
-### Build
-
-After `yarn build/npm run build` command, you can see `package-template.[darwin|win32|linux].node` file in project root. This is the native addon built from [lib.rs](./src/lib.rs).
-
-### Test
-
-With [ava](https://github.com/avajs/ava), run `yarn test/npm run test` to testing native addon. You can also switch to another testing framework if you want.
-
-### CI
-
-With GitHub Actions, each commit and pull request will be built and tested automatically in [`node@20`, `@node22`] x [`macOS`, `Linux`, `Windows`] matrix. You will never be afraid of the native addon broken in these platforms.
-
-### Release
-
-Release native package is very difficult in old days. Native packages may ask developers who use it to install `build toolchain` like `gcc/llvm`, `node-gyp` or something more.
-
-With `GitHub actions`, we can easily prebuild a `binary` for major platforms. And with `N-API`, we should never be afraid of **ABI Compatible**.
-
-The other problem is how to deliver prebuild `binary` to users. Downloading it in `postinstall` script is a common way that most packages do it right now. The problem with this solution is it introduced many other packages to download binary that has not been used by `runtime codes`. The other problem is some users may not easily download the binary from `GitHub/CDN` if they are behind a private network (But in most cases, they have a private NPM mirror).
-
-In this package, we choose a better way to solve this problem. We release different `npm packages` for different platforms. And add it to `optionalDependencies` before releasing the `Major` package to npm.
-
-`NPM` will choose which native package should download from `registry` automatically. You can see [npm](./npm) dir for details. And you can also run `yarn add @napi-rs/package-template` to see how it works.
-
-## Develop requirements
-
-- Install the latest `Rust`
-- Install `Node.js@10+` which fully supported `Node-API`
-- Install `yarn@1.x`
-
-## Test in local
-
-- yarn
-- yarn build
-- yarn test
-
-And you will see:
+## Installation
 
 ```bash
-$ ava --verbose
-
-  ✔ sync function from native code
-  ✔ sleep function from native code (201ms)
-  ─
-
-  2 tests passed
-✨  Done in 1.12s.
+npm install @flairjs/core
 ```
 
-## Release package
+## API
 
-Ensure you have set your **NPM_TOKEN** in the `GitHub` project setting.
+### `transformCode(code, filePath, options, cssPreprocessor?)`
 
-In `Settings -> Secrets`, add **NPM_TOKEN** into it.
+Transforms JSX/TSX code containing Flair styles.
 
-When you want to release the package:
+**Parameters:**
+- `code: string` - The source code to transform
+- `filePath: string` - Path to the file being transformed
+- `options: TransformOptions` - Transformation options
+- `cssPreprocessor?: (css: string) => string` - Optional CSS preprocessor function
+
+**Returns:** `TransformOutput | null`
+
+### TransformOptions
+
+```typescript
+interface TransformOptions {
+  cssOutDir: string                 // Output directory for generated CSS
+  classNameList?: Array<string>     // List of class names to process
+  useTheme?: boolean               // Enable theme processing
+  theme?: Theme                    // Theme configuration
+  appendTimestampToCssFile?: boolean // Add timestamp to CSS filename
+}
+```
+
+### TransformOutput
+
+```typescript
+interface TransformOutput {
+  code: string              // Transformed JavaScript/TypeScript code
+  sourcemap?: string       // Source map (if generated)
+  css: string             // Extracted CSS
+  logs: Array<LogEntry>   // Build logs and warnings
+  generatedCssName?: string // Name of generated CSS file
+}
+```
+
+### Theme Interface
+
+```typescript
+interface Theme {
+  breakpoints: Record<string, string>
+  prefix?: string
+}
+```
+
+## Platform Support
+
+This package includes native binaries for:
+
+- Windows (x64, x86, ARM64)
+- macOS (x64, ARM64)
+- Linux (x64, ARM64, ARMv7, musl variants)
+- FreeBSD (x64)
+- Android (ARM64, ARMv7)
+- WebAssembly (WASI)
+
+
+## Development
+
+### Building from Source
 
 ```bash
-npm version [<newversion> | major | minor | patch | premajor | preminor | prepatch | prerelease [--preid=<prerelease-id>] | from-git]
+# Install Rust and Node.js dependencies
+pnpm install
 
-git push
+# Build the native module in debug mode
+pnpm run build:debug
+# Or prod build
+pnpm run build
+
+# Run tests
+pnpm test
 ```
 
-GitHub actions will do the rest job for you.
+### Architecture
 
-> WARN: Don't run `npm publish` manually.
+The core is structured as follows:
+
+- `src/lib.rs` - Main entry point and NAPI bindings
+- `src/transform.rs` - Core transformation logic
+- `src/parse_css.rs` - CSS parsing and processing
+- `src/style_tag.rs` - `<Style>` tag handling
+- `src/flair_property.rs` - `.flair` property processing
+- `src/update_attribute.rs` - Class name injection
+
+## License
+
+MIT
