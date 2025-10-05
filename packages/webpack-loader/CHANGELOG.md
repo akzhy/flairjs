@@ -1,5 +1,11 @@
 # @flairjs/vite-plugin
 
+## 0.0.1-beta.10
+
+### Patch Changes
+
+- Catch errors in json parse, add default field in package exports
+
 ## 0.0.1-beta.9
 
 ### Patch Changes
