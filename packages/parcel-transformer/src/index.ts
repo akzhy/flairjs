@@ -89,9 +89,11 @@ const transformer: TransformerType<FlairJsParcelTransformerOptions> =
 
         asset.setCode(result.code);
         if (result.sourcemap) {
-          const sourcemap = new SourceMap(options.projectRoot);
-          sourcemap.addVLQMap(JSON.parse(result.sourcemap));
-          asset.setMap(sourcemap);
+          try {
+            const sourcemap = new SourceMap(options.projectRoot);
+            sourcemap.addVLQMap(JSON.parse(result.sourcemap));
+            asset.setMap(sourcemap);
+          } catch {}
         }
 
         return [asset];

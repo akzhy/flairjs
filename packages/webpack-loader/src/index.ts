@@ -5,7 +5,7 @@ import {
   setupUserThemeFile,
   SharedPluginOptions,
   shouldProcessFile,
-  transformCode
+  transformCode,
 } from "@flairjs/bundler-shared";
 import * as path from "path";
 import { LoaderContext } from "webpack";
@@ -80,11 +80,14 @@ export default async function flairJsLoader(
 
     this.addDependency(path.resolve(result.generatedCssName));
 
-    callback(
-      null,
-      result.code,
-      result.sourcemap ? JSON.parse(result.sourcemap ?? "{}") : sourceMap
-    );
+    let resultSourcemap = null;
+    if (result.sourcemap) {
+      try {
+        resultSourcemap = JSON.parse(result.sourcemap);
+      } catch {}
+    }
+
+    callback(null, result.code, resultSourcemap ?? sourceMap);
   } catch (error) {
     console.error("[@flairjs/webpack-loader]", error);
     callback(error as Error, source, sourceMap);

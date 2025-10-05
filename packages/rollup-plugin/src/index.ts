@@ -73,9 +73,16 @@ export default async function flairJsRollupPlugin(
         context.refreshCssFile(id, result.generatedCssName);
       }
 
+      let sourcemap = null;
+      if (result.sourcemap) {
+        try {
+          sourcemap = JSON.parse(result.sourcemap);
+        } catch {}
+      }
+
       return {
         code: result.code,
-        map: JSON.parse(result.sourcemap ?? "{}"),
+        map: sourcemap,
       };
     },
   };
