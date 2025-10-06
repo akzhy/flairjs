@@ -21,7 +21,7 @@ Try it online on StackBlitz.
 ### Installation
 
 ```bash
-# Install core packages
+# Install client packages
 npm install @flairjs/client
 
 # Install your bundler plugin
