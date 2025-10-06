@@ -22,7 +22,7 @@ Try it online on StackBlitz.
 
 ```bash
 # Install core packages
-npm install @flairjs/client @flairjs/core
+npm install @flairjs/client
 
 # Install your bundler plugin
 npm install @flairjs/vite-plugin        # For Vite

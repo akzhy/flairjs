@@ -16,6 +16,8 @@ This package contains the core logic for transforming JSX files with Flair style
 npm install @flairjs/core
 ```
 
+You normally won't have to install this manually, it will be included with the bundler package.
+
 ## API
 
 ### `transformCode(code, filePath, options, cssPreprocessor?)`
