@@ -1,5 +1,13 @@
 # @flairjs/vite-plugin
 
+## 0.0.1-beta.16
+
+### Patch Changes
+
+- Bump version
+- Updated dependencies
+  - @flairjs/core@0.0.1-beta.9
+
 ## 0.0.1-beta.15
 
 ### Patch Changes

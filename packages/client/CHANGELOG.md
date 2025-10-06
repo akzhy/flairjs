@@ -1,5 +1,11 @@
 # @flairjs/client
 
+## 0.0.1-beta.7
+
+### Patch Changes
+
+- Bump version
+
 ## 0.0.1-beta.6
 
 ### Patch Changes
