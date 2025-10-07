@@ -1,5 +1,11 @@
 # @flairjs/vite-plugin
 
+## 0.0.1-beta.13
+
+### Patch Changes
+
+- Prevent deleting generated dir in prod mode
+
 ## 0.0.1-beta.12
 
 ### Patch Changes
