@@ -4,6 +4,8 @@ A build-time CSS-in-JSX solution that brings the power of modern CSS to your Rea
 
 Try it online on StackBlitz.
 
+>Note: Flair is still in early development. Expect minor bugs and issues. Feedback is welcome!
+
 [React Vite](https://stackblitz.com/edit/vitejs-vite-kxbnhpuc?file=src%2FApp.tsx) | [SolidJS Vite](https://stackblitz.com/edit/solidjs-templates-famw2yzx?file=src%2FApp.tsx) | [Preact Vite](https://stackblitz.com/edit/vitejs-vite-zt9k3zr7?file=src%2Fapp.tsx)
 
 ## Features
@@ -21,7 +23,7 @@ Try it online on StackBlitz.
 ### Installation
 
 ```bash
-# Install client packages
+# Install client package
 npm install @flairjs/client
 
 # Install your bundler plugin
