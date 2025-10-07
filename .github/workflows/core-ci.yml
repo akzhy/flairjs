@@ -378,6 +378,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Enable corepack
+        run: corepack enable
       - name: Download artifacts
         uses: actions/download-artifact@v5
         with:
