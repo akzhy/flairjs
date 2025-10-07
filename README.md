@@ -8,7 +8,7 @@ A build-time CSS-in-JSX solution that brings the power of modern CSS to your Rea
 Try it online on StackBlitz.
 
 
-[React Vite](https://stackblitz.com/edit/vitejs-vite-kxbnhpuc?file=src%2FApp.tsx) | [SolidJS Vite](https://stackblitz.com/edit/solidjs-templates-famw2yzx?file=src%2FApp.tsx) | [Preact Vite](https://stackblitz.com/edit/vitejs-vite-zt9k3zr7?file=src%2Fapp.tsx)
+[React Vite](https://stackblitz.com/edit/flairjs-vite-react?file=src%2FApp.tsx) | [SolidJS Vite](https://stackblitz.com/edit/solidjs-templates-famw2yzx?file=src%2FApp.tsx) | [Preact Vite](https://stackblitz.com/edit/vitejs-vite-zt9k3zr7?file=src%2Fapp.tsx)
 
 ## Features
 
