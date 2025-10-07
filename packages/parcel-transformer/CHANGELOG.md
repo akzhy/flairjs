@@ -1,5 +1,13 @@
 # @flairjs/parcel-transformer
 
+## 0.0.1-beta.13
+
+### Patch Changes
+
+- Added more build targets
+- Updated dependencies
+  - @flairjs/core@0.0.1-beta.10
+
 ## 0.0.1-beta.12
 
 ### Patch Changes

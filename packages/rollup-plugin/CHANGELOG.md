@@ -1,5 +1,13 @@
 # @flairjs/rollup-plugin
 
+## 0.0.1-beta.17
+
+### Patch Changes
+
+- Added more build targets
+- Updated dependencies
+  - @flairjs/core@0.0.1-beta.10
+
 ## 0.0.1-beta.16
 
 ### Patch Changes
