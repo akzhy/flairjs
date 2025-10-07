@@ -40,7 +40,9 @@ export default async function flairJsLoader(
   } | null = null;
 
   if (!initialized) {
-    cssGeneratedDir = await setupGeneratedCssDir();
+    cssGeneratedDir = await setupGeneratedCssDir({
+      clearExisting: this.mode !== "production"
+    });
     userTheme = await setupUserThemeFile({
       buildThemeFile: options.buildThemeFile,
       deleteBeforeWrite: true,
