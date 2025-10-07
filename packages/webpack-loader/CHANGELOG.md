@@ -1,5 +1,35 @@
 # @flairjs/vite-plugin
 
+## 0.0.1
+
+### Patch Changes
+
+- 0e54326: Init webpack loader
+- 02d328b: Add core as dependency instead of peer dependency
+- c95cdf9: Prevent css file generation when no css detected
+- 17fa970: Fix issues with directory generation
+- b21de8b: Init parcel transformer, bug fixes
+- 62f65e9: Updated shared packages
+- 41c6877: Prevent deleting generated dir in prod mode
+- 2163d0d: Bump version
+- 4aecc9f: Catch errors in json parse, add default field in package exports
+- cc81b2a: Add missing dependencies
+- eefdffd: Added more build targets
+- 8b08239: Remove unwrap calls, fix issues with file matching
+- dd96b37: Bug fixes and enhancements
+- Updated dependencies [c95cdf9]
+- Updated dependencies [2163d0d]
+- Updated dependencies [0f2be12]
+- Updated dependencies [fb0d85e]
+- Updated dependencies [142352b]
+- Updated dependencies [8d7f7eb]
+- Updated dependencies [eefdffd]
+- Updated dependencies [ddf59ba]
+- Updated dependencies [899e078]
+- Updated dependencies [8b08239]
+- Updated dependencies [dd96b37]
+  - @flairjs/core@0.0.1
+
 ## 0.0.1-beta.14
 
 ### Patch Changes

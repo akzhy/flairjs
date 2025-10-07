@@ -1,5 +1,18 @@
 # @flairjs/client
 
+## 0.0.1
+
+### Patch Changes
+
+- 2aa00c3: Fix issues with type overriding
+- c95cdf9: Prevent css file generation when no css detected
+- 17fa970: Fix issues with directory generation
+- 2163d0d: Bump version
+- 0f2be12: Initial beta release
+- fb0d85e: Updated import path
+- ddf59ba: File validation, fix plugin bugs
+- 899e078: Move themeing and transform logic from core to client and shared packages
+
 ## 0.0.1-beta.7
 
 ### Patch Changes

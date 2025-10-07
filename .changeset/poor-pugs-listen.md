@@ -1,7 +1,0 @@
----
-"@flairjs/client": patch
-"@flairjs/core": patch
-"@flairjs/vite-plugin": patch
----
-
-Initial beta release

@@ -1,5 +1,21 @@
 # @flairjs/core
 
+## 0.0.1
+
+### Patch Changes
+
+- c95cdf9: Prevent css file generation when no css detected
+- 2163d0d: Bump version
+- 0f2be12: Initial beta release
+- fb0d85e: Updated import path
+- 142352b: Make breakpoints in theme optional
+- 8d7f7eb: Trigger CI
+- eefdffd: Added more build targets
+- ddf59ba: File validation, fix plugin bugs
+- 899e078: Move themeing and transform logic from core to client and shared packages
+- 8b08239: Remove unwrap calls, fix issues with file matching
+- dd96b37: Bug fixes and enhancements
+
 ## 0.0.1-beta.10
 
 ### Patch Changes

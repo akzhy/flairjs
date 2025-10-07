@@ -1,5 +1,34 @@
 # @flairjs/parcel-transformer
 
+## 0.0.1
+
+### Patch Changes
+
+- 02d328b: Add core as dependency instead of peer dependency
+- c95cdf9: Prevent css file generation when no css detected
+- 83392da: Invalidate css on file change
+- c490e16: Fix issues with resolving packages
+- 796e636: Fix issues with transformation
+- b21de8b: Init parcel transformer, bug fixes
+- 2163d0d: Bump version
+- ed1ab04: Fix issues with resolving packages
+- 4aecc9f: Catch errors in json parse, add default field in package exports
+- e6e7bd1: Fix config filename
+- eefdffd: Added more build targets
+- dd96b37: Bug fixes and enhancements
+- Updated dependencies [c95cdf9]
+- Updated dependencies [2163d0d]
+- Updated dependencies [0f2be12]
+- Updated dependencies [fb0d85e]
+- Updated dependencies [142352b]
+- Updated dependencies [8d7f7eb]
+- Updated dependencies [eefdffd]
+- Updated dependencies [ddf59ba]
+- Updated dependencies [899e078]
+- Updated dependencies [8b08239]
+- Updated dependencies [dd96b37]
+  - @flairjs/core@0.0.1
+
 ## 0.0.1-beta.13
 
 ### Patch Changes
