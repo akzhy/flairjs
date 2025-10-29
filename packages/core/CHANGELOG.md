@@ -1,5 +1,11 @@
 # @flairjs/core
 
+## 0.0.2
+
+### Patch Changes
+
+- a750d5d: Add support for static identifiers in object
+
 ## 0.0.1
 
 ### Patch Changes

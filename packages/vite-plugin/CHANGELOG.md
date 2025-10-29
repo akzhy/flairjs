@@ -1,5 +1,13 @@
 # @flairjs/vite-plugin
 
+## 0.0.2
+
+### Patch Changes
+
+- a750d5d: Add support for static identifiers in object
+- Updated dependencies [a750d5d]
+  - @flairjs/core@0.0.2
+
 ## 0.0.1
 
 ### Patch Changes
