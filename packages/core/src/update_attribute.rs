@@ -150,6 +150,17 @@ impl<'a> ClassNameReplacer<'a> {
         // Only process string literal keys, not computed properties or identifiers
         if let PropertyKey::StringLiteral(string_key) = &mut property.key {
           self.update_string_expression(string_key);
+        } else if let PropertyKey::StaticIdentifier(static_identifier) = &mut property.key {
+          let updated_class_names_str = self.get_updated_classname(&static_identifier.name);
+          // Switch to a string literal key so hashed names remain valid property names
+          let string_literal_key = self.ast_builder.string_literal(
+            static_identifier.span,
+            self.allocator.alloc_str(&updated_class_names_str),
+            None,
+          );
+
+          property.key =
+            PropertyKey::StringLiteral(OxcBox::new_in(string_literal_key, self.allocator));
         }
       }
     }

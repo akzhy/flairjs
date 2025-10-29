@@ -44,6 +44,9 @@ jobs:
     needs: check-changes
     if: needs.check-changes.outputs.has_core_changes == 'true'
     uses: ./.github/workflows/core-ci.yml
+    permissions:
+      contents: write
+      id-token: write
     with:
       skip_publish: true
     secrets: inherit
