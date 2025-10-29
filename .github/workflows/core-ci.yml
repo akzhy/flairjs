@@ -399,8 +399,8 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write
+      contents: ${{ inputs.skip_publish && 'read' || 'write' }}
+      id-token: ${{ inputs.skip_publish && 'none' || 'write' }}
     needs:
       - lint
       - build
