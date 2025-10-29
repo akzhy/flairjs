@@ -207,7 +207,8 @@ export const TestCaseComponent = () => {
       <button className={clsx("QXWpLq_case-5", {
 		"QXWpLq_case-5-1": true,
 		"QXWpLq_case-5-2": case5,
-		"case-5-3": true
+		"case-5-3": true,
+		"QXWpLq_case5_4": true
 	})} onClick={() => setCase5((p) => !p)}>
         Case5
       </button>

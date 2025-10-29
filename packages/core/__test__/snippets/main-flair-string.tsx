@@ -41,6 +41,7 @@ export const TestCaseComponent = () => {
           'case-5-1': true,
           'case-5-2': case5,
           'case-5-3': true,
+          case5_4: true
         })}
         onClick={() => setCase5((p) => !p)}
       >
@@ -117,6 +118,10 @@ TestCaseComponent.flair = /*css*/ `
 
   &.case-5-2 {
     background-color: rgb(255, 0, 6);
+  }
+
+  &.case5_4 {
+    border-color: rgb(255, 0, 7);
   }
 }
 
