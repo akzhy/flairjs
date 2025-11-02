@@ -34,4 +34,5 @@ export interface TransformOutput {
   css: string
   logs: Array<LogEntry>
   generatedCssName?: string
+  unusedClassnames?: Array<string>
 }
