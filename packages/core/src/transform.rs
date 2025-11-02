@@ -1,5 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
@@ -82,6 +82,7 @@ pub struct TransformOutput {
   pub css: String,
   pub logs: Vec<LogEntry>,
   pub generated_css_name: Option<String>,
+  pub unused_classnames: Option<Vec<String>>,
 }
 
 /// Entry point for transforming a TypeScript React file.
@@ -165,12 +166,32 @@ pub fn transform(
   // Collect all logs that were accumulated during transformation
   let logs = get_logger().drain_logs();
 
+  let unused_classnames = {
+    let all_classnames: HashSet<String> = visitor
+      .css_module_exports.values()
+      .flat_map(|exports| exports.keys())
+      .cloned()
+      .collect();
+
+    let unused: Vec<String> = all_classnames
+      .difference(&visitor.consumed_classnames)
+      .cloned()
+      .collect();
+
+    if unused.is_empty() {
+      None
+    } else {
+      Some(unused)
+    }
+  };
+
   Some(TransformOutput {
     code: result_code,
     sourcemap,
     css: visitor.extracted_css.join("\n"),
     logs,
     generated_css_name: visitor.generated_css_name,
+    unused_classnames
   })
 }
 
@@ -220,6 +241,8 @@ struct TransformVisitor<'a> {
   function_id_to_raw_css_mapping: IndexMap<u32, Vec<CSSData>>,
   /// Maps function/component IDs to their processed CSS module exports (class name mappings)
   css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
+
+  consumed_classnames: HashSet<String>,
 
   ast_builder: AstBuilder<'a>,
   scoping: &'a Scoping,
@@ -291,6 +314,7 @@ impl<'a> TransformVisitor<'a> {
       identifier_symbol_ids,
       pass: Pass::First,
       css_module_exports,
+      consumed_classnames: HashSet::new(),
       file_path,
       options,
       js_env,
@@ -589,6 +613,7 @@ impl<'a> TransformVisitor<'a> {
         let mut classname_replacer = ClassNameReplacer {
           allocator: self.allocator,
           class_name_map: self.get_css_exports(&fn_start).unwrap_or_default(),
+          consumed_classnames: HashSet::new(),
           ast_builder: self.ast_builder,
           scoping: self.scoping,
           identifier_symbol_ids: self.identifier_symbol_ids.clone(),
@@ -606,6 +631,8 @@ impl<'a> TransformVisitor<'a> {
 
         // Update our tracking of which identifiers need to be processed in Pass 3
         self.identifier_symbol_ids = classname_replacer.get_identifier_symbol_ids().to_vec();
+
+        self.consumed_classnames.extend(classname_replacer.get_consumed_classnames());
       }
       Pass::Third => {
         // Pass 3 is handled at the variable declaration level, not at the function body level
@@ -729,6 +756,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
               let mut classname_replacer = ClassNameReplacer {
                 allocator: self.allocator,
                 class_name_map: css_exports.unwrap_or_default(),
+                consumed_classnames: HashSet::new(),
                 ast_builder: self.ast_builder,
                 scoping: self.scoping,
                 identifier_symbol_ids: vec![],
@@ -742,8 +770,10 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
                   .unwrap_or(vec!["className".to_string(), "class".to_string()]),
               };
 
+              
               if decl.init.is_some() {
                 classname_replacer.update_expression(decl.init.as_mut());
+                self.consumed_classnames.extend(classname_replacer.get_consumed_classnames());
               }
             }
           }
