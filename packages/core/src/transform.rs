@@ -11,6 +11,7 @@ use crate::log_warn;
 use crate::logger::{get_logger, LogEntry};
 use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
+use crate::utils::{ExtendedRope, UnusedCss};
 use crate::{log_error, parse_css::parse_css, update_attribute::SymbolStore};
 use indexmap::IndexMap;
 use lightningcss::css_modules::CssModuleExport;
@@ -82,7 +83,8 @@ pub struct TransformOutput {
   pub css: String,
   pub logs: Vec<LogEntry>,
   pub generated_css_name: Option<String>,
-  pub unused_classnames: Option<Vec<String>>,
+  pub unused_classnames: Vec<UnusedCss>,
+  pub success: bool,
 }
 
 /// Entry point for transforming a TypeScript React file.
@@ -95,14 +97,22 @@ pub fn transform(
   code: String,
   file_path: String,
   options: TransformOptions,
-  css_preprocessor: Option<NapiFunction<String, String>>,
+  css_preprocessor: Option<NapiFunction<CSSData, String>>,
   env: Option<Env>,
-) -> Option<TransformOutput> {
+) -> TransformOutput {
   if !matches!(
     file_path.split('.').next_back(),
     Some("tsx" | "jsx" | "ts" | "js")
   ) {
-    return None;
+    return TransformOutput {
+      code,
+      css: "".to_string(),
+      success: false,
+      generated_css_name: None,
+      logs: vec![],
+      sourcemap: None,
+      unused_classnames: vec![],
+    };
   }
 
   // Set up the OXC parser infrastructure
@@ -114,14 +124,25 @@ pub fn transform(
         "Failed to determine source type from file path: {}",
         file_path
       );
-      return None;
+      let logs = get_logger().drain_logs();
+
+      return TransformOutput {
+        code,
+        css: "".to_string(),
+        success: false,
+        generated_css_name: None,
+        logs,
+        sourcemap: None,
+        unused_classnames: vec![],
+      };
     }
   };
 
   let sourcemap_file_path = file_path.clone();
 
   // Parse the source code into an Abstract Syntax Tree (AST)
-  let ParserReturn { mut program, .. } = Parser::new(&allocator, &code, source_type).parse();
+  let code_clone = code.clone();
+  let ParserReturn { mut program, .. } = Parser::new(&allocator, &code_clone, source_type).parse();
 
   // Build semantic information (symbol tables, scopes, references)
   let semantic_builder = SemanticBuilder::new().build(&program);
@@ -131,14 +152,18 @@ pub fn transform(
 
   let ast_builder = AstBuilder::new(&allocator);
 
+  let rope_code = &code.clone();
+  let rope = ExtendedRope::new(rope_code);
   // Create the main visitor that will perform the three-pass transformation
   let mut visitor = TransformVisitor::new(
     &allocator,
     ast_builder,
     &scoping,
+    code.clone(),
     file_path.clone(),
     options,
     &css_preprocessor,
+    &rope,
     env,
   );
 
@@ -147,7 +172,17 @@ pub fn transform(
 
   if visitor.extracted_css.is_empty() {
     // No CSS was extracted, so no further processing is needed
-    return None;
+    let logs = get_logger().drain_logs();
+
+    return TransformOutput {
+      code,
+      css: "".to_string(),
+      success: false,
+      generated_css_name: None,
+      logs,
+      sourcemap: None,
+      unused_classnames: vec![],
+    };
   }
 
   // Generate the final JavaScript/TypeScript code with source maps
@@ -167,39 +202,61 @@ pub fn transform(
   let logs = get_logger().drain_logs();
 
   let unused_classnames = {
-    let all_classnames: HashSet<String> = visitor
-      .css_module_exports.values()
-      .flat_map(|exports| exports.keys())
-      .cloned()
-      .collect();
+    let mut unused: Vec<UnusedCss> = Vec::new();
 
-    let unused: Vec<String> = all_classnames
-      .difference(&visitor.consumed_classnames)
-      .cloned()
-      .collect();
+    visitor
+      .css_module_exports
+      .iter()
+      .for_each(|(fn_id, css_exports)| {
+        let all_classnames: HashSet<String> = css_exports.class_name_map.keys().cloned().collect();
+        let unused_class_string: Vec<String> = all_classnames
+          .difference(&visitor.consumed_classnames)
+          .cloned()
+          .collect();
 
-    if unused.is_empty() {
-      None
-    } else {
-      Some(unused)
-    }
+        unused_class_string.iter().for_each(|class_name| {
+          let css_module_data = visitor.css_module_exports.get(fn_id);
+
+          if let Some(css_module_data) = css_module_data {
+            unused.push(UnusedCss {
+              class_name: class_name.clone(),
+              line: css_module_data.line_number,
+              column: css_module_data.column_number,
+            })
+          }
+        });
+      });
+
+    unused
   };
 
-  Some(TransformOutput {
+  TransformOutput {
     code: result_code,
     sourcemap,
     css: visitor.extracted_css.join("\n"),
     logs,
     generated_css_name: visitor.generated_css_name,
-    unused_classnames
-  })
+    unused_classnames,
+    success: true,
+  }
 }
 
 /// Represents raw CSS data along with its scoping information.
 #[derive(Clone, Debug)]
+#[napi(object)]
 pub struct CSSData {
   pub raw_css: String,
   pub is_global: bool,
+  pub line_number: u32,
+  pub column_number: u32,
+  pub start_offset: u32,
+}
+
+#[derive(Clone, Debug)]
+pub struct CSSModuleData {
+  pub class_name_map: HashMap<String, CssModuleExport>,
+  pub line_number: u32,
+  pub column_number: u32,
 }
 
 /// Main visitor struct that orchestrates the multi-pass CSS-in-JS transformation.
@@ -228,8 +285,9 @@ pub struct CSSData {
 ///
 struct TransformVisitor<'a> {
   allocator: &'a Allocator,
+  source: String,
   options: TransformOptions,
-  css_preprocessor: &'a Option<NapiFunction<'a, String, String>>,
+  css_preprocessor: &'a Option<NapiFunction<'a, CSSData, String>>,
   /// Symbols for imported "Style" components from flair packages
   style_tag_import_symbols: Vec<SymbolId>,
   /// Symbols for imported "c" / "cn" and other utility functions from flair packages  
@@ -240,7 +298,7 @@ struct TransformVisitor<'a> {
   /// The id is actually the function's span.start position
   function_id_to_raw_css_mapping: IndexMap<u32, Vec<CSSData>>,
   /// Maps function/component IDs to their processed CSS module exports (class name mappings)
-  css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>>,
+  css_module_exports: HashMap<u32, CSSModuleData>,
 
   consumed_classnames: HashSet<String>,
 
@@ -279,6 +337,8 @@ struct TransformVisitor<'a> {
   parent_class_id: Option<u32>,
 
   generated_css_name: Option<String>,
+
+  rope: &'a ExtendedRope<'a>,
 }
 
 impl<'a> TransformVisitor<'a> {
@@ -286,23 +346,26 @@ impl<'a> TransformVisitor<'a> {
     allocator: &'a Allocator,
     ast_builder: AstBuilder<'a>,
     scoping: &'a Scoping,
+    source: String,
     file_path: String,
     options: TransformOptions,
-    css_preprocessor: &'a Option<NapiFunction<'a, String, String>>,
+    css_preprocessor: &'a Option<NapiFunction<'a, CSSData, String>>,
+    rope: &'a ExtendedRope,
     js_env: Option<Env>,
   ) -> Self {
     let extracted_css = vec![];
     let identifier_symbol_ids: Vec<SymbolStore> = vec![];
-    let css_module_exports: HashMap<u32, HashMap<String, CssModuleExport>> = HashMap::new();
+    let css_module_exports: HashMap<u32, CSSModuleData> = HashMap::new();
     let style_tag_symbols: Vec<u32> = vec![];
     let style_tag_import_symbols: Vec<SymbolId> = vec![];
     let classname_util_symbols: Vec<SymbolId> = vec![];
 
     let variable_linking = HashMap::new();
-    let flair_property_visitor = FlairProperty::new(scoping, allocator);
+    let flair_property_visitor = FlairProperty::new(scoping, allocator, &rope);
 
     Self {
       allocator,
+      source,
       css_preprocessor,
       style_tag_import_symbols,
       style_tag_symbols,
@@ -323,6 +386,7 @@ impl<'a> TransformVisitor<'a> {
       fn_id_to_class_map: HashMap::new(),
       parent_class_id: None,
       generated_css_name: None,
+      rope,
     }
   }
 
@@ -464,17 +528,13 @@ impl<'a> TransformVisitor<'a> {
       .for_each(|(index, (fn_id, styles))| {
         // Separate scoped and global CSS for different processing
         let (scoped_css, global_css) = {
-          let mut scoped_css: Option<String> = None;
-          let mut global_css: Option<String> = None;
+          let mut scoped_css: Option<&CSSData> = None;
+          let mut global_css: Option<&CSSData> = None;
           styles.iter().for_each(|style| {
             if style.is_global {
-              global_css
-                .get_or_insert_with(String::new)
-                .push_str(&style.raw_css);
+              global_css = Some(style);
             } else {
-              scoped_css
-                .get_or_insert_with(String::new)
-                .push_str(&style.raw_css);
+              scoped_css = Some(style);
             }
           });
 
@@ -483,54 +543,70 @@ impl<'a> TransformVisitor<'a> {
 
         // Apply CSS preprocessing if available.
         let (preprocessed_scoped_css, preprocessed_global_css) = {
-          if self.js_env.is_some() {
-            if let Some(preprocessor) = &self.css_preprocessor {
-              // Apply preprocessor to scoped CSS, fallback to original on error
-              let scoped_result = scoped_css.as_ref().map(|original| {
-                preprocessor
-                  .call(original.clone())
-                  .unwrap_or(original.clone())
-              });
+          if let (Some(_env), Some(preprocessor)) = (&self.js_env, &self.css_preprocessor) {
+            let mut scoped_css_out = scoped_css.cloned();
+            let mut global_css_out = global_css.cloned();
+            // Apply preprocessor to scoped CSS, fallback to original on error
+            if let Some(scoped_css) = scoped_css {
+              let scoped_result = preprocessor
+                .call(scoped_css.clone())
+                .unwrap_or(scoped_css.clone().raw_css);
 
-              // Apply preprocessor to global CSS, fallback to original on error
-              let global_result = global_css.as_ref().map(|original| {
-                preprocessor
-                  .call(original.clone())
-                  .unwrap_or(original.clone())
+              scoped_css_out = Some(CSSData {
+                raw_css: scoped_result,
+                is_global: false,
+                line_number: scoped_css.line_number,
+                column_number: scoped_css.column_number,
+                start_offset: scoped_css.start_offset,
               });
-
-              (scoped_result, global_result)
-            } else {
-              // No preprocessor available, use original CSS
-              (scoped_css, global_css)
             }
+
+            if let Some(global_css) = global_css {
+              // Apply preprocessor to global CSS, fallback to original on error
+              let global_result = preprocessor
+                .call(global_css.clone())
+                .unwrap_or(global_css.clone().raw_css);
+
+              global_css_out = Some(CSSData {
+                raw_css: global_result,
+                is_global: true,
+                line_number: global_css.line_number,
+                column_number: global_css.column_number,
+                start_offset: global_css.start_offset,
+              });
+            }
+
+            (scoped_css_out, global_css_out)
           } else {
-            // No JavaScript environment, use original CSS
-            (scoped_css, global_css)
+            (scoped_css.cloned(), global_css.cloned())
           }
         };
 
         let use_theme = self.options.use_theme.unwrap_or(false);
 
         // Parse scoped CSS with CSS modules enabled for class name generation
-        let parsed_scoped_css: Option<ToCssResult> =
+        let parsed_scoped_css: Option<(CSSData, ToCssResult)> =
           preprocessed_scoped_css.clone().and_then(|css| {
             let res = parse_css(
-              &css,
+              &css.raw_css,
+              &self.source,
               &format!("{}:{}", self.file_path, index),
+              &self.file_path,
+              css.start_offset,
               true, // Enable CSS modules for scoped styles
               use_theme,
               &self.options.theme,
             );
 
             match res {
-              Ok(val) => Some(val),
+              Ok(val) => Some((css, val)),
               Err(_) => {
                 log_error!(
-                  "Failed to parse CSS in function starting at {}: {:#?}. CSS: {:#?}",
-                  fn_id,
-                  res.err(),
-                  preprocessed_scoped_css
+                  "Failed to parse CSS at {}:{}:{}. {}",
+                  self.file_path,
+                  css.line_number,
+                  css.column_number,
+                  res.err().unwrap_or("Unknown error".to_string()),
                 );
                 None
               }
@@ -538,24 +614,28 @@ impl<'a> TransformVisitor<'a> {
           });
 
         // Parse global CSS without CSS modules
-        let parsed_global_css: Option<ToCssResult> =
+        let parsed_global_css: Option<(CSSData, ToCssResult)> =
           preprocessed_global_css.clone().and_then(|css| {
             let res = parse_css(
-              &css,
+              &css.raw_css,
+              &self.source,
               &format!("{}:{}", self.file_path, fn_id),
+              &self.file_path,
+              css.start_offset,
               false, // Disable CSS modules for global styles
               use_theme,
               &self.options.theme,
             );
 
             match res {
-              Ok(val) => Some(val),
+              Ok(val) => Some((css, val)),
               Err(_) => {
                 log_error!(
-                  "Failed to parse CSS in function starting at {}: {:#?}. CSS: {:#?}",
-                  fn_id,
-                  res.err(),
-                  preprocessed_global_css
+                  "Failed to parse CSS at {}:{}:{}. {}",
+                  self.file_path,
+                  css.line_number,
+                  css.column_number,
+                  res.err().unwrap_or("Unknown error".to_string()),
                 );
                 None
               }
@@ -564,17 +644,25 @@ impl<'a> TransformVisitor<'a> {
 
         // Store CSS module exports for class name replacement in Pass 2
         if let Some(parsed_scoped_css) = parsed_scoped_css {
+          let (css_data, css_result) = parsed_scoped_css;
           let empty_exports = HashMap::new();
-          let css_exports = parsed_scoped_css.exports.as_ref().unwrap_or(&empty_exports);
+          let css_exports = css_result.exports.as_ref().unwrap_or(&empty_exports);
 
-          self.css_module_exports.insert(*fn_id, css_exports.clone());
+          self.css_module_exports.insert(
+            *fn_id,
+            CSSModuleData {
+              class_name_map: css_exports.clone(),
+              line_number: css_data.line_number,
+              column_number: css_data.column_number,
+            },
+          );
 
-          self.extracted_css.push(parsed_scoped_css.code);
+          self.extracted_css.push(css_result.code);
         }
 
         // Add global CSS directly to the output (no class name mapping needed)
         if let Some(parsed_global_css) = parsed_global_css {
-          self.extracted_css.push(parsed_global_css.code);
+          self.extracted_css.push(parsed_global_css.1.code);
         }
       });
   }
@@ -585,7 +673,8 @@ impl<'a> TransformVisitor<'a> {
     match self.pass {
       Pass::First => {
         // Detect and collect style tag information and CSS content
-        let mut style_detector = StyleDetector::new(self.scoping, &self.style_tag_import_symbols);
+        let mut style_detector =
+          StyleDetector::new(self.scoping, &self.style_tag_import_symbols, &self.rope);
         style_detector.visit_function_body(body);
 
         if let Some(class_id) = self.parent_class_id {
@@ -632,7 +721,9 @@ impl<'a> TransformVisitor<'a> {
         // Update our tracking of which identifiers need to be processed in Pass 3
         self.identifier_symbol_ids = classname_replacer.get_identifier_symbol_ids().to_vec();
 
-        self.consumed_classnames.extend(classname_replacer.get_consumed_classnames());
+        self
+          .consumed_classnames
+          .extend(classname_replacer.get_consumed_classnames());
       }
       Pass::Third => {
         // Pass 3 is handled at the variable declaration level, not at the function body level
@@ -648,10 +739,16 @@ impl<'a> TransformVisitor<'a> {
     // Check if this function is a method inside a class
     if let Some(class_id) = self.fn_id_to_class_map.get(fn_id) {
       // Use the parent class's CSS exports for consistency
-      self.css_module_exports.get(class_id).cloned()
+      self
+        .css_module_exports
+        .get(class_id)
+        .map(|exp| exp.class_name_map.clone())
     } else {
       // Use the function's own CSS exports
-      self.css_module_exports.get(fn_id).cloned()
+      self
+        .css_module_exports
+        .get(fn_id)
+        .map(|exp| exp.class_name_map.clone())
     }
   }
 
@@ -770,10 +867,11 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
                   .unwrap_or(vec!["className".to_string(), "class".to_string()]),
               };
 
-              
               if decl.init.is_some() {
                 classname_replacer.update_expression(decl.init.as_mut());
-                self.consumed_classnames.extend(classname_replacer.get_consumed_classnames());
+                self
+                  .consumed_classnames
+                  .extend(classname_replacer.get_consumed_classnames());
               }
             }
           }
