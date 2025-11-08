@@ -1,14 +1,31 @@
-use std::{collections::HashMap, convert::Infallible};
+use std::{
+  collections::HashMap,
+  convert::Infallible,
+  hash::{DefaultHasher, Hash, Hasher},
+};
 
 use cssparser::{ParseError, Parser, ParserInput, SourceLocation, ToCss, Token};
+use data_encoding::{Encoding, Specification};
+use lazy_static::lazy_static;
 use lightningcss::{
-  css_modules::{self},
+  css_modules::{self, Pattern, Segment},
   printer::PrinterOptions,
   stylesheet::{ParserOptions, StyleSheet, ToCssResult},
   targets::{Browsers, Features, Targets},
 };
+use smallvec::smallvec;
 
-use crate::{log_error, transform::Theme};
+use crate::{
+  log_error,
+  transform::{CSSData, Theme},
+};
+use parcel_sourcemap::SourceMap;
+
+#[derive(Debug)]
+pub struct ParseCssResult {
+  pub result: ToCssResult,
+  pub source_map: SourceMap,
+}
 
 /// Parses CSS string and applies transformations based on configuration flags
 ///
@@ -19,15 +36,18 @@ use crate::{log_error, transform::Theme};
 /// * `use_theme` - Whether to process theme tokens (e.g., $theme.color.primary -> var(--theme-color-primary))
 ///
 /// # Returns
-/// * `Ok(ToCssResult)` - Parsed and transformed CSS with optional exports (for CSS modules)
+/// * `Ok(ParseCssResult)` - Parsed and transformed CSS with optional exports (for CSS modules)
 /// * `Err(String)` - Error message if parsing or transformation fails
 pub fn parse_css(
   css: &str,
+  source_code: &str,
+  modulename: &str,
   filename: &str,
+  css_data: CSSData,
   module: bool,
   use_theme: bool,
   theme: &Option<Theme>,
-) -> Result<ToCssResult, String> {
+) -> Result<ParseCssResult, String> {
   // Pre-process CSS to replace theme tokens if enabled
   // Theme tokens like $theme.color.primary get converted to var(--theme-color-primary)
   let processed_css = if use_theme {
@@ -38,12 +58,21 @@ pub fn parse_css(
     css.to_string()
   };
 
+  let module_hash_name = hash(modulename, true);
   // Configure parser options for lightningcss
   let parser_options = ParserOptions {
     filename: filename.to_string(),
+
     // Enable CSS modules if requested - this will scope class names and generate export mappings
     css_modules: if module {
       Some(css_modules::Config {
+        pattern: Pattern {
+          segments: smallvec![
+            Segment::Literal(&module_hash_name),
+            Segment::Literal("_"),
+            Segment::Local
+          ],
+        },
         ..Default::default()
       })
     } else {
@@ -66,19 +95,51 @@ pub fn parse_css(
   let stylesheet = StyleSheet::parse(&processed_css, parser_options)
     .map_err(|e| format!("Failed to parse CSS: {}", e))?;
 
+  let project_root = ".";
+  let mut sourcemap = SourceMap::new(project_root);
+  sourcemap.add_source(filename);
+
+  let _ = sourcemap.set_source_content(0, &source_code);
   // Convert the stylesheet back to CSS string with transformations applied
   let result = stylesheet.to_css(PrinterOptions {
     minify: false, // Expect the users' bundler to handle minification
     targets,
+    source_map: Some(&mut sourcemap),
     ..Default::default()
   });
+
+  let mut offsetted_sourcemap = SourceMap::new(project_root);
+  offsetted_sourcemap.add_source(filename);
+
+  let _ = offsetted_sourcemap.set_source_content(0, &source_code);
+
+  sourcemap
+    .get_mappings()
+    .iter()
+    .enumerate()
+    .for_each(|(index, map)| {
+      let new_original = map.original.map(|mut o| {
+        o.original_line += css_data.line_number;
+
+        if index == 0 {
+          o.original_column += css_data.column_number;
+        }
+        o
+      });
+
+      offsetted_sourcemap.add_mapping(map.generated_line, map.generated_column, new_original);
+    });
 
   // Handle the conversion result and provide descriptive error messages
   let ret_value = match result {
     Ok(result) => result,
     Err(e) => return Err(format!("Failed to convert stylesheet to CSS: {}", e)),
   };
-  Ok(ret_value)
+
+  Ok(ParseCssResult {
+    result: ret_value,
+    source_map: offsetted_sourcemap,
+  })
 }
 
 /// Validates a theme token string to ensure it follows the expected format
@@ -410,4 +471,29 @@ fn handle_at_rule_tokens(
   }
 
   out
+}
+
+lazy_static! {
+  static ref ENCODER: Encoding = {
+    let mut spec = Specification::new();
+    spec
+      .symbols
+      .push_str("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-");
+    spec.encoding().unwrap()
+  };
+}
+
+/// Hashing implementation copied from lightnincss.
+/// The default
+fn hash(s: &str, at_start: bool) -> String {
+  let mut hasher = DefaultHasher::new();
+  s.hash(&mut hasher);
+  let hash = hasher.finish() as u32;
+
+  let hash = ENCODER.encode(&hash.to_le_bytes());
+  if at_start && matches!(hash.as_bytes()[0], b'0'..=b'9') {
+    format!("_{}", hash)
+  } else {
+    hash
+  }
 }

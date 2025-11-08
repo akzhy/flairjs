@@ -9,13 +9,13 @@ use std::time::SystemTime;
 use crate::flair_property::{FlairProperty, FLAIR_REPLACEMENT};
 use crate::log_warn;
 use crate::logger::{get_logger, LogEntry};
+use crate::parse_css::ParseCssResult;
 use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::utils::{ExtendedRope, UnusedCss};
 use crate::{log_error, parse_css::parse_css, update_attribute::SymbolStore};
 use indexmap::IndexMap;
 use lightningcss::css_modules::CssModuleExport;
-use lightningcss::stylesheet::ToCssResult;
 use napi::bindgen_prelude::Function as NapiFunction;
 use napi::Env;
 use napi_derive::napi;
@@ -36,6 +36,7 @@ use oxc::{
   parser::{Parser, ParserReturn},
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
+use parcel_sourcemap::SourceMap;
 
 /// Represents the different passes of the AST transformation.
 /// The transformation requires three passes due to dependency chains:
@@ -208,32 +209,45 @@ pub fn transform(
       .css_module_exports
       .iter()
       .for_each(|(fn_id, css_exports)| {
-        let all_classnames: HashSet<String> = css_exports.class_name_map.keys().cloned().collect();
-        let unused_class_string: Vec<String> = all_classnames
-          .difference(&visitor.consumed_classnames)
-          .cloned()
-          .collect();
+        css_exports.iter().for_each(|item| {
+          let all_classnames: HashSet<String> = item.class_name_map.keys().cloned().collect();
 
-        unused_class_string.iter().for_each(|class_name| {
-          let css_module_data = visitor.css_module_exports.get(fn_id);
+          let unused_class_string: Vec<String> = all_classnames
+            .difference(&visitor.consumed_classnames)
+            .cloned()
+            .collect();
 
-          if let Some(css_module_data) = css_module_data {
-            unused.push(UnusedCss {
-              class_name: class_name.clone(),
-              line: css_module_data.line_number,
-              column: css_module_data.column_number,
-            })
-          }
-        });
+          unused_class_string.iter().for_each(|class_name| {
+            let css_module_data = item.class_name_map.get(class_name);
+
+            if let Some(_) = css_module_data {
+              unused.push(UnusedCss {
+                class_name: class_name.clone(),
+                line: item.line_number,
+                column: item.column_number,
+              })
+            }
+          });
+        })
       });
 
     unused
   };
 
+  let final_css = {
+    let mut combined_css = String::new();
+    visitor.extracted_css.iter().for_each(|css_result| {
+      combined_css.push_str(&css_result.result.code);
+      combined_css.push('\n');
+    });
+
+    combined_css
+  };
+
   TransformOutput {
     code: result_code,
     sourcemap,
-    css: visitor.extracted_css.join("\n"),
+    css: final_css,
     logs,
     generated_css_name: visitor.generated_css_name,
     unused_classnames,
@@ -293,12 +307,12 @@ struct TransformVisitor<'a> {
   /// Symbols for imported "c" / "cn" and other utility functions from flair packages  
   classname_util_symbols: Vec<SymbolId>,
   /// Accumulated CSS strings that will be written to the output CSS file
-  extracted_css: Vec<String>,
+  extracted_css: Vec<ParseCssResult>,
   /// Maps function/component IDs to their raw CSS content before processing
   /// The id is actually the function's span.start position
   function_id_to_raw_css_mapping: IndexMap<u32, Vec<CSSData>>,
   /// Maps function/component IDs to their processed CSS module exports (class name mappings)
-  css_module_exports: HashMap<u32, CSSModuleData>,
+  css_module_exports: HashMap<u32, Vec<CSSModuleData>>,
 
   consumed_classnames: HashSet<String>,
 
@@ -355,7 +369,7 @@ impl<'a> TransformVisitor<'a> {
   ) -> Self {
     let extracted_css = vec![];
     let identifier_symbol_ids: Vec<SymbolStore> = vec![];
-    let css_module_exports: HashMap<u32, CSSModuleData> = HashMap::new();
+    let css_module_exports: HashMap<u32, Vec<CSSModuleData>> = HashMap::new();
     let style_tag_symbols: Vec<u32> = vec![];
     let style_tag_import_symbols: Vec<SymbolId> = vec![];
     let classname_util_symbols: Vec<SymbolId> = vec![];
@@ -462,15 +476,60 @@ impl<'a> TransformVisitor<'a> {
     );
 
     // Write the extracted CSS to a file in the specified output directory
-    let file_path = format!("{}/{}", self.options.css_out_dir, hash_string);
-    match File::create(&file_path) {
+    let css_file_path = format!("{}/{}", self.options.css_out_dir, hash_string);
+    let css_map_file_path = format!("{}/{}.map", self.options.css_out_dir, hash_string);
+
+    match File::create(&css_file_path) {
       Ok(mut file) => {
-        if let Err(err) = file.write_all(self.extracted_css.join("\n").as_bytes()) {
+        let final_css = {
+          let mut combined_css = String::new();
+          self.extracted_css.iter().for_each(|css_result| {
+            combined_css.push_str(&css_result.result.code);
+            combined_css.push('\n');
+          });
+
+          combined_css.push_str(format!("/*# sourceMappingURL={}.map */", hash_string).as_str());
+          combined_css
+        };
+        if let Err(err) = file.write_all(final_css.as_bytes()) {
           log_error!(
             "Failed to write CSS to file: {}, reason: {:#?}",
-            file_path,
+            css_file_path,
             err
           );
+        }
+      }
+      Err(err) => {
+        log_error!(
+          "Failed to create file in css_out_dir: {}, reason: {:#?}",
+          self.options.css_out_dir,
+          err
+        );
+      }
+    }
+
+    match File::create(&css_map_file_path) {
+      Ok(mut file) => {
+        let mut final_css_map = {
+          let mut combined_map = SourceMap::new(".");
+          let mut line_offset = 0;
+          self.extracted_css.iter_mut().for_each(|css_result| {
+            let css_code = &css_result.result.code;
+            let line_number = css_code.lines().count() as i64;
+            let _ = combined_map.add_sourcemap(&mut css_result.source_map, line_offset);
+            line_offset += line_number;
+          });
+
+          combined_map
+        };
+        if let Some(sourcemap_json) = final_css_map.to_json(None).ok() {
+          if let Err(err) = file.write_all(sourcemap_json.as_bytes()) {
+            log_error!(
+              "Failed to write CSS to file: {}, reason: {:#?}",
+              css_file_path,
+              err
+            );
+          }
         }
       }
       Err(err) => {
@@ -527,143 +586,70 @@ impl<'a> TransformVisitor<'a> {
       .enumerate()
       .for_each(|(index, (fn_id, styles))| {
         // Separate scoped and global CSS for different processing
-        let (scoped_css, global_css) = {
-          let mut scoped_css: Option<&CSSData> = None;
-          let mut global_css: Option<&CSSData> = None;
-          styles.iter().for_each(|style| {
-            if style.is_global {
-              global_css = Some(style);
-            } else {
-              scoped_css = Some(style);
-            }
-          });
+        styles.iter().for_each(|style| {
+          let mut css_data = style.clone();
 
-          (scoped_css, global_css)
-        };
-
-        // Apply CSS preprocessing if available.
-        let (preprocessed_scoped_css, preprocessed_global_css) = {
           if let (Some(_env), Some(preprocessor)) = (&self.js_env, &self.css_preprocessor) {
-            let mut scoped_css_out = scoped_css.cloned();
-            let mut global_css_out = global_css.cloned();
-            // Apply preprocessor to scoped CSS, fallback to original on error
-            if let Some(scoped_css) = scoped_css {
-              let scoped_result = preprocessor
-                .call(scoped_css.clone())
-                .unwrap_or(scoped_css.clone().raw_css);
+            let preprocessed_result = preprocessor
+              .call(style.clone())
+              .unwrap_or(style.raw_css.clone());
 
-              scoped_css_out = Some(CSSData {
-                raw_css: scoped_result,
-                is_global: false,
-                line_number: scoped_css.line_number,
-                column_number: scoped_css.column_number,
-                start_offset: scoped_css.start_offset,
-              });
-            }
-
-            if let Some(global_css) = global_css {
-              // Apply preprocessor to global CSS, fallback to original on error
-              let global_result = preprocessor
-                .call(global_css.clone())
-                .unwrap_or(global_css.clone().raw_css);
-
-              global_css_out = Some(CSSData {
-                raw_css: global_result,
-                is_global: true,
-                line_number: global_css.line_number,
-                column_number: global_css.column_number,
-                start_offset: global_css.start_offset,
-              });
-            }
-
-            (scoped_css_out, global_css_out)
-          } else {
-            (scoped_css.cloned(), global_css.cloned())
+            css_data.raw_css = preprocessed_result;
           }
-        };
 
-        let use_theme = self.options.use_theme.unwrap_or(false);
+          let use_theme = self.options.use_theme.unwrap_or(false);
 
-        // Parse scoped CSS with CSS modules enabled for class name generation
-        let parsed_scoped_css: Option<(CSSData, ToCssResult)> =
-          preprocessed_scoped_css.clone().and_then(|css| {
+          // Parse scoped CSS with CSS modules enabled for class name generation
+          let parsed_css: Option<(CSSData, ParseCssResult)> = {
+            let css_data_clone = css_data.clone();
+            let is_global = css_data_clone.is_global;
             let res = parse_css(
-              &css.raw_css,
+              &css_data_clone.raw_css.clone(),
               &self.source,
               &format!("{}:{}", self.file_path, index),
               &self.file_path,
-              css.start_offset,
-              true, // Enable CSS modules for scoped styles
+              css_data_clone,
+              !is_global, // Enable CSS modules for scoped styles
               use_theme,
               &self.options.theme,
             );
 
             match res {
-              Ok(val) => Some((css, val)),
+              Ok(val) => Some((css_data, val)),
               Err(_) => {
                 log_error!(
                   "Failed to parse CSS at {}:{}:{}. {}",
                   self.file_path,
-                  css.line_number,
-                  css.column_number,
+                  css_data.line_number,
+                  css_data.column_number,
                   res.err().unwrap_or("Unknown error".to_string()),
                 );
                 None
               }
             }
-          });
+          };
 
-        // Parse global CSS without CSS modules
-        let parsed_global_css: Option<(CSSData, ToCssResult)> =
-          preprocessed_global_css.clone().and_then(|css| {
-            let res = parse_css(
-              &css.raw_css,
-              &self.source,
-              &format!("{}:{}", self.file_path, fn_id),
-              &self.file_path,
-              css.start_offset,
-              false, // Disable CSS modules for global styles
-              use_theme,
-              &self.options.theme,
-            );
+          if let Some(parsed_css) = parsed_css {
+            if parsed_css.0.is_global {
+              self.extracted_css.push(parsed_css.1);
+            } else {
+              let (css_data, css_result) = parsed_css;
+              let empty_exports = HashMap::new();
+              let css_exports = css_result.result.exports.as_ref().unwrap_or(&empty_exports);
+              self
+                .css_module_exports
+                .entry(*fn_id)
+                .or_default()
+                .push(CSSModuleData {
+                  class_name_map: css_exports.clone(),
+                  line_number: css_data.line_number,
+                  column_number: css_data.column_number,
+                });
 
-            match res {
-              Ok(val) => Some((css, val)),
-              Err(_) => {
-                log_error!(
-                  "Failed to parse CSS at {}:{}:{}. {}",
-                  self.file_path,
-                  css.line_number,
-                  css.column_number,
-                  res.err().unwrap_or("Unknown error".to_string()),
-                );
-                None
-              }
+              self.extracted_css.push(css_result);
             }
-          });
-
-        // Store CSS module exports for class name replacement in Pass 2
-        if let Some(parsed_scoped_css) = parsed_scoped_css {
-          let (css_data, css_result) = parsed_scoped_css;
-          let empty_exports = HashMap::new();
-          let css_exports = css_result.exports.as_ref().unwrap_or(&empty_exports);
-
-          self.css_module_exports.insert(
-            *fn_id,
-            CSSModuleData {
-              class_name_map: css_exports.clone(),
-              line_number: css_data.line_number,
-              column_number: css_data.column_number,
-            },
-          );
-
-          self.extracted_css.push(css_result.code);
-        }
-
-        // Add global CSS directly to the output (no class name mapping needed)
-        if let Some(parsed_global_css) = parsed_global_css {
-          self.extracted_css.push(parsed_global_css.1.code);
-        }
+          }
+        });
       });
   }
 
@@ -684,7 +670,6 @@ impl<'a> TransformVisitor<'a> {
         // If style tags were detected, store the CSS and symbol information
         if style_detector.has_style {
           self.style_tag_symbols = style_detector.get_style_tag_symbol_ids();
-
           // If this function is inside a class, map it to the parent class for CSS scope inheritance
           if let Some(class_id) = self.parent_class_id {
             self
@@ -736,20 +721,26 @@ impl<'a> TransformVisitor<'a> {
   /// For class methods, this looks up the parent class's CSS exports instead
   /// of the method's own exports.
   fn get_css_exports(&self, fn_id: &u32) -> Option<HashMap<String, CssModuleExport>> {
-    // Check if this function is a method inside a class
-    if let Some(class_id) = self.fn_id_to_class_map.get(fn_id) {
-      // Use the parent class's CSS exports for consistency
-      self
-        .css_module_exports
-        .get(class_id)
-        .map(|exp| exp.class_name_map.clone())
-    } else {
-      // Use the function's own CSS exports
-      self
-        .css_module_exports
-        .get(fn_id)
-        .map(|exp| exp.class_name_map.clone())
+    let owner_id = self.fn_id_to_class_map.get(fn_id).copied().unwrap_or(*fn_id);
+    let module_entries = self.css_module_exports.get(&owner_id)?;
+
+    let capacity = module_entries
+      .iter()
+      .map(|entry| entry.class_name_map.len())
+      .sum();
+
+    let mut merged = HashMap::with_capacity(capacity);
+
+    for entry in module_entries {
+      merged.extend(
+        entry
+          .class_name_map
+          .iter()
+          .map(|(class_name, export)| (class_name.clone(), export.clone())),
+      );
     }
+
+    Some(merged)
   }
 
   fn get_import_symbol(&self, import_specifier: &ImportSpecifier, name: &str) -> Option<SymbolId> {
