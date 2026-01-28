@@ -104,7 +104,8 @@ exports[`Core tests > flair property object is working 1`] = `
 .RxOsuW_case-16 {
   color: #ff0010;
 }
-"
+
+/*# sourceMappingURL=1518dce36b030ff9.css.map */"
 `;
 
 exports[`Core tests > flair property object is working 2`] = `
@@ -118,10 +119,10 @@ export const TestCaseComponent = () => {
 	const [case9, setCase9] = useState(false);
 	const case3 = "RxOsuW_case-3";
 	const case6_3 = "RxOsuW_case-6-3";
-	const case6_4 = "case-6-4";
+	const case6_4 = "RxOsuW_case-6-4";
 	const case9_1 = "case-9 RxOsuW_case-9-1";
 	const case9_2 = "case-9 RxOsuW_case-9-2";
-	const case10 = "case-10";
+	const case10 = "RxOsuW_case-10";
 	const case11_1 = "case-11-1";
 	const case11 = \`case-11 \${case11_1} RxOsuW_case-11-2\`;
 	const case12_1 = "case-12-1";
@@ -186,10 +187,10 @@ export const TestCaseComponent = () => {
 	const [case9, setCase9] = useState(false);
 	const case3 = "QXWpLq_case-3";
 	const case6_3 = "QXWpLq_case-6-3";
-	const case6_4 = "case-6-4";
+	const case6_4 = "QXWpLq_case-6-4";
 	const case9_1 = "case-9 QXWpLq_case-9-1";
 	const case9_2 = "case-9 QXWpLq_case-9-2";
-	const case10 = "case-10";
+	const case10 = "QXWpLq_case-10";
 	const case11_1 = "case-11-1";
 	const case11 = \`case-11 \${case11_1} QXWpLq_case-11-2\`;
 	const case12_1 = "case-12-1";
@@ -256,10 +257,10 @@ export const TestCaseComponent = () => {
 	const [case9, setCase9] = useState(false);
 	const case3 = "mmCRFG_case-3";
 	const case6_3 = "mmCRFG_case-6-3";
-	const case6_4 = "case-6-4";
+	const case6_4 = "mmCRFG_case-6-4";
 	const case9_1 = "case-9 mmCRFG_case-9-1";
 	const case9_2 = "case-9 mmCRFG_case-9-2";
-	const case10 = "case-10";
+	const case10 = "mmCRFG_case-10";
 	const case11_1 = "case-11-1";
 	const case11 = \`case-11 \${case11_1} mmCRFG_case-11-2\`;
 	const case12_1 = "case-12-1";

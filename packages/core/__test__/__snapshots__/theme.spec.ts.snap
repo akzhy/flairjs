@@ -111,6 +111,7 @@ exports[`Theme tests > flair object is working 1`] = `
 .JnFTUa_case-16 {
   color: #ff0010;
 }
+
 "
 `;
 
@@ -134,6 +135,7 @@ exports[`Theme tests > flair object media is working 1`] = `
     background-color: var(--colors-red-300);
   }
 }
+
 "
 `;
 
@@ -248,6 +250,7 @@ exports[`Theme tests > flair string is working 1`] = `
 .GJBWWW_case-16 {
   color: #ff0010;
 }
+
 "
 `;
 
@@ -362,5 +365,6 @@ exports[`Theme tests > style tag is working 1`] = `
 .uLUfvG_case-16 {
   color: #ff0010;
 }
+
 "
 `;
