@@ -3,6 +3,7 @@ import {
   TransformOptions,
   TransformOutput,
 } from "@flairjs/core";
+import { CssData } from "@flairjs/core";
 
 const colors = {
   reset: "\x1b[0m",
@@ -41,9 +42,9 @@ export const transformCode = (
   code: string,
   filePath: string,
   options: TransformOptions & {
-    cssPreprocessor?: (css: string) => string;
+    cssPreprocessor?: (cssData: CssData) => string;
   }
-): TransformOutput | null => {
+): TransformOutput => {
   const result = rustTransformCode(
     code,
     filePath,

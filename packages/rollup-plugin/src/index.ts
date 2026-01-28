@@ -5,6 +5,7 @@ import {
   shouldProcessFile,
   transformCode,
 } from "@flairjs/bundler-shared";
+import { CssData } from "@flairjs/core";
 import type { Plugin } from "rollup";
 
 export type { SharedPluginOptions };
@@ -57,7 +58,7 @@ export default async function flairJsRollupPlugin(
       const result = transformCode(code, id, {
         appendTimestampToCssFile: true,
         cssPreprocessor: options?.cssPreprocessor
-          ? (css: string) => options.cssPreprocessor!(css, id)
+          ? (cssData: CssData) => options.cssPreprocessor!(cssData, id)
           : undefined,
         theme: context.userTheme?.theme,
         useTheme: !!context.userTheme,
@@ -65,7 +66,7 @@ export default async function flairJsRollupPlugin(
         classNameList: options?.classNameList,
       });
 
-      if (!result) {
+      if (!result.success) {
         return null;
       }
 

@@ -6,6 +6,7 @@ import {
   shouldProcessFile,
   transformCode,
 } from "@flairjs/bundler-shared";
+import type { CssData } from "@flairjs/core";
 import type { Transformer as TransformerType } from "@parcel/plugin";
 import { Transformer } from "@parcel/plugin";
 import SourceMapImport from "@parcel/source-map";
@@ -65,14 +66,14 @@ const transformer: TransformerType<FlairJsParcelTransformerOptions> =
           appendTimestampToCssFile: false,
           classNameList: config?.classNameList,
           cssPreprocessor: config?.cssPreprocessor
-            ? (css: string) => config.cssPreprocessor!(css, asset.filePath)
+            ? (cssData: CssData) => config.cssPreprocessor!(cssData, asset.filePath)
             : undefined,
           theme: config.userTheme?.theme,
           useTheme: !!config.userTheme,
           cssOutDir,
         });
 
-        if (!result) {
+        if (!result?.success) {
           return [asset];
         }
 
@@ -84,7 +85,7 @@ const transformer: TransformerType<FlairJsParcelTransformerOptions> =
           path.resolve(cssOutDir, result.generatedCssName),
           {
             pipeline: "css",
-          }
+          },
         );
 
         asset.setCode(result.code);
