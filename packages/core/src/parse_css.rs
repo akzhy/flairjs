@@ -483,8 +483,7 @@ lazy_static! {
   };
 }
 
-/// Hashing implementation copied from lightnincss.
-/// The default
+/// Hashing implementation copied from lightningcss.
 fn hash(s: &str, at_start: bool) -> String {
   let mut hasher = DefaultHasher::new();
   s.hash(&mut hasher);
