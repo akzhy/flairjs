@@ -3,11 +3,11 @@ use oxc_data_structures::rope::Rope;
 
 pub struct ExtendedRope<'a> {
   rope: Rope,
-  source_text: &'a String,
+  source_text: &'a str,
 }
 
 impl<'a> ExtendedRope<'a> {
-  pub fn new(source_text: &'a String) -> Self {
+  pub fn new(source_text: &'a str) -> Self {
     let rope = Rope::from_str(source_text);
     Self { rope, source_text }
   }
