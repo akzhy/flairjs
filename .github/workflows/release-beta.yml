@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
 
       - name: Enable corepack
@@ -54,8 +54,6 @@ jobs:
     if: needs.check.outputs.has_core == 'true'
     uses: ./.github/workflows/core-ci.yml
     secrets: inherit
-    with:
-      npm_tag: beta
 
   # Case 2: Only JS packages changed → publish directly here with beta tag
   js-release:
@@ -82,7 +80,7 @@ jobs:
       - name: Publish JS packages with beta tag
         uses: changesets/action@v1
         with:
-          publish: pnpm changeset publish --tag beta
+          publish: pnpm changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
