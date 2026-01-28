@@ -202,21 +202,25 @@ pub fn transform(
   // Collect all logs that were accumulated during transformation
   let logs = get_logger().drain_logs();
 
+  // Detect unused CSS class names by comparing defined classes with consumed classes
   let unused_classnames = {
     let mut unused: Vec<UnusedCss> = Vec::new();
 
     visitor
       .css_module_exports
       .iter()
-      .for_each(|(fn_id, css_exports)| {
+      .for_each(|(_fn_id, css_exports)| {
         css_exports.iter().for_each(|item| {
+          // Collect all class names defined in CSS
           let all_classnames: HashSet<String> = item.class_name_map.keys().cloned().collect();
 
+          // Find classes that were defined but never used in the code
           let unused_class_string: Vec<String> = all_classnames
             .difference(&visitor.consumed_classnames)
             .cloned()
             .collect();
 
+          // Create UnusedCss entries with location information
           unused_class_string.iter().for_each(|class_name| {
             let css_module_data = item.class_name_map.get(class_name);
 
