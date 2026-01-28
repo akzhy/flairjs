@@ -2,9 +2,6 @@ name: Release Beta
 
 on:
   workflow_dispatch: {}
-  push:
-    branches:
-      - beta
 
 permissions:
   contents: write
