@@ -38,6 +38,7 @@ pub struct ParseCssResult {
 /// # Returns
 /// * `Ok(ParseCssResult)` - Parsed and transformed CSS with optional exports (for CSS modules)
 /// * `Err(String)` - Error message if parsing or transformation fails
+#[allow(clippy::too_many_arguments)]
 pub fn parse_css(
   css: &str,
   source_code: &str,
@@ -99,7 +100,7 @@ pub fn parse_css(
   let mut sourcemap = SourceMap::new(project_root);
   sourcemap.add_source(filename);
 
-  let _ = sourcemap.set_source_content(0, &source_code);
+  let _ = sourcemap.set_source_content(0, source_code);
   // Convert the stylesheet back to CSS string with transformations applied
   let result = stylesheet.to_css(PrinterOptions {
     minify: false, // Expect the users' bundler to handle minification
@@ -111,7 +112,7 @@ pub fn parse_css(
   let mut offsetted_sourcemap = SourceMap::new(project_root);
   offsetted_sourcemap.add_source(filename);
 
-  let _ = offsetted_sourcemap.set_source_content(0, &source_code);
+  let _ = offsetted_sourcemap.set_source_content(0, source_code);
 
   sourcemap
     .get_mappings()
@@ -490,7 +491,7 @@ fn hash(s: &str, at_start: bool) -> String {
   let hash = hasher.finish() as u32;
 
   let hash = ENCODER.encode(&hash.to_le_bytes());
-  if at_start && matches!(hash.as_bytes()[0], b'0'..=b'9') {
+  if at_start && hash.as_bytes()[0].is_ascii_digit() {
     format!("_{}", hash)
   } else {
     hash

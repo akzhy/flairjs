@@ -224,7 +224,7 @@ pub fn transform(
           unused_class_string.iter().for_each(|class_name| {
             let css_module_data = item.class_name_map.get(class_name);
 
-            if let Some(_) = css_module_data {
+            if css_module_data.is_some() {
               unused.push(UnusedCss {
                 class_name: class_name.clone(),
                 line: item.line_number,
@@ -360,6 +360,7 @@ struct TransformVisitor<'a> {
 }
 
 impl<'a> TransformVisitor<'a> {
+  #[allow(clippy::too_many_arguments)]
   fn new(
     allocator: &'a Allocator,
     ast_builder: AstBuilder<'a>,
@@ -379,7 +380,7 @@ impl<'a> TransformVisitor<'a> {
     let classname_util_symbols: Vec<SymbolId> = vec![];
 
     let variable_linking = HashMap::new();
-    let flair_property_visitor = FlairProperty::new(scoping, allocator, &rope);
+    let flair_property_visitor = FlairProperty::new(scoping, allocator, rope);
 
     Self {
       allocator,
@@ -526,7 +527,7 @@ impl<'a> TransformVisitor<'a> {
 
           combined_map
         };
-        if let Some(sourcemap_json) = final_css_map.to_json(None).ok() {
+        if let Ok(sourcemap_json) = final_css_map.to_json(None) {
           if let Err(err) = file.write_all(sourcemap_json.as_bytes()) {
             log_error!(
               "Failed to write CSS map to file: {}, reason: {:#?}",
@@ -664,7 +665,7 @@ impl<'a> TransformVisitor<'a> {
       Pass::First => {
         // Detect and collect style tag information and CSS content
         let mut style_detector =
-          StyleDetector::new(self.scoping, &self.style_tag_import_symbols, &self.rope);
+          StyleDetector::new(self.scoping, &self.style_tag_import_symbols, self.rope);
         style_detector.visit_function_body(body);
 
         if let Some(class_id) = self.parent_class_id {
