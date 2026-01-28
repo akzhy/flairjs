@@ -78,7 +78,7 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
 
         // Check if this style element should be treated as global CSS
         let is_global = check_if_global(jsx);
-        
+
         let mut start_offset = jsx.span.start;
         // Extract CSS content from the children of the styled component
         for child in children_iter {
@@ -100,7 +100,10 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
                 .collect::<Vec<String>>()
                 .join("");
 
-              start_offset = template_expression.quasis.first().map_or(jsx.span.start, |q| q.span.start);
+              start_offset = template_expression
+                .quasis
+                .first()
+                .map_or(jsx.span.start, |q| q.span.start);
               extracted_css.push_str(&template_expression_value);
             } else if let JSXExpression::TaggedTemplateExpression(tagged_template) = expression {
               // Handle tagged template literals (e.g., css`body { color: red; }`)
@@ -112,7 +115,11 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
                 .collect::<Vec<String>>()
                 .join("");
 
-              start_offset = tagged_template.quasi.quasis.first().map_or(jsx.span.start, |q| q.span.start);
+              start_offset = tagged_template
+                .quasi
+                .quasis
+                .first()
+                .map_or(jsx.span.start, |q| q.span.start);
               extracted_css.push_str(&tagged_template_value);
             }
           }
