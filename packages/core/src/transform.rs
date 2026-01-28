@@ -725,7 +725,11 @@ impl<'a> TransformVisitor<'a> {
   /// For class methods, this looks up the parent class's CSS exports instead
   /// of the method's own exports.
   fn get_css_exports(&self, fn_id: &u32) -> Option<HashMap<String, CssModuleExport>> {
-    let owner_id = self.fn_id_to_class_map.get(fn_id).copied().unwrap_or(*fn_id);
+    let owner_id = self
+      .fn_id_to_class_map
+      .get(fn_id)
+      .copied()
+      .unwrap_or(*fn_id);
     let module_entries = self.css_module_exports.get(&owner_id)?;
 
     let capacity = module_entries
