@@ -525,8 +525,8 @@ impl<'a> TransformVisitor<'a> {
         if let Some(sourcemap_json) = final_css_map.to_json(None).ok() {
           if let Err(err) = file.write_all(sourcemap_json.as_bytes()) {
             log_error!(
-              "Failed to write CSS to file: {}, reason: {:#?}",
-              css_file_path,
+              "Failed to write CSS map to file: {}, reason: {:#?}",
+              css_map_file_path,
               err
             );
           }
