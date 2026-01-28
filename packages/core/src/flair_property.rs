@@ -16,6 +16,7 @@ use oxc::semantic::SymbolId;
 use std::collections::HashMap;
 
 use crate::transform::CSSData;
+use crate::utils::ExtendedRope;
 
 pub static FLAIR_REPLACEMENT: &str = "__flair_replacement__";
 
@@ -39,10 +40,15 @@ pub struct FlairProperty<'a> {
   symbol_to_span_start_map: HashMap<SymbolId, u32>,
   allocator: &'a Allocator,
   ast_builder: AstBuilder<'a>,
+  rope: &'a ExtendedRope<'a>,
 }
 
 impl<'a> FlairProperty<'a> {
-  pub fn new(scoping: &'a Scoping, allocator: &'a Allocator) -> FlairProperty<'a> {
+  pub fn new(
+    scoping: &'a Scoping,
+    allocator: &'a Allocator,
+    rope: &'a ExtendedRope,
+  ) -> FlairProperty<'a> {
     FlairProperty {
       scoping,
       style: IndexMap::new(),
@@ -50,6 +56,7 @@ impl<'a> FlairProperty<'a> {
       symbol_to_span_start_map: HashMap::new(),
       allocator,
       ast_builder: AstBuilder::new(allocator),
+      rope,
     }
   }
 
@@ -143,10 +150,14 @@ impl<'a> FlairProperty<'a> {
     }
 
     let content = &assign.right;
+    let mut start_offset: u32 = 0;
     // Extract CSS content from the right-hand side expression
     let css_content: String = match content {
       // Direct string assignment
-      Expression::StringLiteral(string_value) => string_value.value.to_string(),
+      Expression::StringLiteral(string_value) => {
+        start_offset = string_value.span.start;
+        string_value.value.to_string()
+      }
       // Template literal assignment
       Expression::TemplateLiteral(template_expression) => {
         let template_value = template_expression
@@ -156,6 +167,10 @@ impl<'a> FlairProperty<'a> {
           .collect::<Vec<String>>()
           .join("");
 
+        start_offset = template_expression
+          .quasis
+          .first()
+          .map_or(assign.span.start, |q| q.span.start);
         template_value
       }
       Expression::TaggedTemplateExpression(tagged_template) => {
@@ -167,6 +182,12 @@ impl<'a> FlairProperty<'a> {
           .map(|elem| elem.value.clone().raw.into_string())
           .collect::<Vec<String>>()
           .join("");
+
+        start_offset = tagged_template
+          .quasi
+          .quasis
+          .first()
+          .map_or(assign.span.start, |q| q.span.start);
 
         tagged_template_value
       }
@@ -183,6 +204,8 @@ impl<'a> FlairProperty<'a> {
           (Expression::Identifier(identifier_calle), Some(Expression::ObjectExpression(obj)))
             if identifier_calle.name == "flair" =>
           {
+            start_offset = obj.span.start;
+
             build_style_string_from_object(obj)
           }
           _ => String::from(""),
@@ -194,19 +217,27 @@ impl<'a> FlairProperty<'a> {
 
     // Store the CSS content in the appropriate style map
     if static_member.property.name.as_str() == "globalFlair" {
+      let (line_number, column_number) = self.rope.get_line_column(assign.span.start);
       self.global_style.insert(
         *self.symbol_to_span_start_map.get(&symbol_id).unwrap(),
         CSSData {
           raw_css: css_content,
           is_global: true,
+          line_number,
+          column_number,
+          start_offset,
         },
       );
     } else {
+      let (line_number, column_number) = self.rope.get_line_column(assign.span.start);
       self.style.insert(
         *self.symbol_to_span_start_map.get(&symbol_id).unwrap(),
         CSSData {
           raw_css: css_content,
           is_global: false,
+          line_number,
+          column_number,
+          start_offset,
         },
       );
     }

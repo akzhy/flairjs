@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use lightningcss::css_modules::CssModuleExport;
 use oxc::allocator::Allocator;
@@ -52,6 +53,7 @@ impl SymbolStore {
 pub struct ClassNameReplacer<'a> {
   /// Maps original class names to their CSS module exports (hashed names)
   pub class_name_map: HashMap<String, CssModuleExport>,
+  pub consumed_classnames: HashSet<String>,
   pub allocator: &'a Allocator,
   pub ast_builder: AstBuilder<'a>,
   pub scoping: &'a Scoping,
@@ -82,6 +84,10 @@ impl<'a> ClassNameReplacer<'a> {
     &self.identifier_symbol_ids
   }
 
+  pub fn get_consumed_classnames(&self) -> HashSet<String> {
+    self.consumed_classnames.clone()
+  }
+
   /// Checks if a given attribute name should be processed for class name transformation
   /// Supports both exact string matching and regex patterns (wrapped in forward slashes)
   /// Example: "className" matches exactly, "/class.*/" matches "className", "class", etc.
@@ -105,13 +111,14 @@ impl<'a> ClassNameReplacer<'a> {
   /// Transforms class names from original to CSS module equivalents
   /// Handles space-separated class names (e.g., "btn primary" -> "btn_abc123 primary_def456")
   /// If a class name isn't found in the CSS module map, it's left unchanged
-  fn get_updated_classname(&self, class_name: &str) -> String {
+  fn get_updated_classname(&mut self, class_name: &str) -> String {
     let class_names: Vec<&str> = class_name.split(' ').collect();
     let mut updated_class_names = Vec::new();
 
     for class_name in class_names {
       if let Some(export) = self.get_classname_exports().get(class_name) {
         updated_class_names.push(export.name.clone());
+        self.consumed_classnames.insert(class_name.to_string());
       } else {
         updated_class_names.push(class_name.to_string());
       }
@@ -161,6 +168,8 @@ impl<'a> ClassNameReplacer<'a> {
 
           property.key =
             PropertyKey::StringLiteral(OxcBox::new_in(string_literal_key, self.allocator));
+        } else if let PropertyKey::Identifier(identifier) = &mut property.key {
+          self.update_identifier_expression(identifier);
         }
       }
     }
