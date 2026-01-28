@@ -1,0 +1,16 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "@flairjs/client": "0.0.1",
+    "@flairjs/core": "0.0.2",
+    "@flairjs/parcel-transformer": "0.0.2",
+    "@flairjs/rollup-plugin": "0.0.2",
+    "@flairjs/bundler-shared": "0.0.2",
+    "@flairjs/vite-plugin": "0.0.2",
+    "@flairjs/webpack-loader": "0.0.2"
+  },
+  "changesets": [
+    "few-showers-bet"
+  ]
+}

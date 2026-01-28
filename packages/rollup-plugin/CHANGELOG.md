@@ -1,5 +1,20 @@
 # @flairjs/rollup-plugin
 
+## 0.1.0-beta.0
+
+### Minor Changes
+
+- - Add sourcemap support for CSS
+  - Add logs for unused CSS
+  - Fix some classnames not getting recognised
+  - \[Breaking] Updated TransformOutput to always have a value, with success property determining the success of the operation
+  - \[Breaking] Updated cssPreprocessor function to have an object as the first param instead of string
+
+### Patch Changes
+
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.0
+
 ## 0.0.2
 
 ### Patch Changes
