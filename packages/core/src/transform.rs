@@ -14,6 +14,7 @@ use crate::style_tag::StyleDetector;
 use crate::update_attribute::ClassNameReplacer;
 use crate::utils::{ExtendedRope, UnusedCss};
 use crate::{log_error, parse_css::parse_css, update_attribute::SymbolStore};
+use data_encoding::BASE64;
 use indexmap::IndexMap;
 use lightningcss::css_modules::CssModuleExport;
 use napi::bindgen_prelude::Function as NapiFunction;
@@ -482,7 +483,6 @@ impl<'a> TransformVisitor<'a> {
 
     // Write the extracted CSS to a file in the specified output directory
     let css_file_path = format!("{}/{}", self.options.css_out_dir, hash_string);
-    let css_map_file_path = format!("{}/{}.map", self.options.css_out_dir, hash_string);
 
     match File::create(&css_file_path) {
       Ok(mut file) => {
@@ -493,7 +493,31 @@ impl<'a> TransformVisitor<'a> {
             combined_css.push('\n');
           });
 
-          combined_css.push_str(format!("/*# sourceMappingURL={}.map */", hash_string).as_str());
+          // Generate and inline the sourcemap as base64
+          let mut final_css_map = {
+            let mut combined_map = SourceMap::new(".");
+            let mut line_offset = 0;
+            self.extracted_css.iter_mut().for_each(|css_result| {
+              let css_code = &css_result.result.code;
+              let line_number = css_code.lines().count() as i64;
+              let _ = combined_map.add_sourcemap(&mut css_result.source_map, line_offset);
+              line_offset += line_number;
+            });
+
+            combined_map
+          };
+
+          if let Ok(sourcemap_json) = final_css_map.to_json(None) {
+            let base64_sourcemap = BASE64.encode(sourcemap_json.as_bytes());
+            combined_css.push_str(
+              format!(
+                "/*# sourceMappingURL=data:application/json;base64,{} */",
+                base64_sourcemap
+              )
+              .as_str(),
+            );
+          }
+
           combined_css
         };
         if let Err(err) = file.write_all(final_css.as_bytes()) {
@@ -502,39 +526,6 @@ impl<'a> TransformVisitor<'a> {
             css_file_path,
             err
           );
-        }
-      }
-      Err(err) => {
-        log_error!(
-          "Failed to create file in css_out_dir: {}, reason: {:#?}",
-          self.options.css_out_dir,
-          err
-        );
-      }
-    }
-
-    match File::create(&css_map_file_path) {
-      Ok(mut file) => {
-        let mut final_css_map = {
-          let mut combined_map = SourceMap::new(".");
-          let mut line_offset = 0;
-          self.extracted_css.iter_mut().for_each(|css_result| {
-            let css_code = &css_result.result.code;
-            let line_number = css_code.lines().count() as i64;
-            let _ = combined_map.add_sourcemap(&mut css_result.source_map, line_offset);
-            line_offset += line_number;
-          });
-
-          combined_map
-        };
-        if let Ok(sourcemap_json) = final_css_map.to_json(None) {
-          if let Err(err) = file.write_all(sourcemap_json.as_bytes()) {
-            log_error!(
-              "Failed to write CSS map to file: {}, reason: {:#?}",
-              css_map_file_path,
-              err
-            );
-          }
         }
       }
       Err(err) => {
