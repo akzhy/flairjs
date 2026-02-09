@@ -395,28 +395,38 @@ fn handle_theme_tokens(
     // POTENTIAL ISSUE: String slicing uses byte offsets while parser columns are
     // character-based. This could cause issues with multi-byte Unicode characters
     // in CSS comments or strings, but should be fine for ASCII theme tokens
-    let raw_theme_token = &parser.current_line().to_string()
-      [(var_start_location.column - 1) as usize..(last_var_token_location.column - 1) as usize];
+    let current_line = parser.current_line().to_string();
+    let start_idx = (var_start_location.column - 1) as usize;
+    let end_idx = (last_var_token_location.column - 1) as usize;
+
+    // Safely slice the string to avoid panics from out-of-bounds access
+    let raw_theme_token_opt = current_line.get(start_idx..end_idx);
 
     // Convert theme token to CSS custom property with validation
     // Examples:
     // - "$primary" -> "var(--primary)"
     // - "$colors.red.500" -> "var(--colors-red-500)"
     // - "$spaces.4" -> "var(--spaces-4)"
-    let parsed_token = if is_valid_theme_token(raw_theme_token) {
-      let path_vec: Vec<&str> = raw_theme_token.split(".").collect();
-      format!("var(--{token_prefix}{})", path_vec.join("-"))
+    if let Some(raw_theme_token) = raw_theme_token_opt {
+      let parsed_token = if is_valid_theme_token(raw_theme_token) {
+        let path_vec: Vec<&str> = raw_theme_token.split(".").collect();
+        format!("var(--{token_prefix}{})", path_vec.join("-"))
+      } else {
+        // Invalid theme token format - log warning and output as fallback
+        log_error!("Warning: Invalid theme token format '{}'. Expected format: $identifier or $identifier.segment.value (camelCase recommended)", raw_theme_token);
+        // This preserves the original token in case of malformed syntax
+        fallback_string.clone()
+      };
+      out.push_str(&parsed_token);
     } else {
-      // Invalid theme token format - log warning and output as fallback
-      log_error!("Warning: Invalid theme token format '{}'. Expected format: $identifier or $identifier.segment.value (camelCase recommended)", raw_theme_token);
-      // This preserves the original token in case of malformed syntax
-      fallback_string.clone()
-    };
-    out.push_str(&parsed_token);
+      // Theme variable spans multiple lines or whitespace was encountered
+      // Since theme tokens are expected to be single-line expressions,
+      // fall back to outputting the original token sequence
+      out.push_str(&fallback_string);
+    }
   } else {
-    // Theme variable spans multiple lines or whitespace was encountered
-    // Since theme tokens are expected to be single-line expressions,
-    // fall back to outputting the original token sequence
+    // Current token is on a different line than the variable start, so we can't form a valid theme variable
+    // Output the collected tokens as-is
     out.push_str(&fallback_string);
   }
 
