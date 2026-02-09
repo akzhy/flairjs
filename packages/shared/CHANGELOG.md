@@ -1,5 +1,14 @@
 # @flairjs/bundler-shared
 
+## 1.0.0-beta.1
+
+### Patch Changes
+
+- Updated sourcemap embedding, add logs for unused classnames
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.1
+  - @flairjs/client@0.0.1
+
 ## 1.0.0-beta.0
 
 ### Minor Changes

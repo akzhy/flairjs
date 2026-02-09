@@ -11,6 +11,7 @@
     "@flairjs/webpack-loader": "0.0.2"
   },
   "changesets": [
-    "few-showers-bet"
+    "few-showers-bet",
+    "gentle-wings-rescue"
   ]
 }
