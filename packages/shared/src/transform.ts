@@ -23,17 +23,17 @@ const colors = {
 const logger = {
   error: (msg: string) => {
     console.log(
-      `${colors.bg.red}${colors.fg.white}[flairjs/Error]${colors.reset} ${colors.fg.red}${msg}${colors.reset}`
+      `${colors.bg.red}${colors.fg.white}[flairjs/Error]${colors.reset} ${colors.fg.red}${msg}${colors.reset}`,
     );
   },
   warn: (msg: string) => {
     console.log(
-      `${colors.bg.yellow}${colors.fg.white}[flairjs/Warning]${colors.reset} ${msg}${colors.reset}`
+      `${colors.bg.yellow}${colors.fg.white}[flairjs/Warning]${colors.reset} ${msg}${colors.reset}`,
     );
   },
   info: (msg: string) => {
     console.log(
-      `${colors.bg.blue}${colors.fg.white}[flairjs/Info]${colors.reset} ${msg}${colors.reset}`
+      `${colors.bg.blue}${colors.fg.white}[flairjs/Info]${colors.reset} ${msg}${colors.reset}`,
     );
   },
 };
@@ -43,7 +43,7 @@ export const transformCode = (
   filePath: string,
   options: TransformOptions & {
     cssPreprocessor?: (cssData: CssData) => string;
-  }
+  },
 ): TransformOutput => {
   const result = rustTransformCode(
     code,
@@ -55,7 +55,7 @@ export const transformCode = (
       theme: options.theme,
       appendTimestampToCssFile: options.appendTimestampToCssFile,
     },
-    options.cssPreprocessor
+    options.cssPreprocessor,
   );
 
   const logs = result?.logs ?? [];
@@ -65,5 +65,12 @@ export const transformCode = (
       logger[log.level](log.message);
     }
   });
+
+  result.unusedClassnames.forEach((unused) => {
+    logger.warn(
+      `Unused classname detected: "${unused.className}" in file "${filePath}" at line ${unused.line}`,
+    );
+  });
+
   return result;
 };
