@@ -95,7 +95,7 @@ pub fn parse_css(
   };
 
   let stylesheet = StyleSheet::parse(&processed_css, parser_options)
-    .map_err(|e| e.to_flair_error_string(filename.to_string(), &css_data))?;
+    .map_err(|e| e.to_flair_error_string(&filename, &css_data))?;
 
   let project_root = ".";
   let mut sourcemap = SourceMap::new(project_root);
@@ -135,7 +135,7 @@ pub fn parse_css(
   // Handle the conversion result and provide descriptive error messages
   let ret_value = match result {
     Ok(result) => result,
-    Err(e) => return Err(e.to_flair_error_string(filename.to_string(), &css_data)),
+    Err(e) => return Err(e.to_flair_error_string(&filename, &css_data)),
   };
 
   Ok(ParseCssResult {
