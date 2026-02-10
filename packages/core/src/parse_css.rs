@@ -18,6 +18,7 @@ use smallvec::smallvec;
 use crate::{
   log_error,
   transform::{CSSData, Theme},
+  utils::MapLightningCssError,
 };
 use parcel_sourcemap::SourceMap;
 
@@ -94,7 +95,7 @@ pub fn parse_css(
   };
 
   let stylesheet = StyleSheet::parse(&processed_css, parser_options)
-    .map_err(|e| format!("Failed to parse CSS: {}", e))?;
+    .map_err(|e| e.to_flair_error_string(filename.to_string(), &css_data))?;
 
   let project_root = ".";
   let mut sourcemap = SourceMap::new(project_root);
@@ -134,7 +135,7 @@ pub fn parse_css(
   // Handle the conversion result and provide descriptive error messages
   let ret_value = match result {
     Ok(result) => result,
-    Err(e) => return Err(format!("Failed to convert stylesheet to CSS: {}", e)),
+    Err(e) => return Err(e.to_flair_error_string(filename.to_string(), &css_data)),
   };
 
   Ok(ParseCssResult {

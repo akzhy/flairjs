@@ -613,13 +613,7 @@ impl<'a> TransformVisitor<'a> {
             match res {
               Ok(val) => Some((css_data, val)),
               Err(e) => {
-                log_error!(
-                  "Failed to parse CSS at {}:{}:{}. {}",
-                  self.file_path,
-                  css_data.line_number,
-                  css_data.column_number,
-                  e,
-                );
+                log_error!("Error parsing CSS: {}", e,);
                 None
               }
             }
