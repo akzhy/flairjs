@@ -1,5 +1,11 @@
 # @flairjs/core
 
+## 0.1.0-beta.2
+
+### Patch Changes
+
+- Improved logging
+
 ## 0.1.0-beta.1
 
 ### Patch Changes
