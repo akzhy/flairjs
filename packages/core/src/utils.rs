@@ -106,7 +106,7 @@ pub trait MapLightningCssError {
 
 impl<'a> MapLightningCssError for Error<ParserError<'a>> {
   fn to_flair_error_string(self, filename: &str, css_data: &CSSData) -> String {
-    let file_info = format_file_info(&self.loc, &filename, &css_data);
+    let file_info = format_file_info(&self.loc, filename, css_data);
     format!(
       "{} {}",
       file_info,
@@ -117,7 +117,7 @@ impl<'a> MapLightningCssError for Error<ParserError<'a>> {
 
 impl MapLightningCssError for Error<PrinterErrorKind> {
   fn to_flair_error_string(self, filename: &str, css_data: &CSSData) -> String {
-    let file_info = format_file_info(&self.loc, &filename, &css_data);
+    let file_info = format_file_info(&self.loc, filename, css_data);
     format!(
       "{} {}",
       file_info,
