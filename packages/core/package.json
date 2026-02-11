@@ -2,9 +2,8 @@
   "name": "@flairjs/core",
   "version": "0.1.0-beta.2",
   "description": "Core module for flairjs",
-  "main": "dist/cjs/api.js",
-  "module": "dist/esm/api.js",
-  "types": "dist/types/api.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/akzhy/flairjs"
@@ -18,7 +17,12 @@
     "flairjs"
   ],
   "files": [
-    "dist"
+    "index.js",
+    "index.d.ts",
+    "core.wasi-browser.js",
+    "core.wasi.cjs",
+    "wasi-worker-browser.mjs",
+    "wasi-worker.mjs"
   ],
   "napi": {
     "binaryName": "core",
@@ -50,10 +54,6 @@
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
-    "dev:js": "rolldown -w -c",
-    "build:js": "rolldown -c",
-    "postbuild": "node patch-index.js && pnpm build:js",
-    "postbuild:debug": "node patch-index.js && pnpm build:js",
     "format": "run-p format:prettier format:rs format:toml",
     "format:prettier": "prettier . -w",
     "format:toml": "taplo format",
@@ -71,7 +71,6 @@
     "@flairjs/client": "workspace:*",
     "@napi-rs/cli": "^3.0.3",
     "@oxc-node/core": "^0.0.32",
-    "@rollup/plugin-typescript": "^12.1.4",
     "@taplo/cli": "^0.7.0",
     "@tybys/wasm-util": "^0.10.0",
     "@types/node": "^22.18.1",
@@ -79,8 +78,6 @@
     "lint-staged": "^16.1.2",
     "npm-run-all2": "^8.0.4",
     "oxlint": "^1.8.0",
-    "rolldown": "catalog:",
-    "rollup-plugin-copy": "^3.5.0",
     "tinybench": "^5.0.0",
     "typescript": "catalog:",
     "vitest": "^3.2.4"
