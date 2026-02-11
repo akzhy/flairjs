@@ -1,6 +1,6 @@
 {
   "name": "@flairjs/core",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Core module for flairjs",
   "main": "index.js",
   "types": "index.d.ts",

@@ -1,5 +1,14 @@
 # @flairjs/bundler-shared
 
+## 1.0.0-beta.3
+
+### Patch Changes
+
+- Updated entry point for core
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.3
+  - @flairjs/client@0.0.1
+
 ## 1.0.0-beta.2
 
 ### Patch Changes
