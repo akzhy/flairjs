@@ -60,6 +60,7 @@ pub fn map_lightning_css_parser_error_to_string(error: Error<ParserError>) -> St
     }
     ParserError::UnexpectedToken(token) => format!("Unexpected token: {:?}", token),
     ParserError::MaximumNestingDepth => "Maximum nesting depth reached".to_string(),
+    ParserError::EmptyBracketInCondition => "Empty brackets in media condition".to_string(),
   }
 }
 
