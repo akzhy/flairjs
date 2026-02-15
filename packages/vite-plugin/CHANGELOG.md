@@ -1,5 +1,13 @@
 # @flairjs/vite-plugin
 
+## 0.1.0-beta.4
+
+### Patch Changes
+
+- Improved unused classname log info, performance improvements and bug fixes
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.4
+
 ## 0.1.0-beta.3
 
 ### Patch Changes
