@@ -15,6 +15,7 @@ use oxc::semantic::Scoping;
 use oxc::semantic::SymbolId;
 use std::collections::HashMap;
 
+use crate::log_warn;
 use crate::transform::CSSData;
 use crate::utils::ExtendedRope;
 
@@ -160,6 +161,11 @@ impl<'a> FlairProperty<'a> {
       }
       // Template literal assignment
       Expression::TemplateLiteral(template_expression) => {
+        if !template_expression.expressions.is_empty() {
+          log_warn!(
+            "Template literal interpolations (${{...}}) in flair CSS are not supported and will be dropped. Use static CSS instead."
+          );
+        }
         let template_value = template_expression
           .quasis
           .iter()
@@ -175,6 +181,11 @@ impl<'a> FlairProperty<'a> {
       }
       Expression::TaggedTemplateExpression(tagged_template) => {
         // Handle tagged template literals (e.g., css`body { color: red; }`)
+        if !tagged_template.quasi.expressions.is_empty() {
+          log_warn!(
+            "Template literal interpolations (${{...}}) in flair CSS are not supported and will be dropped. Use static CSS instead."
+          );
+        }
         let tagged_template_value = tagged_template
           .quasi
           .quasis
