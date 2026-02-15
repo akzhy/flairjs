@@ -68,7 +68,7 @@ export const transformCode = (
 
   result.unusedClassnames.forEach((unused) => {
     logger.warn(
-      `Unused classname detected: "${unused.className}" in file "${filePath}" at line ${unused.line}`,
+      `Unused classname detected: "${unused.className}" in file "${filePath}:${unused.line}:${unused.column}".`,
     );
   });
 
