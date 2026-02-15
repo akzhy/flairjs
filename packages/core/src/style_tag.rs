@@ -7,6 +7,7 @@ use oxc::{
   semantic::{Scoping, SymbolId},
 };
 
+use crate::log_warn;
 use crate::transform::CSSData;
 use crate::utils::ExtendedRope;
 
@@ -93,6 +94,11 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
             if let JSXExpression::TemplateLiteral(template_expression) = expression {
               // Extract the raw string content from template literal quasi elements
               // Note: This only extracts static parts, not interpolated expressions
+              if !template_expression.expressions.is_empty() {
+                log_warn!(
+                  "Template literal interpolations (${{...}}) in <Style> tags are not supported and will be dropped. Use static CSS instead."
+                );
+              }
               let template_expression_value = template_expression
                 .quasis
                 .iter()
@@ -107,6 +113,11 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
               extracted_css.push_str(&template_expression_value);
             } else if let JSXExpression::TaggedTemplateExpression(tagged_template) = expression {
               // Handle tagged template literals (e.g., css`body { color: red; }`)
+              if !tagged_template.quasi.expressions.is_empty() {
+                log_warn!(
+                  "Template literal interpolations (${{...}}) in <Style> tags are not supported and will be dropped. Use static CSS instead."
+                );
+              }
               let tagged_template_value = tagged_template
                 .quasi
                 .quasis
