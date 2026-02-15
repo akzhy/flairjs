@@ -11,6 +11,7 @@ use crate::log_warn;
 use crate::logger::{get_logger, LogEntry};
 use crate::parse_css::ParseCssResult;
 use crate::style_tag::StyleDetector;
+use crate::update_attribute::ClassNameMatcher;
 use crate::update_attribute::ClassNameReplacer;
 use crate::utils::{ExtendedRope, UnusedCss};
 use crate::{log_error, parse_css::parse_css, update_attribute::SymbolStore};
@@ -38,6 +39,7 @@ use oxc::{
   semantic::{ScopeFlags, Scoping, SemanticBuilder, SymbolId},
 };
 use parcel_sourcemap::SourceMap;
+use sourcemap::SourceMap as JsSourceMap;
 
 /// Represents the different passes of the AST transformation.
 /// The transformation requires three passes due to dependency chains:
@@ -154,8 +156,7 @@ pub fn transform(
 
   let ast_builder = AstBuilder::new(&allocator);
 
-  let rope_code = &code.clone();
-  let rope = ExtendedRope::new(rope_code);
+  let rope = ExtendedRope::new(&code_clone);
   // Create the main visitor that will perform the three-pass transformation
   let mut visitor = TransformVisitor::new(
     &allocator,
@@ -203,42 +204,6 @@ pub fn transform(
   // Collect all logs that were accumulated during transformation
   let logs = get_logger().drain_logs();
 
-  // Detect unused CSS class names by comparing defined classes with consumed classes
-  let unused_classnames = {
-    let mut unused: Vec<UnusedCss> = Vec::new();
-
-    visitor
-      .css_module_exports
-      .iter()
-      .for_each(|(_fn_id, css_exports)| {
-        css_exports.iter().for_each(|item| {
-          // Collect all class names defined in CSS
-          let all_classnames: HashSet<String> = item.class_name_map.keys().cloned().collect();
-
-          // Find classes that were defined but never used in the code
-          let unused_class_string: Vec<String> = all_classnames
-            .difference(&visitor.consumed_classnames)
-            .cloned()
-            .collect();
-
-          // Create UnusedCss entries with location information
-          unused_class_string.iter().for_each(|class_name| {
-            let css_module_data = item.class_name_map.get(class_name);
-
-            if css_module_data.is_some() {
-              unused.push(UnusedCss {
-                class_name: class_name.clone(),
-                line: item.line_number,
-                column: item.column_number,
-              })
-            }
-          });
-        })
-      });
-
-    unused
-  };
-
   let final_css = {
     let mut combined_css = String::new();
     visitor.extracted_css.iter().for_each(|css_result| {
@@ -247,6 +212,49 @@ pub fn transform(
     });
 
     combined_css
+  };
+
+  // Detect unused CSS class names by comparing defined classes with consumed classes
+  // Helper to compute line and column from a byte offset in a string
+  fn line_col_from_offset(s: &str, offset: usize) -> (u32, u32) {
+    let line = s[..offset].lines().count() as u32;
+    let last_line_start = s[..offset].rfind('\n').map(|pos| pos + 1).unwrap_or(0);
+    let col = (offset - last_line_start) as u32;
+    (line, col)
+  }
+
+  let unused_classnames = {
+    let mut unused: Vec<UnusedCss> = Vec::new();
+
+    for (_fn_id, css_exports) in visitor.css_module_exports.iter() {
+      for item in css_exports {
+        for (class_name, css_module_data) in &item.class_name_map {
+          if visitor.consumed_classnames.contains(class_name) {
+            continue;
+          }
+
+          // Try to resolve the original source location via the CSS sourcemap
+          let (line, column) = visitor
+            .js_sourcemap
+            .as_ref()
+            .and_then(|sm| {
+              let idx = final_css.find(&format!(".{}", css_module_data.name))?;
+              let (css_line, css_col) = line_col_from_offset(&final_css, idx);
+              sm.lookup_token(css_line, css_col)
+            })
+            .map(|token| (token.get_src_line() + 1, token.get_src_col() + 1))
+            .unwrap_or((item.line_number, item.column_number));
+
+          unused.push(UnusedCss {
+            class_name: class_name.clone(),
+            line,
+            column,
+          });
+        }
+      }
+    }
+
+    unused
   };
 
   TransformOutput {
@@ -341,7 +349,7 @@ struct TransformVisitor<'a> {
   flair_property_visitor: FlairProperty<'a>,
 
   /// Span start positions of style tags that should be removed from JSX
-  style_tag_symbols: Vec<u32>,
+  style_tag_symbols: HashSet<u32>,
 
   file_path: String,
   js_env: Option<Env>,
@@ -358,6 +366,11 @@ struct TransformVisitor<'a> {
   generated_css_name: Option<String>,
 
   rope: &'a ExtendedRope<'a>,
+
+  js_sourcemap: Option<JsSourceMap>,
+
+  /// Pre-compiled class name matchers, compiled once from options.class_name_list
+  compiled_class_name_matchers: Vec<ClassNameMatcher>,
 }
 
 impl<'a> TransformVisitor<'a> {
@@ -376,12 +389,19 @@ impl<'a> TransformVisitor<'a> {
     let extracted_css = vec![];
     let identifier_symbol_ids: Vec<SymbolStore> = vec![];
     let css_module_exports: HashMap<u32, Vec<CSSModuleData>> = HashMap::new();
-    let style_tag_symbols: Vec<u32> = vec![];
+    let style_tag_symbols: HashSet<u32> = HashSet::new();
     let style_tag_import_symbols: Vec<SymbolId> = vec![];
     let classname_util_symbols: Vec<SymbolId> = vec![];
 
     let variable_linking = HashMap::new();
     let flair_property_visitor = FlairProperty::new(scoping, allocator, rope);
+
+    let default_class_name_list = vec!["className".to_string(), "class".to_string()];
+    let class_name_list = options
+      .class_name_list
+      .as_deref()
+      .unwrap_or(&default_class_name_list);
+    let compiled_class_name_matchers = ClassNameMatcher::compile_list(class_name_list);
 
     Self {
       allocator,
@@ -407,6 +427,8 @@ impl<'a> TransformVisitor<'a> {
       parent_class_id: None,
       generated_css_name: None,
       rope,
+      js_sourcemap: None,
+      compiled_class_name_matchers,
     }
   }
 
@@ -508,6 +530,11 @@ impl<'a> TransformVisitor<'a> {
           };
 
           if let Ok(sourcemap_json) = final_css_map.to_json(None) {
+            let sm = JsSourceMap::from_reader(sourcemap_json.as_bytes());
+            if let Ok(sm) = sm {
+              self.js_sourcemap = Some(sm);
+            }
+
             let base64_sourcemap = BASE64.encode(sourcemap_json.as_bytes());
             combined_css.push_str(
               format!(
@@ -520,6 +547,7 @@ impl<'a> TransformVisitor<'a> {
 
           combined_css
         };
+
         if let Err(err) = file.write_all(final_css.as_bytes()) {
           log_error!(
             "Failed to write CSS to file: {}, reason: {:#?}",
@@ -659,42 +687,46 @@ impl<'a> TransformVisitor<'a> {
 
         // If style tags were detected, store the CSS and symbol information
         if style_detector.has_style {
-          self.style_tag_symbols = style_detector.get_style_tag_symbol_ids();
+          self
+            .style_tag_symbols
+            .extend(style_detector.get_style_tag_symbol_ids());
           // If this function is inside a class, map it to the parent class for CSS scope inheritance
           if let Some(class_id) = self.parent_class_id {
             self
               .function_id_to_raw_css_mapping
-              .insert(class_id, style_detector.css);
+              .entry(class_id)
+              .or_default()
+              .extend(style_detector.css);
           } else {
             self
               .function_id_to_raw_css_mapping
-              .insert(fn_start, style_detector.css);
+              .entry(fn_start)
+              .or_default()
+              .extend(style_detector.css);
           }
         }
       }
       Pass::Second => {
         // Replace direct className references and identify variables that need replacement in Pass 3
+        let css_exports = self.get_css_exports(&fn_start).unwrap_or_default();
+        let identifier_symbol_ids = std::mem::take(&mut self.identifier_symbol_ids);
         let mut classname_replacer = ClassNameReplacer {
           allocator: self.allocator,
-          class_name_map: self.get_css_exports(&fn_start).unwrap_or_default(),
+          class_name_map: css_exports,
           consumed_classnames: HashSet::new(),
           ast_builder: self.ast_builder,
           scoping: self.scoping,
-          identifier_symbol_ids: self.identifier_symbol_ids.clone(),
+          identifier_symbol_ids,
           fn_id: fn_start,
           classname_util_symbols: self.classname_util_symbols.clone(),
           variable_linking: self.variable_linking.clone(),
-          class_name_list: self
-            .options
-            .class_name_list
-            .clone()
-            .unwrap_or(vec!["className".to_string(), "class".to_string()]),
+          class_name_matchers: self.compiled_class_name_matchers.clone(),
         };
 
         classname_replacer.visit_function_body(body);
 
-        // Update our tracking of which identifiers need to be processed in Pass 3
-        self.identifier_symbol_ids = classname_replacer.get_identifier_symbol_ids().to_vec();
+        // Move back the accumulated identifier symbol IDs for Pass 3
+        self.identifier_symbol_ids = std::mem::take(&mut classname_replacer.identifier_symbol_ids);
 
         self
           .consumed_classnames
@@ -845,11 +877,7 @@ impl<'a> VisitMut<'a> for TransformVisitor<'a> {
                 fn_id: decl.span.start,
                 classname_util_symbols: self.classname_util_symbols.clone(),
                 variable_linking: self.variable_linking.clone(),
-                class_name_list: self
-                  .options
-                  .class_name_list
-                  .clone()
-                  .unwrap_or(vec!["className".to_string(), "class".to_string()]),
+                class_name_matchers: self.compiled_class_name_matchers.clone(),
               };
 
               if decl.init.is_some() {
