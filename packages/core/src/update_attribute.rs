@@ -47,6 +47,44 @@ impl SymbolStore {
   }
 }
 
+/// Pre-compiled class name matcher for efficient attribute name checking.
+/// Compiled once and reused for every JSX attribute, avoiding repeated `Regex::new()` calls.
+/// Clone is cheap: Regex uses Arc internally.
+#[derive(Clone)]
+pub enum ClassNameMatcher {
+  Exact(String),
+  Pattern(Regex),
+}
+
+impl ClassNameMatcher {
+  /// Check if the given attribute name matches this matcher
+  pub fn matches(&self, name: &str) -> bool {
+    match self {
+      ClassNameMatcher::Exact(s) => s == name,
+      ClassNameMatcher::Pattern(re) => re.is_match(name),
+    }
+  }
+
+  /// Compile a list of string patterns (exact or `/regex/`) into matchers.
+  /// Invalid regex patterns fall back to exact matching.
+  pub fn compile_list(list: &[String]) -> Vec<ClassNameMatcher> {
+    list
+      .iter()
+      .map(|item| {
+        if item.starts_with('/') && item.ends_with('/') && item.len() > 2 {
+          let pattern = &item[1..item.len() - 1];
+          match Regex::new(pattern) {
+            Ok(re) => ClassNameMatcher::Pattern(re),
+            Err(_) => ClassNameMatcher::Exact(item.clone()),
+          }
+        } else {
+          ClassNameMatcher::Exact(item.clone())
+        }
+      })
+      .collect()
+  }
+}
+
 /// Main struct responsible for transforming CSS class names in JSX/TSX files
 /// This handles CSS modules transformation by replacing original class names
 /// with their hashed/scoped equivalents
@@ -70,9 +108,9 @@ pub struct ClassNameReplacer<'a> {
   /// Future enhancement: support all kinds of variable assignments including
   /// destructuring, imports, and complex assignment patterns
   pub variable_linking: HashMap<SymbolId, SymbolId>,
-  /// List of attribute names to process (e.g., ["className", "class"])
-  /// Supports regex patterns wrapped in forward slashes
-  pub class_name_list: Vec<String>,
+  /// Pre-compiled matchers for attribute names to process (e.g., "className", "class", /class.*/)
+  /// Compiled once and cloned (cheap due to Regex using Arc internally)
+  pub class_name_matchers: Vec<ClassNameMatcher>,
 }
 
 impl<'a> ClassNameReplacer<'a> {
@@ -84,28 +122,17 @@ impl<'a> ClassNameReplacer<'a> {
     &self.identifier_symbol_ids
   }
 
-  pub fn get_consumed_classnames(&self) -> HashSet<String> {
-    self.consumed_classnames.clone()
+  pub fn get_consumed_classnames(&mut self) -> HashSet<String> {
+    std::mem::take(&mut self.consumed_classnames)
   }
 
-  /// Checks if a given attribute name should be processed for class name transformation
-  /// Supports both exact string matching and regex patterns (wrapped in forward slashes)
-  /// Example: "className" matches exactly, "/class.*/" matches "className", "class", etc.
+  /// Checks if a given attribute name should be processed for class name transformation.
+  /// Uses pre-compiled matchers for efficient lookup.
   fn is_classname_in_list(&self, class_name: &str) -> bool {
-    let item = self.class_name_list.iter().find(|item| {
-      // Check if the item is a regex pattern
-      if item.starts_with("/") && item.ends_with("/") {
-        // Extract the regex pattern by removing the surrounding slashes
-        let pattern = &item[1..item.len() - 1];
-        if let Ok(re) = Regex::new(pattern) {
-          return re.is_match(class_name);
-        }
-      }
-      // Fallback to exact string matching
-      *item == class_name
-    });
-
-    item.is_some()
+    self
+      .class_name_matchers
+      .iter()
+      .any(|matcher| matcher.matches(class_name))
   }
 
   /// Transforms class names from original to CSS module equivalents
