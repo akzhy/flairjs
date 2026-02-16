@@ -7,6 +7,7 @@ import {
   shouldProcessFile,
   transformCode,
 } from "@flairjs/bundler-shared";
+import { CssData } from "@flairjs/core";
 import * as path from "path";
 import { LoaderContext } from "webpack";
 
@@ -65,14 +66,14 @@ export default async function flairJsLoader(
       appendTimestampToCssFile: false,
       classNameList: options?.classNameList,
       cssPreprocessor: options?.cssPreprocessor
-        ? (css: string) => options.cssPreprocessor!(css, fileName)
+        ? (cssData: CssData) => options.cssPreprocessor!(cssData, fileName)
         : undefined,
       theme: userTheme?.theme,
       useTheme: !!userTheme,
       cssOutDir: cssGeneratedDir,
     });
 
-    if (!result) {
+    if (!result.success) {
       return callback(null, source, sourceMap);
     }
 

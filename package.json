@@ -7,10 +7,11 @@
     "build": "pnpm -r run build",
     "build:core": "pnpm --filter @flairjs/core run build",
     "build:non-core-packages": "pnpm --filter \"!@flairjs/core\" run build",
-    "build:core-js": "pnpm --filter @flairjs/core run build:js",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "cs:version": "changeset version",
+    "postcs:version": "pnpm build:core"
   },
   "dependencies": {
-    "@changesets/cli": "^2.29.7"
+    "@changesets/cli": "^2.29.8"
   }
 }

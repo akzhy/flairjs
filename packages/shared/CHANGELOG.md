@@ -1,5 +1,81 @@
 # @flairjs/bundler-shared
 
+## 1.0.0
+
+### Minor Changes
+
+- 0cee0fb: - Add sourcemap support for CSS
+  - Add logs for unused CSS
+  - Fix some classnames not getting recognised
+  - \[Breaking] Updated TransformOutput to always have a value, with success property determining the success of the operation
+  - \[Breaking] Updated cssPreprocessor function to have an object as the first param instead of string
+
+### Patch Changes
+
+- 0bbff6a: Updated entry point for core
+- 1822036: Updated sourcemap embedding, add logs for unused classnames
+- 7d14ae2: Improved unused classname log info, performance improvements and bug fixes
+- 80a7a7d: Improved logging
+- Updated dependencies [0cee0fb]
+- Updated dependencies [0bbff6a]
+- Updated dependencies [1822036]
+- Updated dependencies [7d14ae2]
+- Updated dependencies [80a7a7d]
+  - @flairjs/core@0.1.0
+  - @flairjs/client@0.0.1
+
+## 1.0.0-beta.4
+
+### Patch Changes
+
+- Improved unused classname log info, performance improvements and bug fixes
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.4
+  - @flairjs/client@0.0.1
+
+## 1.0.0-beta.3
+
+### Patch Changes
+
+- Updated entry point for core
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.3
+  - @flairjs/client@0.0.1
+
+## 1.0.0-beta.2
+
+### Patch Changes
+
+- Improved logging
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.2
+  - @flairjs/client@0.0.1
+
+## 1.0.0-beta.1
+
+### Patch Changes
+
+- Updated sourcemap embedding, add logs for unused classnames
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.1
+  - @flairjs/client@0.0.1
+
+## 1.0.0-beta.0
+
+### Minor Changes
+
+- - Add sourcemap support for CSS
+  - Add logs for unused CSS
+  - Fix some classnames not getting recognised
+  - \[Breaking] Updated TransformOutput to always have a value, with success property determining the success of the operation
+  - \[Breaking] Updated cssPreprocessor function to have an object as the first param instead of string
+
+### Patch Changes
+
+- Updated dependencies
+  - @flairjs/core@0.1.0-beta.0
+  - @flairjs/client@0.0.1
+
 ## 0.0.2
 
 ### Patch Changes

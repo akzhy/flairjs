@@ -7,7 +7,9 @@ use oxc::{
   semantic::{Scoping, SymbolId},
 };
 
+use crate::log_warn;
 use crate::transform::CSSData;
+use crate::utils::ExtendedRope;
 
 pub struct StyleDetector<'a> {
   scoping: &'a Scoping,
@@ -22,12 +24,15 @@ pub struct StyleDetector<'a> {
   pub css: Vec<CSSData>,
   /// Flag indicating whether any style elements were found during traversal
   pub has_style: bool,
+
+  rope: &'a ExtendedRope<'a>,
 }
 
 impl StyleDetector<'_> {
   pub fn new<'a>(
     scoping: &'a Scoping,
     style_tag_import_symbols: &'a Vec<SymbolId>,
+    rope: &'a ExtendedRope,
   ) -> StyleDetector<'a> {
     let has_style = false;
     let css = vec![];
@@ -39,6 +44,7 @@ impl StyleDetector<'_> {
       scoping,
       style_tag_import_symbols,
       style_tag_symbol_ids,
+      rope,
     }
   }
 
@@ -74,11 +80,13 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
         // Check if this style element should be treated as global CSS
         let is_global = check_if_global(jsx);
 
+        let mut start_offset = jsx.span.start;
         // Extract CSS content from the children of the styled component
         for child in children_iter {
           // Handle direct text content (e.g., <Style>body { color: red; }</Style>)
           if let JSXChild::Text(child_text) = child {
             extracted_css.push_str(&child_text.value);
+            start_offset = child_text.span.start;
           }
           // Handle JavaScript expressions containing CSS (e.g., <Style>{`body { color: red; }`}</Style>)
           else if let JSXChild::ExpressionContainer(child_expression) = child {
@@ -86,6 +94,11 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
             if let JSXExpression::TemplateLiteral(template_expression) = expression {
               // Extract the raw string content from template literal quasi elements
               // Note: This only extracts static parts, not interpolated expressions
+              if !template_expression.expressions.is_empty() {
+                log_warn!(
+                  "Template literal interpolations (${{...}}) in <Style> tags are not supported and will be dropped. Use static CSS instead."
+                );
+              }
               let template_expression_value = template_expression
                 .quasis
                 .iter()
@@ -93,9 +106,18 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
                 .collect::<Vec<String>>()
                 .join("");
 
+              start_offset = template_expression
+                .quasis
+                .first()
+                .map_or(jsx.span.start, |q| q.span.start);
               extracted_css.push_str(&template_expression_value);
             } else if let JSXExpression::TaggedTemplateExpression(tagged_template) = expression {
               // Handle tagged template literals (e.g., css`body { color: red; }`)
+              if !tagged_template.quasi.expressions.is_empty() {
+                log_warn!(
+                  "Template literal interpolations (${{...}}) in <Style> tags are not supported and will be dropped. Use static CSS instead."
+                );
+              }
               let tagged_template_value = tagged_template
                 .quasi
                 .quasis
@@ -104,13 +126,23 @@ impl<'a> Visit<'_> for StyleDetector<'a> {
                 .collect::<Vec<String>>()
                 .join("");
 
+              start_offset = tagged_template
+                .quasi
+                .quasis
+                .first()
+                .map_or(jsx.span.start, |q| q.span.start);
               extracted_css.push_str(&tagged_template_value);
             }
           }
         }
+        let (line_number, column_number) = self.rope.get_line_column(jsx.span.start);
+
         self.css.push(CSSData {
           raw_css: extracted_css,
           is_global,
+          line_number,
+          column_number,
+          start_offset,
         });
       }
     }

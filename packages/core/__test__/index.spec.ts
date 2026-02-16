@@ -27,10 +27,8 @@ describe('Core tests', () => {
     const result = transformCode(flairPropertyContent, 'index-2.tsx', {
       cssOutDir: path.resolve(__dirname, './.css'),
     })
-    if (!result) {
-      throw new Error('transformCode returned null or undefined')
-    }
     expect(result.code).toMatchSnapshot()
+    expect(result.unusedClassnames.filter((cn) => cn.className === 'case-unused')).toHaveLength(1)
   })
 
   test('flair property object is working', () => {
@@ -39,7 +37,6 @@ describe('Core tests', () => {
     })
     const cssFiles = readdirSync(path.resolve(__dirname, './.css')).filter((f) => f.endsWith('.css'))
     const cssContent = readFileSync(path.resolve(__dirname, './.css', cssFiles[0]), 'utf-8')
-
 
     expect(cssContent).toMatchSnapshot()
 

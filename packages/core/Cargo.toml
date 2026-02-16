@@ -10,13 +10,19 @@ crate-type = ["cdylib"]
 
 [dependencies]
 cssparser = "0.35.0"
+data-encoding = "2.9.0"
 indexmap = "2.11.1"
-lightningcss = { version = "1.0.0-alpha.67", features = ["browserslist"] }
+lazy_static = "1.5.0"
+lightningcss = { version = "1.0.0-alpha.70", features = ["browserslist"] }
 napi = "3.0.0"
 napi-derive = "3.0.0"
 once_cell = "1.20.2"
-oxc = {version = "0.93.0", features = ["semantic", "ast_visit", "codegen"]}
+oxc = { version = "0.96.0", features = ["semantic", "ast_visit", "codegen"] }
+oxc_data_structures = { version = "0.96.0", features = ["rope"] }
+parcel_sourcemap = "2.1.1"
 regex = "1.11.2"
+smallvec = "1.15.1"
+sourcemap = "9.3.2"
 
 [build-dependencies]
 napi-build = "2"

@@ -3,6 +3,7 @@ import {
   TransformOptions,
   TransformOutput,
 } from "@flairjs/core";
+import { CssData } from "@flairjs/core";
 
 const colors = {
   reset: "\x1b[0m",
@@ -22,17 +23,17 @@ const colors = {
 const logger = {
   error: (msg: string) => {
     console.log(
-      `${colors.bg.red}${colors.fg.white}[flairjs/Error]${colors.reset} ${colors.fg.red}${msg}${colors.reset}`
+      `${colors.bg.red}${colors.fg.white}[flairjs/Error]${colors.reset} ${colors.fg.red}${msg}${colors.reset}`,
     );
   },
   warn: (msg: string) => {
     console.log(
-      `${colors.bg.yellow}${colors.fg.white}[flairjs/Warning]${colors.reset} ${msg}${colors.reset}`
+      `${colors.bg.yellow}${colors.fg.white}[flairjs/Warning]${colors.reset} ${msg}${colors.reset}`,
     );
   },
   info: (msg: string) => {
     console.log(
-      `${colors.bg.blue}${colors.fg.white}[flairjs/Info]${colors.reset} ${msg}${colors.reset}`
+      `${colors.bg.blue}${colors.fg.white}[flairjs/Info]${colors.reset} ${msg}${colors.reset}`,
     );
   },
 };
@@ -41,9 +42,9 @@ export const transformCode = (
   code: string,
   filePath: string,
   options: TransformOptions & {
-    cssPreprocessor?: (css: string) => string;
-  }
-): TransformOutput | null => {
+    cssPreprocessor?: (cssData: CssData) => string;
+  },
+): TransformOutput => {
   const result = rustTransformCode(
     code,
     filePath,
@@ -54,7 +55,7 @@ export const transformCode = (
       theme: options.theme,
       appendTimestampToCssFile: options.appendTimestampToCssFile,
     },
-    options.cssPreprocessor
+    options.cssPreprocessor,
   );
 
   const logs = result?.logs ?? [];
@@ -64,5 +65,12 @@ export const transformCode = (
       logger[log.level](log.message);
     }
   });
+
+  result.unusedClassnames.forEach((unused) => {
+    logger.warn(
+      `Unused classname detected: "${unused.className}" in file "${filePath}:${unused.line}:${unused.column}".`,
+    );
+  });
+
   return result;
 };

@@ -5,6 +5,7 @@ import module from "node:module";
 import path from "node:path";
 import { getUserTheme, GetUserThemeResult } from "./user-theme.js";
 import { store } from "./store.js";
+import { CssData } from "@flairjs/core";
 
 const require = module.createRequire(import.meta.url);
 
@@ -16,7 +17,7 @@ export interface SharedPluginOptions {
    * @param id the id of the file being processed
    * @returns the processed css
    */
-  cssPreprocessor?: (css: string, id: string) => string;
+  cssPreprocessor?: (cssData: CssData, id: string) => string;
   include?: string | string[];
   exclude?: string | string[];
   /**

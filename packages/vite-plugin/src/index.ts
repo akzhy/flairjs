@@ -5,6 +5,7 @@ import {
   shouldProcessFile,
   transformCode,
 } from "@flairjs/bundler-shared";
+import { CssData } from "@flairjs/core";
 import type { Plugin } from "vite";
 
 interface FlairJsVitePluginOptions extends SharedPluginOptions {}
@@ -57,14 +58,14 @@ export default async function flairJsVitePlugin(
         appendTimestampToCssFile: true,
         classNameList: options?.classNameList,
         cssPreprocessor: options?.cssPreprocessor
-          ? (css: string) => options.cssPreprocessor!(css, id)
+          ? (cssData: CssData) => options.cssPreprocessor!(cssData, id)
           : undefined,
         theme: context.userTheme?.theme,
         useTheme: !!context.userTheme,
         cssOutDir: context.flairGeneratedCssDir,
       });
 
-      if (!result) {
+      if (!result.success) {
         return null;
       }
 
