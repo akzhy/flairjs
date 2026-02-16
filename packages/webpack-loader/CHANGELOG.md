@@ -1,5 +1,28 @@
 # @flairjs/vite-plugin
 
+## 0.1.0
+
+### Minor Changes
+
+- 0cee0fb: - Add sourcemap support for CSS
+  - Add logs for unused CSS
+  - Fix some classnames not getting recognised
+  - \[Breaking] Updated TransformOutput to always have a value, with success property determining the success of the operation
+  - \[Breaking] Updated cssPreprocessor function to have an object as the first param instead of string
+
+### Patch Changes
+
+- 0bbff6a: Updated entry point for core
+- 1822036: Updated sourcemap embedding, add logs for unused classnames
+- 7d14ae2: Improved unused classname log info, performance improvements and bug fixes
+- 80a7a7d: Improved logging
+- Updated dependencies [0cee0fb]
+- Updated dependencies [0bbff6a]
+- Updated dependencies [1822036]
+- Updated dependencies [7d14ae2]
+- Updated dependencies [80a7a7d]
+  - @flairjs/core@0.1.0
+
 ## 0.1.0-beta.4
 
 ### Patch Changes
