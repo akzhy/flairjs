@@ -1,5 +1,11 @@
 # @flairjs/client
 
+## 0.0.2
+
+### Patch Changes
+
+- Update TypeScript definitions to allow string key in flair object
+
 ## 0.0.1
 
 ### Patch Changes

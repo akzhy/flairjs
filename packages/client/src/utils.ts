@@ -25,6 +25,8 @@ type FlairObject<T extends FlairTheme = FlairTheme> = {
     | ThemeTokens<T>
     | (string & {})
     | number;
+} & {
+  [K in `--${string}`]?: string | number;
 };
 
 type FlairCSS = {
